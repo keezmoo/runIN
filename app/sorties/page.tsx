@@ -1,11 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
 import ParticiperButton from "./participer-button";
 import FiltresSorties from "./filtres-sorties";
+import NavigationJours from "./navigation-jours";
+
+import {
+    ajouterJours,
+    formatDateCourte,
+    formatDateLongue,
+    formatHeure,
+    getDateKey,
+} from "@/lib/date-utils";
 
 type SortiesPageProps = {
     searchParams: Promise<{
+        lieu?: string;
         type?: string;
         date?: string;
     }>;
@@ -16,6 +27,7 @@ export default async function SortiesPage({
 }: SortiesPageProps) {
     const params = await searchParams;
 
+    const filtreLieu = params.lieu ?? "";
     const filtreType = params.type ?? "";
     const filtreDate = params.date ?? "";
 
@@ -41,20 +53,31 @@ export default async function SortiesPage({
         redirect("/profil");
     }
 
-    // Récupère les sorties
+    // ------------------------------------------------
+    // RECHERCHE DES SORTIES
+    // ------------------------------------------------
+
     let sortiesQuery = supabase
         .from("sorties")
         .select(`
-    id,
-    titre,
-    organisateur_id,
-    nombre_max_participants,
-    date_heure_depart,
-    lieu_depart,
-    type_sortie
-  `);
+      id,
+      titre,
+      organisateur_id,
+      nombre_max_participants,
+      date_heure_depart,
+      lieu_depart,
+      type_sortie
+    `);
 
-    // Filtre Route / Trail
+    // Filtre par lieu
+    if (filtreLieu.trim()) {
+        sortiesQuery = sortiesQuery.ilike(
+            "lieu_depart",
+            `%${filtreLieu.trim()}%`
+        );
+    }
+
+    // Type : Trail ou Route
     if (
         filtreType === "route" ||
         filtreType === "trail"
@@ -65,15 +88,21 @@ export default async function SortiesPage({
         );
     }
 
-    // Filtre par date
+    // Si une date est choisie dans le filtre
     if (filtreDate) {
         sortiesQuery = sortiesQuery.gte(
             "date_heure_depart",
             filtreDate
         );
+    } else {
+        // Sinon, on ne montre que les sorties futures
+        sortiesQuery = sortiesQuery.gte(
+            "date_heure_depart",
+            new Date().toISOString()
+        );
     }
 
-    // Les sorties les plus proches dans le temps d'abord
+    // Plus proche dans le temps en premier
     sortiesQuery = sortiesQuery.order(
         "date_heure_depart",
         { ascending: true }
@@ -84,14 +113,25 @@ export default async function SortiesPage({
         error: sortiesError,
     } = await sortiesQuery;
 
-    // Récupère les participations
-    const { data: participations, error: participationsError } =
-        await supabase
-            .from("participations")
-            .select("sortie_id, utilisateur_id");
+    // ------------------------------------------------
+    // PARTICIPATIONS
+    // ------------------------------------------------
 
-    // Récupère les profils pour connaître le nom des organisateurs
-    const { data: profils, error: profilsError } = await supabase
+    const {
+        data: participations,
+        error: participationsError,
+    } = await supabase
+        .from("participations")
+        .select("sortie_id, utilisateur_id");
+
+    // ------------------------------------------------
+    // PROFILS
+    // ------------------------------------------------
+
+    const {
+        data: profils,
+        error: profilsError,
+    } = await supabase
         .from("profiles")
         .select("id, nom");
 
@@ -102,10 +142,81 @@ export default async function SortiesPage({
     ) {
         return (
             <main className="mx-auto max-w-2xl p-6">
-                <p>Erreur lors du chargement des sorties.</p>
+                <p>
+                    Erreur lors du chargement des sorties.
+                </p>
             </main>
         );
     }
+
+    const listeSorties = sorties ?? [];
+    const listeParticipations = participations ?? [];
+    const listeProfils = profils ?? [];
+
+    // ------------------------------------------------
+    // REGROUPEMENT DES SORTIES PAR JOUR
+    // ------------------------------------------------
+
+    type Sortie = (typeof listeSorties)[number];
+
+    const sortiesParJour = new Map<
+        string,
+        Sortie[]
+    >();
+
+    for (const sortie of listeSorties) {
+        const dateKey = getDateKey(
+            new Date(sortie.date_heure_depart)
+        );
+
+        const groupe =
+            sortiesParJour.get(dateKey) ?? [];
+
+        groupe.push(sortie);
+
+        sortiesParJour.set(
+            dateKey,
+            groupe
+        );
+    }
+
+    // ------------------------------------------------
+    // BARRE AUJOURD'HUI → J+7
+    // ------------------------------------------------
+
+    const aujourdHui = getDateKey(new Date());
+
+    const joursNavigation = Array.from(
+        { length: 8 },
+        (_, index) => {
+            const date = ajouterJours(
+                aujourdHui,
+                index
+            );
+
+            let titre = `J+${index}`;
+
+            if (index === 0) {
+                titre = "Aujourd'hui";
+            }
+
+            if (index === 1) {
+                titre = "Demain";
+            }
+
+            return {
+                date,
+                titre,
+                sousTitre: formatDateCourte(date),
+                disponible:
+                    sortiesParJour.has(date),
+            };
+        }
+    );
+
+    // ------------------------------------------------
+    // AFFICHAGE
+    // ------------------------------------------------
 
     return (
         <main className="mx-auto max-w-2xl p-6">
@@ -117,111 +228,168 @@ export default async function SortiesPage({
 
                 <Link
                     href="/sorties/nouvelle"
-                    className="rounded bg-black px-4 py-2 text-white">
+                    className="rounded bg-black px-4 py-2 text-white"
+                >
                     Créer une sortie
                 </Link>
             </div>
 
+
+            {/* Filtres */}
             <FiltresSorties
+                lieuActuel={filtreLieu}
                 typeActuel={filtreType}
                 dateActuelle={filtreDate}
             />
 
-            {sorties.length === 0 ? (
-                <p>Aucune sortie pour le moment.</p>
+
+            {/* Navigation rapide sur 8 jours */}
+            <NavigationJours
+                jours={joursNavigation}
+            />
+
+
+            {/* Liste */}
+            {listeSorties.length === 0 ? (
+                <p>
+                    Aucune sortie ne correspond à votre recherche.
+                </p>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-10">
 
-                    {sorties.map((sortie) => {
+                    {Array.from(
+                        sortiesParJour.entries()
+                    ).map(([date, sortiesJour]) => (
 
-                        // Recherche le profil de l'organisateur
-                        const organisateur = profils.find(
-                            (profil) =>
-                                profil.id === sortie.organisateur_id
-                        );
+                        <section
+                            key={date}
+                            id={`jour-${date}`}
+                            className="scroll-mt-6"
+                        >
 
-                        // Participations de cette sortie
-                        const participationsSortie =
-                            participations.filter(
-                                (participation) =>
-                                    participation.sortie_id === sortie.id
-                            );
+                            {/* Titre du jour */}
+                            <h2 className="mb-4 border-b pb-2 text-xl font-semibold">
+                                {date === aujourdHui
+                                    ? `Aujourd'hui — ${formatDateLongue(date)}`
+                                    : date ===
+                                        ajouterJours(aujourdHui, 1)
+                                        ? `Demain — ${formatDateLongue(date)}`
+                                        : formatDateLongue(date)}
+                            </h2>
 
-                        // L'organisateur compte comme première personne
-                        const nombreActuel =
-                            1 + participationsSortie.length;
 
-                        // L'utilisateur est-il déjà inscrit ?
-                        const dejaParticipant =
-                            participationsSortie.some(
-                                (participation) =>
-                                    participation.utilisateur_id === user.id
-                            );
+                            {/* Sorties du jour */}
+                            <div className="space-y-4">
 
-                        // Est-ce sa propre sortie ?
-                        const estOrganisateur =
-                            sortie.organisateur_id === user.id;
+                                {sortiesJour.map((sortie) => {
 
-                        // La sortie est-elle complète ?
-                        const complet =
-                            nombreActuel >=
-                            sortie.nombre_max_participants;
+                                    const organisateur =
+                                        listeProfils.find(
+                                            (profil) =>
+                                                profil.id ===
+                                                sortie.organisateur_id
+                                        );
 
-                        return (
-                            <div
-                                key={sortie.id}
-                                className="rounded border p-4"
-                            >
-                                <h2 className="text-lg font-semibold">
-                                    {sortie.titre}
-                                </h2>
+                                    const participationsSortie =
+                                        listeParticipations.filter(
+                                            (participation) =>
+                                                participation.sortie_id ===
+                                                sortie.id
+                                        );
 
-                                <p className="mt-1 text-sm font-medium">
-                                    {sortie.type_sortie === "trail" ? "Trail" : "Route"}
-                                </p>
+                                    const nombreActuel =
+                                        1 +
+                                        participationsSortie.length;
 
-                                <p className="mt-2">
-                                    {new Intl.DateTimeFormat("fr-FR", {
-                                        dateStyle: "full",
-                                        timeStyle: "short",
-                                        timeZone: "Europe/Paris",
-                                    }).format(
-                                        new Date(sortie.date_heure_depart)
-                                    )}
-                                </p>
+                                    const dejaParticipant =
+                                        participationsSortie.some(
+                                            (participation) =>
+                                                participation.utilisateur_id ===
+                                                user.id
+                                        );
 
-                                <p className="mt-1">
-                                    Départ : {sortie.lieu_depart}
-                                </p>
+                                    const estOrganisateur =
+                                        sortie.organisateur_id ===
+                                        user.id;
 
-                                <p className="mt-1 text-sm">
-                                    Organisé par{" "}
-                                    <Link
-                                        href={`/membres/${sortie.organisateur_id}`}
-                                        className="font-medium underline"
-                                    >
-                                        {organisateur?.nom ?? "Utilisateur"}
-                                    </Link>
-                                </p>
+                                    const complet =
+                                        nombreActuel >=
+                                        sortie.nombre_max_participants;
 
-                                <p className="mt-2">
-                                    {nombreActuel} /{" "}
-                                    {sortie.nombre_max_participants} participants
-                                </p>
+                                    return (
+                                        <div
+                                            key={sortie.id}
+                                            className="rounded border p-4"
+                                        >
 
-                                <div className="mt-4">
-                                    <ParticiperButton
-                                        sortieId={sortie.id}
-                                        userId={user.id}
-                                        nombreMax={sortie.nombre_max_participants}
-                                        dejaParticipant={dejaParticipant}
-                                        estOrganisateur={estOrganisateur}
-                                        complet={complet}
-                                    />
-                                </div>
+                                            <h3 className="text-lg font-semibold">
+                                                {sortie.titre}
+                                            </h3>
+
+                                            <p className="mt-1 text-sm font-medium">
+                                                {sortie.type_sortie ===
+                                                    "trail"
+                                                    ? "Trail"
+                                                    : "Route"}
+                                            </p>
+
+                                            <p className="mt-2">
+                                                Départ à{" "}
+                                                <strong>
+                                                    {formatHeure(
+                                                        sortie.date_heure_depart
+                                                    )}
+                                                </strong>
+                                            </p>
+
+                                            <p className="mt-1">
+                                                {sortie.lieu_depart}
+                                            </p>
+
+                                            <p className="mt-1 text-sm">
+                                                Organisé par{" "}
+                                                <Link
+                                                    href={`/membres/${sortie.organisateur_id}`}
+                                                    className="font-medium underline"
+                                                >
+                                                    {organisateur?.nom ??
+                                                        "Utilisateur"}
+                                                </Link>
+                                            </p>
+
+                                            <p className="mt-2">
+                                                {nombreActuel} /{" "}
+                                                {
+                                                    sortie.nombre_max_participants
+                                                }{" "}
+                                                participants
+                                            </p>
+
+                                            <div className="mt-4">
+                                                <ParticiperButton
+                                                    sortieId={sortie.id}
+                                                    userId={user.id}
+                                                    nombreMax={
+                                                        sortie.nombre_max_participants
+                                                    }
+                                                    dejaParticipant={
+                                                        dejaParticipant
+                                                    }
+                                                    estOrganisateur={
+                                                        estOrganisateur
+                                                    }
+                                                    complet={complet}
+                                                />
+                                            </div>
+
+                                        </div>
+                                    );
+                                })}
+
                             </div>
-                        );
-                    })}
+
+                        </section>
+                    ))}
 
                 </div>
             )}

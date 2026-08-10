@@ -1,11 +1,13 @@
 import Link from "next/link";
 
 type FiltresSortiesProps = {
+  lieuActuel: string;
   typeActuel: string;
   dateActuelle: string;
 };
 
 export default function FiltresSorties({
+  lieuActuel,
   typeActuel,
   dateActuelle,
 }: FiltresSortiesProps) {
@@ -17,6 +19,20 @@ export default function FiltresSorties({
       <h2 className="font-semibold">
         Rechercher une sortie
       </h2>
+
+      <div>
+        <label className="mb-1 block">
+          Lieu
+        </label>
+
+        <input
+          type="text"
+          name="lieu"
+          defaultValue={lieuActuel}
+          className="w-full rounded border p-2"
+          placeholder="Chambéry"
+        />
+      </div>
 
       <div>
         <label className="mb-1 block">
