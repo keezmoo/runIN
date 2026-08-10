@@ -18,7 +18,7 @@ export default async function ProfilPage() {
   // Cherche le profil correspondant à cet utilisateur
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nom, age, sexe")
+    .select("nom, age, sexe, lieu_recherche, rayon_recherche_km, position_recherche")
     .eq("id", user.id)
     .maybeSingle();
 

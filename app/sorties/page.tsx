@@ -17,6 +17,9 @@ import {
 type SortiesPageProps = {
     searchParams: Promise<{
         lieu?: string;
+        rayon?: string;
+        lat?: string;
+        lon?: string;
         type?: string;
         date?: string;
     }>;
@@ -27,7 +30,6 @@ export default async function SortiesPage({
 }: SortiesPageProps) {
     const params = await searchParams;
 
-    const filtreLieu = params.lieu ?? "";
     const filtreType = params.type ?? "";
     const filtreDate = params.date ?? "";
 
@@ -52,30 +54,53 @@ export default async function SortiesPage({
     if (!profile) {
         redirect("/profil");
     }
+    // Localisation enregistrée dans le profil
+    const {
+        data: filtreProfilData,
+        error: filtreProfilError,
+    } = await supabase.rpc(
+        "mon_filtre_geographique"
+    );
+
+    const filtreProfil =
+        filtreProfilData?.[0] ?? null;
+
+    if (filtreProfilError || !filtreProfil) {
+        redirect("/profil");
+    }
+
+    const filtreLieu =
+        params.lieu ??
+        filtreProfil.lieu_recherche ??
+        "";
+
+    const filtreRayon =
+        params.rayon
+            ? Number(params.rayon)
+            : filtreProfil.rayon_recherche_km;
+
+    const latitude =
+        params.lat
+            ? Number(params.lat)
+            : filtreProfil.latitude;
+
+    const longitude =
+        params.lon
+            ? Number(params.lon)
+            : filtreProfil.longitude;
 
     // ------------------------------------------------
     // RECHERCHE DES SORTIES
     // ------------------------------------------------
 
-    let sortiesQuery = supabase
-        .from("sorties")
-        .select(`
-      id,
-      titre,
-      organisateur_id,
-      nombre_max_participants,
-      date_heure_depart,
-      lieu_depart,
-      type_sortie
-    `);
-
-    // Filtre par lieu
-    if (filtreLieu.trim()) {
-        sortiesQuery = sortiesQuery.ilike(
-            "lieu_depart",
-            `%${filtreLieu.trim()}%`
-        );
-    }
+    let sortiesQuery = supabase.rpc(
+        "sorties_dans_rayon",
+        {
+            p_latitude: latitude,
+            p_longitude: longitude,
+            p_rayon_km: filtreRayon,
+        }
+    );
 
     // Type : Trail ou Route
     if (
@@ -238,6 +263,7 @@ export default async function SortiesPage({
             {/* Filtres */}
             <FiltresSorties
                 lieuActuel={filtreLieu}
+                rayonActuel={filtreRayon}
                 typeActuel={filtreType}
                 dateActuelle={filtreDate}
             />
@@ -346,14 +372,20 @@ export default async function SortiesPage({
                                                 {sortie.lieu_depart}
                                             </p>
 
+                                            <p className="text-sm text-gray-500">
+                                                À{" "}
+                                                {sortie.distance_km.toFixed(1)
+                                                    .replace(".", ",")}{" "}
+                                                km de {filtreLieu}
+                                            </p>
+
                                             <p className="mt-1 text-sm">
                                                 Organisé par{" "}
                                                 <Link
                                                     href={`/membres/${sortie.organisateur_id}`}
                                                     className="font-medium underline"
                                                 >
-                                                    {organisateur?.nom ??
-                                                        "Utilisateur"}
+                                                    {organisateur?.nom ?? "Utilisateur"}
                                                 </Link>
                                             </p>
 

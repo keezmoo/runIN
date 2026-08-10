@@ -56,6 +56,24 @@ export default function SortieForm({
         }
         setLoading(true);
 
+        // Recherche les coordonnées du lieu de départ
+        const geocodeResponse = await fetch(
+            `/api/geocode?q=${encodeURIComponent(
+                lieuDepart.trim()
+            )}`
+        );
+
+        if (!geocodeResponse.ok) {
+            setMessage(
+                "Impossible de trouver le lieu de départ."
+            );
+            setLoading(false);
+            return;
+        }
+
+        const localisation =
+            await geocodeResponse.json();
+
         const supabase = createClient();
 
         const { error } = await supabase
@@ -70,6 +88,8 @@ export default function SortieForm({
                     new Date(dateHeure).toISOString(),
                 lieu_depart: lieuDepart.trim(),
                 type_sortie: typeSortie,
+                position_depart:
+                    `POINT(${localisation.longitude} ${localisation.latitude})`,
             });
 
         if (error) {

@@ -66,3 +66,62 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Curseur de rayon runIN */
+
+.rayon-slider {
+  appearance: none;
+  -webkit-appearance: none;
+
+  height: 8px;
+  border-radius: 9999px;
+
+  background: #c79a6b;
+
+  cursor: pointer;
+}
+
+/* Chrome / Edge / Safari */
+
+.rayon-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+
+  width: 22px;
+  height: 22px;
+
+  border-radius: 50%;
+
+  background: #8ed8b6;
+
+  border: 2px solid #ffffff;
+
+  cursor: grab;
+}
+
+.rayon-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+/* Firefox */
+
+.rayon-slider::-moz-range-track {
+  height: 8px;
+
+  border-radius: 9999px;
+
+  background: #c79a6b;
+}
+
+.rayon-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+
+  border-radius: 50%;
+
+  background: #8ed8b6;
+
+  border: 2px solid #ffffff;
+
+  cursor: grab;
+}
