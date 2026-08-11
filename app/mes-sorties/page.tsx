@@ -214,17 +214,10 @@ export default async function MesSortiesPage() {
     return (
         <main className="mx-auto max-w-2xl p-6">
 
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8">
                 <h1 className="text-2xl font-bold">
                     Mes sorties
                 </h1>
-
-                <Link
-                    href="/sorties"
-                    className="rounded border px-4 py-2"
-                >
-                    Toutes les sorties
-                </Link>
             </div>
 
 

@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 import SortieForm from "./sortie-form";
 
@@ -27,16 +26,6 @@ export default async function NouvelleSortiePage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-
-      {/* Bouton retour */}
-      <div className="mb-8">
-        <Link
-          href="/sorties"
-          className="rounded border px-4 py-2"
-        >
-          ← Toutes les sorties
-        </Link>
-      </div>
 
       {/* Titre */}
       <h1 className="mb-6 text-2xl font-bold">

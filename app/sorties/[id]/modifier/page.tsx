@@ -5,7 +5,6 @@ import {
     redirect,
 } from "next/navigation";
 
-import Link from "next/link";
 
 import ModifierSortieForm from "./modifier-sortie-form";
 
@@ -71,15 +70,6 @@ export default async function ModifierSortiePage({
 
     return (
         <main className="mx-auto max-w-2xl p-6">
-
-            <div className="mb-8">
-                <Link
-                    href="/mes-sorties"
-                    className="rounded border px-4 py-2"
-                >
-                    ← Mes sorties
-                </Link>
-            </div>
 
             <h1 className="mb-6 text-2xl font-bold">
                 Modifier la sortie
