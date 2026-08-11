@@ -30,6 +30,19 @@ export default async function ProfilPage() {
         userId={user.id}
         initialProfile={profile}
       />
+      <form
+        action="/auth/signout"
+        method="post"
+        className="mt-8"
+      >
+        <button
+          type="submit"
+          className="rounded border px-4 py-2"
+        >
+          Se déconnecter
+        </button>
+      </form>
     </main>
+
   );
 }
