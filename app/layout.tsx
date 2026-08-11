@@ -3,6 +3,8 @@ import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
+import NavigationPrincipale from "../components/navigation-principale";
+
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
@@ -25,14 +27,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+    <html lang="fr" suppressHydrationWarning>
+      <body
+        className={`${geistSans.className} antialiased pb-20 md:pb-0`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
+          <NavigationPrincipale />
+
           {children}
         </ThemeProvider>
       </body>
