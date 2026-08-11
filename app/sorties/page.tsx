@@ -257,6 +257,12 @@ export default async function SortiesPage({
                 >
                     Créer une sortie
                 </Link>
+                <Link
+                    href="/mes-sorties"
+                    className="rounded border px-4 py-2"
+                >
+                    Mes sorties
+                </Link>
             </div>
 
 
