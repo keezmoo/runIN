@@ -107,14 +107,7 @@ export default function NavigationPrincipale() {
 
   function estActif(href: string) {
     if (href === "/sorties") {
-      return (
-        pathname === "/sorties" ||
-        (
-          pathname.startsWith("/sorties/") &&
-          pathname !== "/sorties/nouvelle" &&
-          !pathname.includes("/modifier")
-        )
-      );
+      return pathname === "/sorties";
     }
 
     if (href === "/mes-sorties") {
@@ -179,11 +172,12 @@ export default function NavigationPrincipale() {
                   md:gap-2 md:px-3 md:py-2
                   md:text-sm
 
-                  ${lien.principal
-                    ? "bg-[#8ED8B6] text-black"
-                    : actif
-                      ? "text-[#8ED8B6]"
-                      : "text-foreground hover:bg-gray-500/10"
+                  ${
+                    lien.principal
+                      ? "bg-[#8ED8B6] text-black"
+                      : actif
+                        ? "text-[#8ED8B6]"
+                        : "text-foreground hover:bg-gray-500/10"
                   }
                 `}
               >

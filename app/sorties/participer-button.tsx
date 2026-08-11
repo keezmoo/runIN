@@ -2,15 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/client";
 
 type ParticiperButtonProps = {
   sortieId: string;
   userId: string;
   nombreMax: number;
+
   dejaParticipant: boolean;
   estOrganisateur: boolean;
   complet: boolean;
+
+  modeInscription: string;
+  demandeEnAttente: boolean;
 };
 
 export default function ParticiperButton({
@@ -20,12 +25,11 @@ export default function ParticiperButton({
   dejaParticipant,
   estOrganisateur,
   complet,
+  modeInscription,
+  demandeEnAttente,
 }: ParticiperButtonProps) {
-
+  const supabase = createClient();
   const router = useRouter();
-
-  const [participant, setParticipant] =
-    useState(dejaParticipant);
 
   const [loading, setLoading] =
     useState(false);
@@ -33,69 +37,70 @@ export default function ParticiperButton({
   const [message, setMessage] =
     useState("");
 
-  async function changerParticipation() {
-    setLoading(true);
-    setMessage("");
+  const [
+    demandeActive,
+    setDemandeActive,
+  ] = useState(demandeEnAttente);
 
-    const supabase = createClient();
 
-    // --------------------------------
-    // CAS 1 : quitter une sortie
-    // --------------------------------
+  // ------------------------------------------------
+  // QUITTER UNE SORTIE
+  // ------------------------------------------------
 
-    if (participant) {
+  async function quitterSortie() {
+    const { error } = await supabase
+      .from("participations")
+      .delete()
+      .eq("sortie_id", sortieId)
+      .eq("utilisateur_id", userId);
 
-      const { error } = await supabase
-        .from("participations")
-        .delete()
-        .eq("sortie_id", sortieId)
-        .eq("utilisateur_id", userId);
-
-      if (error) {
-        setMessage("Erreur : " + error.message);
-        setLoading(false);
-        return;
-      }
-
-      setParticipant(false);
-      router.refresh();
-      setLoading(false);
-      return;
+    if (error) {
+      setMessage(
+        "Impossible de quitter la sortie."
+      );
+      return false;
     }
 
+    return true;
+  }
 
-    // --------------------------------
-    // CAS 2 : participer
-    // --------------------------------
 
-    // Vérification du nombre de places
-    const { count, error: countError } =
-      await supabase
-        .from("participations")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq("sortie_id", sortieId);
+  // ------------------------------------------------
+  // PARTICIPATION AUTOMATIQUE
+  // ------------------------------------------------
+
+  async function participerAutomatiquement() {
+
+    // Vérifie combien de personnes sont déjà inscrites
+    const {
+      count,
+      error: countError,
+    } = await supabase
+      .from("participations")
+      .select("*", {
+        count: "exact",
+        head: true,
+      })
+      .eq("sortie_id", sortieId);
 
     if (countError) {
-      setMessage("Impossible de vérifier les places.");
-      setLoading(false);
-      return;
+      setMessage(
+        "Impossible de vérifier les participants."
+      );
+      return false;
     }
 
-    // +1 = organisateur
-    const nombreActuel = (count ?? 0) + 1;
+    // +1 car l'organisateur compte
+    const nombreActuel =
+      (count ?? 0) + 1;
 
     if (nombreActuel >= nombreMax) {
-      setMessage("Cette sortie est complète.");
-      setLoading(false);
-
-      router.refresh();
-      return;
+      setMessage(
+        "Cette sortie est complète."
+      );
+      return false;
     }
 
-    // Création de la participation
     const { error } = await supabase
       .from("participations")
       .insert({
@@ -104,51 +109,217 @@ export default function ParticiperButton({
       });
 
     if (error) {
-      setMessage("Erreur : " + error.message);
-    } else {
-      setParticipant(true);
-      router.refresh();
+      setMessage(
+        "Impossible de rejoindre la sortie."
+      );
+      return false;
     }
 
-    setLoading(false);
+    return true;
   }
 
 
-  // L'organisateur participe automatiquement
+  // ------------------------------------------------
+  // DEMANDER À PARTICIPER
+  // ------------------------------------------------
+
+  async function demanderParticipation() {
+
+    if (complet) {
+      setMessage(
+        "Cette sortie est complète."
+      );
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("demandes_participation")
+      .insert({
+        sortie_id: sortieId,
+        utilisateur_id: userId,
+        statut: "en_attente",
+      });
+
+    if (error) {
+      setMessage(
+        "Impossible d'envoyer la demande."
+      );
+      return false;
+    }
+
+    setDemandeActive(true);
+
+    return true;
+  }
+
+
+  // ------------------------------------------------
+  // ANNULER UNE DEMANDE
+  // ------------------------------------------------
+
+  async function annulerDemande() {
+
+    const { error } = await supabase
+      .from("demandes_participation")
+      .delete()
+      .eq("sortie_id", sortieId)
+      .eq("utilisateur_id", userId)
+      .eq("statut", "en_attente");
+
+    if (error) {
+      setMessage(
+        "Impossible d'annuler la demande."
+      );
+      return false;
+    }
+
+    setDemandeActive(false);
+
+    return true;
+  }
+
+
+  // ------------------------------------------------
+  // ACTION DU BOUTON
+  // ------------------------------------------------
+
+  async function actionParticipation() {
+
+    setLoading(true);
+    setMessage("");
+
+    let succes = false;
+
+
+    // Déjà inscrit → quitter
+    if (dejaParticipant) {
+
+      succes =
+        await quitterSortie();
+
+    }
+
+    // Sortie avec validation
+    else if (
+      modeInscription === "validation"
+    ) {
+
+      if (demandeActive) {
+
+        succes =
+          await annulerDemande();
+
+      } else {
+
+        succes =
+          await demanderParticipation();
+
+      }
+
+    }
+
+    // Sortie automatique
+    else {
+
+      succes =
+        await participerAutomatiquement();
+
+    }
+
+
+    setLoading(false);
+
+    if (succes) {
+      router.refresh();
+    }
+  }
+
+
+  // ------------------------------------------------
+  // ORGANISATEUR
+  // ------------------------------------------------
+
   if (estOrganisateur) {
     return (
-      <span className="text-sm font-medium">
+      <p className="text-sm font-medium">
         Vous organisez cette sortie
-      </span>
+      </p>
     );
   }
 
 
+  // ------------------------------------------------
+  // TEXTE DU BOUTON
+  // ------------------------------------------------
+
+  let texteBouton = "Participer";
+
+  if (loading) {
+
+    texteBouton = "Chargement...";
+
+  } else if (dejaParticipant) {
+
+    texteBouton = "Quitter";
+
+  } else if (
+    modeInscription === "validation" &&
+    demandeActive
+  ) {
+
+    texteBouton = "Annuler ma demande";
+
+  } else if (
+    modeInscription === "validation"
+  ) {
+
+    texteBouton =
+      "Demander à participer";
+
+  } else if (complet) {
+
+    texteBouton = "Complet";
+
+  }
+
+
+  const boutonDesactive =
+    loading ||
+    (
+      complet &&
+      !dejaParticipant &&
+      !demandeActive
+    );
+
+
   return (
     <div>
+
       <button
         type="button"
-        onClick={changerParticipation}
-        disabled={
-          loading ||
-          (!participant && complet)
-        }
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-40"
+        onClick={actionParticipation}
+        disabled={boutonDesactive}
+        className="rounded border px-4 py-2 disabled:opacity-40"
       >
-        {loading
-          ? "Chargement..."
-          : participant
-            ? "Quitter la sortie"
-            : complet
-              ? "Complet"
-              : "Participer"}
+        {texteBouton}
       </button>
+
+
+      {demandeActive &&
+        !dejaParticipant && (
+          <p className="mt-2 text-sm text-gray-500">
+            En attente de validation par
+            l&apos;organisateur.
+          </p>
+        )}
+
 
       {message && (
         <p className="mt-2 text-sm">
           {message}
         </p>
       )}
+
     </div>
   );
 }

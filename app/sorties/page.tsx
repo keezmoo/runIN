@@ -148,6 +148,18 @@ export default async function SortiesPage({
     } = await supabase
         .from("participations")
         .select("sortie_id, utilisateur_id");
+    // ------------------------------------------------
+    // DEMANDES DE PARTICIPATION DE L'UTILISATEUR
+    // ------------------------------------------------
+
+    const {
+        data: demandesParticipation,
+        error: demandesParticipationError,
+    } = await supabase
+        .from("demandes_participation")
+        .select("sortie_id, utilisateur_id, statut")
+        .eq("utilisateur_id", user.id)
+        .eq("statut", "en_attente");
 
     // ------------------------------------------------
     // PROFILS
@@ -163,6 +175,7 @@ export default async function SortiesPage({
     if (
         sortiesError ||
         participationsError ||
+        demandesParticipationError ||
         profilsError
     ) {
         return (
@@ -177,7 +190,7 @@ export default async function SortiesPage({
     const listeSorties = sorties ?? [];
     const listeParticipations = participations ?? [];
     const listeProfils = profils ?? [];
-
+    const listeDemandes = demandesParticipation ?? [];
     // ------------------------------------------------
     // REGROUPEMENT DES SORTIES PAR JOUR
     // ------------------------------------------------
@@ -335,43 +348,52 @@ export default async function SortiesPage({
                                         nombreActuel >=
                                         sortie.nombre_max_participants;
 
+                                    const demandeEnAttente =
+                                        listeDemandes.some(
+                                            (demande) =>
+                                                demande.sortie_id === sortie.id
+                                        );
+
                                     return (
                                         <div
                                             key={sortie.id}
                                             className="rounded border p-4"
                                         >
+                                            <Link
+                                                href={`/sorties/${sortie.id}`}
+                                                className="block rounded hover:bg-gray-500/5"
+                                            >
+                                                <h3 className="text-lg font-semibold">
+                                                    {sortie.titre}
+                                                </h3>
 
-                                            <h3 className="text-lg font-semibold">
-                                                {sortie.titre}
-                                            </h3>
+                                                <p className="mt-1 text-sm font-medium">
+                                                    {sortie.type_sortie ===
+                                                        "trail"
+                                                        ? "Trail"
+                                                        : "Route"}
+                                                </p>
 
-                                            <p className="mt-1 text-sm font-medium">
-                                                {sortie.type_sortie ===
-                                                    "trail"
-                                                    ? "Trail"
-                                                    : "Route"}
-                                            </p>
+                                                <p className="mt-2">
+                                                    Départ à{" "}
+                                                    <strong>
+                                                        {formatHeure(
+                                                            sortie.date_heure_depart
+                                                        )}
+                                                    </strong>
+                                                </p>
 
-                                            <p className="mt-2">
-                                                Départ à{" "}
-                                                <strong>
-                                                    {formatHeure(
-                                                        sortie.date_heure_depart
-                                                    )}
-                                                </strong>
-                                            </p>
+                                                <p className="mt-1">
+                                                    {sortie.lieu_depart}
+                                                </p>
 
-                                            <p className="mt-1">
-                                                {sortie.lieu_depart}
-                                            </p>
-
-                                            <p className="text-sm text-gray-500">
-                                                À{" "}
-                                                {sortie.distance_km.toFixed(1)
-                                                    .replace(".", ",")}{" "}
-                                                km de {filtreLieu}
-                                            </p>
-
+                                                <p className="text-sm text-gray-500">
+                                                    À{" "}
+                                                    {sortie.distance_km.toFixed(1)
+                                                        .replace(".", ",")}{" "}
+                                                    km de {filtreLieu}
+                                                </p>
+                                            </Link>
                                             <p className="mt-1 text-sm">
                                                 Organisé par{" "}
                                                 <Link
@@ -404,6 +426,12 @@ export default async function SortiesPage({
                                                         estOrganisateur
                                                     }
                                                     complet={complet}
+                                                    modeInscription={
+                                                        sortie.mode_inscription
+                                                    }
+                                                    demandeEnAttente={
+                                                        demandeEnAttente
+                                                    }
                                                 />
                                             </div>
 

@@ -53,6 +53,56 @@ export default async function MesSortiesPage() {
         });
 
     // ------------------------------------------------
+    // DEMANDES EN ATTENTE SUR MES SORTIES
+    // ------------------------------------------------
+
+    const idsSortiesOrganisees =
+        sortiesOrganisees?.map(
+            (sortie) => sortie.id
+        ) ?? [];
+
+    let demandesEnAttente: {
+        sortie_id: string;
+    }[] = [];
+
+    if (idsSortiesOrganisees.length > 0) {
+        const {
+            data,
+            error: demandesError,
+        } = await supabase
+            .from("demandes_participation")
+            .select("sortie_id")
+            .in(
+                "sortie_id",
+                idsSortiesOrganisees
+            )
+            .eq("statut", "en_attente");
+
+        if (demandesError) {
+            return (
+                <main className="mx-auto max-w-2xl p-6">
+                    <p>
+                        Erreur lors du chargement des demandes.
+                    </p>
+                </main>
+            );
+        }
+
+        demandesEnAttente = data ?? [];
+    }
+
+    const nombreDemandesParSortie =
+        demandesEnAttente.reduce<
+            Record<string, number>
+        >((compteur, demande) => {
+
+            compteur[demande.sortie_id] =
+                (compteur[demande.sortie_id] ?? 0) + 1;
+
+            return compteur;
+        }, {});
+
+    // ------------------------------------------------
     // PARTICIPATIONS DE L'UTILISATEUR
     // ------------------------------------------------
 
@@ -157,35 +207,66 @@ export default async function MesSortiesPage() {
         const dateKey = getDateKey(
             new Date(sortie.date_heure_depart)
         );
+        const nombreDemandes =
+            nombreDemandesParSortie[sortie.id] ?? 0;
+
 
         return (
             <div
                 key={sortie.id}
                 className="rounded border p-4"
             >
-                <h3 className="text-lg font-semibold">
-                    {sortie.titre}
-                </h3>
 
-                <p className="mt-1 text-sm font-medium">
-                    {sortie.type_sortie === "trail"
-                        ? "Trail"
-                        : "Route"}
-                </p>
+                {/* Partie cliquable vers la fiche */}
+                <Link
+                    href={`/sorties/${sortie.id}`}
+                    className="block rounded hover:bg-gray-500/5"
+                >
 
-                <p className="mt-2">
-                    {formatDateLongue(dateKey)}
-                    {" — "}
-                    <strong>
-                        {formatHeure(
-                            sortie.date_heure_depart
+                    <h3 className="text-lg font-semibold">
+                        {sortie.titre}
+                    </h3>
+
+                    <p className="mt-1 text-sm font-medium">
+                        {sortie.type_sortie === "trail"
+                            ? "Trail"
+                            : "Route"}
+                    </p>
+
+                    <p className="mt-2">
+                        {formatDateLongue(dateKey)}
+                        {" — "}
+                        <strong>
+                            {formatHeure(
+                                sortie.date_heure_depart
+                            )}
+                        </strong>
+                    </p>
+
+                    <p className="mt-1">
+                        {sortie.lieu_depart}
+                    </p>
+
+
+                    {/* Demandes en attente */}
+                    {estOrganisateur &&
+                        nombreDemandes > 0 && (
+
+                            <div className="mt-3">
+                                <span className="inline-block rounded-full bg-[#8ED8B6] px-3 py-1 text-sm font-medium text-black">
+                                    {nombreDemandes}{" "}
+                                    {nombreDemandes === 1
+                                        ? "demande en attente"
+                                        : "demandes en attente"}
+                                </span>
+                            </div>
+
                         )}
-                    </strong>
-                </p>
 
-                <p className="mt-1">
-                    {sortie.lieu_depart}
-                </p>
+                </Link>
+
+
+                {/* Actions de l'organisateur */}
                 {estOrganisateur && (
                     <div className="mt-4 flex gap-3">
 
@@ -203,6 +284,7 @@ export default async function MesSortiesPage() {
 
                     </div>
                 )}
+
             </div>
         );
     }

@@ -19,6 +19,7 @@ export default function SortieForm({
     const [typeSortie, setTypeSortie] = useState("route");
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
+    const [modeInscription, setModeInscription] = useState("automatique");
 
     async function creerSortie() {
         setMessage("");
@@ -82,14 +83,14 @@ export default function SortieForm({
                 titre: titre.trim(),
                 organisateur_id: userId,
                 nombre_max_participants: nombre,
-
-                // Conversion en format reconnu par Supabase
                 date_heure_depart:
                     new Date(dateHeure).toISOString(),
                 lieu_depart: lieuDepart.trim(),
                 type_sortie: typeSortie,
                 position_depart:
                     `POINT(${localisation.longitude} ${localisation.latitude})`,
+
+                mode_inscription: modeInscription,
             });
 
         if (error) {
@@ -171,7 +172,6 @@ export default function SortieForm({
                 <label className="mb-1 block font-medium">
                     Nombre maximum de participants
                 </label>
-
                 <input
                     type="number"
                     value={nombreMax}
@@ -185,6 +185,64 @@ export default function SortieForm({
                     L'organisateur est compris dans ce nombre.
                 </p>
             </div>
+            <div>
+                <label className="mb-2 block font-medium">
+                    Inscription des participants
+                </label>
+
+                <div className="space-y-3">
+
+                    <label className="flex cursor-pointer gap-3 rounded border p-3">
+                        <input
+                            type="radio"
+                            name="modeInscription"
+                            value="automatique"
+                            checked={modeInscription === "automatique"}
+                            onChange={(e) =>
+                                setModeInscription(e.target.value)
+                            }
+                        />
+
+                        <div>
+                            <p className="font-medium">
+                                Inscription automatique
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                                Toute personne qui clique sur Participer
+                                rejoint immédiatement la sortie.
+                            </p>
+                        </div>
+                    </label>
+
+
+                    <label className="flex cursor-pointer gap-3 rounded border p-3">
+                        <input
+                            type="radio"
+                            name="modeInscription"
+                            value="validation"
+                            checked={modeInscription === "validation"}
+                            onChange={(e) =>
+                                setModeInscription(e.target.value)
+                            }
+                        />
+
+                        <div>
+                            <p className="font-medium">
+                                Validation par l&apos;organisateur
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                                Vous acceptez ou refusez chaque demande
+                                avant que la personne rejoigne la sortie.
+                            </p>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+
 
 
             <button

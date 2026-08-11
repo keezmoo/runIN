@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 
+
+
 type Sortie = {
     id: string;
     titre: string;
@@ -12,6 +14,7 @@ type Sortie = {
     date_heure_depart: string;
     lieu_depart: string;
     type_sortie: string;
+    mode_inscription: string;
 };
 
 type ModifierSortieFormProps = {
@@ -70,6 +73,9 @@ export default function ModifierSortieForm({
 
     const [message, setMessage] =
         useState("");
+
+    const [modeInscription, setModeInscription] =
+        useState(sortie.mode_inscription);
 
     async function modifierSortie() {
         setMessage("");
@@ -149,6 +155,8 @@ export default function ModifierSortieForm({
 
                 nombre_max_participants:
                     nombreMax,
+
+                mode_inscription: modeInscription,
             })
             .eq("id", sortie.id);
 

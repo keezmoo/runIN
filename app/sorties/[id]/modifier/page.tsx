@@ -39,13 +39,14 @@ export default async function ModifierSortiePage({
         .from("sorties")
         .select(
             `
-        id,
-        titre,
-        nombre_max_participants,
-        date_heure_depart,
-        lieu_depart,
-        type_sortie
-      `
+    id,
+    titre,
+    nombre_max_participants,
+    date_heure_depart,
+    lieu_depart,
+    type_sortie,
+    mode_inscription
+  `
         )
         .eq("id", id)
         .eq("organisateur_id", user.id)
