@@ -28,6 +28,22 @@ type ModifierSortieFormProps = {
     nombreParticipants: number;
 };
 
+function maintenantDatetimeLocal() {
+    const maintenant = new Date();
+
+    const decalage =
+        maintenant.getTimezoneOffset() *
+        60 *
+        1000;
+
+    return new Date(
+        maintenant.getTime() - decalage
+    )
+        .toISOString()
+        .slice(0, 16);
+}
+
+
 function versDatetimeLocal(
     dateISO: string
 ) {
@@ -203,7 +219,18 @@ export default function ModifierSortieForm({
             );
             return;
         }
+        const dateDepart =
+            new Date(dateHeure);
 
+        if (
+            Number.isNaN(dateDepart.getTime()) ||
+            dateDepart <= new Date()
+        ) {
+            setMessage(
+                "La date et l'heure de départ doivent être dans le futur."
+            );
+            return;
+        }
         const nombreMax =
             Number(nombreMaxParticipants);
 
@@ -445,6 +472,7 @@ export default function ModifierSortieForm({
                     onChange={(e) =>
                         setDateHeure(e.target.value)
                     }
+                    min={maintenantDatetimeLocal()}
                     className="w-full rounded border p-2"
                 />
             </div>

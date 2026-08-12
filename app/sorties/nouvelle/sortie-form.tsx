@@ -7,6 +7,21 @@ type SortieFormProps = {
     userId: string;
 };
 
+function maintenantDatetimeLocal() {
+    const maintenant = new Date();
+
+    const decalage =
+        maintenant.getTimezoneOffset() *
+        60 *
+        1000;
+
+    return new Date(
+        maintenant.getTime() - decalage
+    )
+        .toISOString()
+        .slice(0, 16);
+}
+
 export default function SortieForm({
     userId,
 }: SortieFormProps) {
@@ -29,6 +44,8 @@ export default function SortieForm({
     const [allureMinutes, setAllureMinutes] = useState("");
     const [allureSecondes, setAllureSecondes] = useState("");
     const [description, setDescription] = useState("");
+
+
 
     async function creerSortie() {
         setMessage("");
@@ -58,6 +75,21 @@ export default function SortieForm({
             );
             return;
         }
+
+
+        const dateDepart =
+            new Date(dateHeure);
+
+        if (
+            Number.isNaN(dateDepart.getTime()) ||
+            dateDepart <= new Date()
+        ) {
+            setMessage(
+                "La date et l'heure de départ doivent être dans le futur."
+            );
+            return;
+        }
+
         if (lieuDepart.trim().length < 2) {
             setMessage(
                 "Veuillez indiquer un lieu de départ."
@@ -317,7 +349,10 @@ export default function SortieForm({
                 <input
                     type="datetime-local"
                     value={dateHeure}
-                    onChange={(e) => setDateHeure(e.target.value)}
+                    onChange={(e) =>
+                        setDateHeure(e.target.value)
+                    }
+                    min={maintenantDatetimeLocal()}
                     className="w-full rounded border p-2"
                 />
             </div>
