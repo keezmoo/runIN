@@ -15,6 +15,88 @@ type PageProps = {
         id: string;
     }>;
 };
+function afficherTypeEntrainement(
+    type: string | null
+) {
+    switch (type) {
+        case "endurance_fondamentale":
+            return "Endurance fondamentale";
+
+        case "sortie_longue":
+            return "Sortie longue";
+
+        case "tempo_seuil":
+            return "Tempo / seuil";
+
+        case "fractionne":
+            return "Fractionné";
+
+        case "cotes":
+            return "Côtes";
+
+        case "recuperation":
+            return "Récupération";
+
+        case "libre":
+            return "Sortie libre";
+
+        default:
+            return null;
+    }
+}
+
+
+function afficherIntensite(
+    intensite: string | null
+) {
+    switch (intensite) {
+        case "tranquille":
+            return "Tranquille";
+
+        case "moderee":
+            return "Modérée";
+
+        case "soutenue":
+            return "Soutenue";
+
+        default:
+            return null;
+    }
+}
+
+
+function afficherDuree(
+    totalMinutes: number
+) {
+    const heures =
+        Math.floor(totalMinutes / 60);
+
+    const minutes =
+        totalMinutes % 60;
+
+    if (heures === 0) {
+        return `${minutes} min`;
+    }
+
+    if (minutes === 0) {
+        return `${heures} h`;
+    }
+
+    return `${heures} h ${minutes}`;
+}
+
+
+function afficherAllure(
+    totalSecondes: number
+) {
+    const minutes =
+        Math.floor(totalSecondes / 60);
+
+    const secondes =
+        totalSecondes % 60;
+
+    return `${minutes}:${String(secondes).padStart(2, "0")} /km`;
+}
 
 export default async function DetailSortiePage({
     params,
@@ -44,18 +126,23 @@ export default async function DetailSortiePage({
         error: sortieError,
     } = await supabase
         .from("sorties")
-        .select(
-            `
-        id,
-        titre,
-        organisateur_id,
-        nombre_max_participants,
-        date_heure_depart,
-        lieu_depart,
-        type_sortie,
-        mode_inscription
-      `
-        )
+        .select(`
+    id,
+    titre,
+    organisateur_id,
+    nombre_max_participants,
+    date_heure_depart,
+    lieu_depart,
+    type_sortie,
+    mode_inscription,
+    type_entrainement,
+    distance_km,
+    denivele_positif_m,
+    duree_estimee_minutes,
+    intensite,
+    allure_secondes_km,
+    description
+`)
         .eq("id", id)
         .maybeSingle();
 
@@ -276,6 +363,15 @@ export default async function DetailSortiePage({
         new Date(sortie.date_heure_depart)
     );
 
+    const typeEntrainementAffiche =
+        afficherTypeEntrainement(
+            sortie.type_entrainement
+        );
+
+    const intensiteAffiche =
+        afficherIntensite(
+            sortie.intensite
+        );
     // ------------------------------------------------
     // AFFICHAGE
     // ------------------------------------------------
@@ -286,12 +382,6 @@ export default async function DetailSortiePage({
             {/* TITRE */}
 
             <div className="mb-8">
-                <p className="mb-2 text-sm font-medium">
-                    {sortie.type_sortie === "trail"
-                        ? "Trail"
-                        : "Route"}
-                </p>
-
                 <h1 className="text-3xl font-bold">
                     {sortie.titre}
                 </h1>
@@ -304,6 +394,7 @@ export default async function DetailSortiePage({
 
                 <div className="space-y-3">
 
+                    {/* DATE */}
                     <div>
                         <p className="text-sm text-gray-500">
                             Date
@@ -321,6 +412,7 @@ export default async function DetailSortiePage({
                     </div>
 
 
+                    {/* LIEU */}
                     <div>
                         <p className="text-sm text-gray-500">
                             Lieu de départ
@@ -332,6 +424,119 @@ export default async function DetailSortiePage({
                     </div>
 
 
+                    {/* TYPE DE SORTIE */}
+                    <div>
+                        <p className="text-sm text-gray-500">
+                            Type de sortie
+                        </p>
+
+                        <p>
+                            {sortie.type_sortie === "trail"
+                                ? "Trail"
+                                : "Route"}
+                        </p>
+                    </div>
+
+
+                    {/* TYPE D'ENTRAÎNEMENT */}
+                    {typeEntrainementAffiche && (
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Type d&apos;entraînement
+                            </p>
+
+                            <p>
+                                {typeEntrainementAffiche}
+                            </p>
+                        </div>
+                    )}
+
+
+                    {/* DISTANCE */}
+                    {sortie.distance_km !== null && (
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Distance
+                            </p>
+
+                            <p>
+                                {Number(
+                                    sortie.distance_km
+                                ).toLocaleString(
+                                    "fr-FR",
+                                    {
+                                        maximumFractionDigits: 2,
+                                    }
+                                )}{" "}
+                                km
+                            </p>
+                        </div>
+                    )}
+
+
+                    {/* DÉNIVELÉ */}
+                    {sortie.denivele_positif_m !== null && (
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Dénivelé positif
+                            </p>
+
+                            <p>
+                                {sortie.denivele_positif_m} m D+
+                            </p>
+                        </div>
+                    )}
+
+
+                    {/* DURÉE */}
+                    {sortie.duree_estimee_minutes !== null && (
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Durée estimée
+                            </p>
+
+                            <p>
+                                {afficherDuree(
+                                    sortie.duree_estimee_minutes
+                                )}
+                            </p>
+                        </div>
+                    )}
+
+
+                    {/* INTENSITÉ */}
+                    {intensiteAffiche && (
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Intensité
+                            </p>
+
+                            <p>
+                                {intensiteAffiche}
+                            </p>
+                        </div>
+                    )}
+
+
+                    {/* ALLURE - ROUTE UNIQUEMENT */}
+                    {sortie.type_sortie === "route" &&
+                        sortie.allure_secondes_km !== null && (
+
+                            <div>
+                                <p className="text-sm text-gray-500">
+                                    Allure prévue
+                                </p>
+
+                                <p>
+                                    {afficherAllure(
+                                        sortie.allure_secondes_km
+                                    )}
+                                </p>
+                            </div>
+                        )}
+
+
+                    {/* PARTICIPANTS */}
                     <div>
                         <p className="text-sm text-gray-500">
                             Participants
@@ -339,11 +544,12 @@ export default async function DetailSortiePage({
 
                         <p>
                             {nombreActuel} /{" "}
-                            {
-                                sortie.nombre_max_participants
-                            }
+                            {sortie.nombre_max_participants}
                         </p>
                     </div>
+
+
+                    {/* INSCRIPTION */}
                     <div>
                         <p className="text-sm text-gray-500">
                             Inscription
@@ -355,10 +561,26 @@ export default async function DetailSortiePage({
                                 : "Automatique"}
                         </p>
                     </div>
+
                 </div>
 
             </section>
 
+            {sortie.description &&
+                sortie.description.trim() !== "" && (
+
+                    <section className="mb-8">
+
+                        <h2 className="mb-3 text-xl font-semibold">
+                            Description
+                        </h2>
+
+                        <p className="whitespace-pre-wrap">
+                            {sortie.description}
+                        </p>
+
+                    </section>
+                )}
 
             {/* ORGANISATEUR */}
 

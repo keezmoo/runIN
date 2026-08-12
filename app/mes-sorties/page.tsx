@@ -9,6 +9,58 @@ import {
     getDateKey,
 } from "@/lib/date-utils";
 
+function afficherTypeEntrainement(
+    type: string | null
+) {
+    switch (type) {
+        case "endurance_fondamentale":
+            return "Endurance fondamentale";
+
+        case "sortie_longue":
+            return "Sortie longue";
+
+        case "tempo_seuil":
+            return "Tempo / seuil";
+
+        case "fractionne":
+            return "Fractionné";
+
+        case "cotes":
+            return "Côtes";
+
+        case "recuperation":
+            return "Récupération";
+
+        case "libre":
+            return "Sortie libre";
+
+        default:
+            return null;
+    }
+}
+
+
+function afficherDuree(
+    totalMinutes: number
+) {
+    const heures =
+        Math.floor(totalMinutes / 60);
+
+    const minutes =
+        totalMinutes % 60;
+
+    if (heures === 0) {
+        return `${minutes} min`;
+    }
+
+    if (minutes === 0) {
+        return `${heures} h`;
+    }
+
+    return `${heures} h ${minutes}`;
+}
+
+
 export default async function MesSortiesPage() {
     const supabase = await createClient();
 
@@ -40,7 +92,11 @@ export default async function MesSortiesPage() {
         date_heure_depart,
         lieu_depart,
         type_sortie,
-        nombre_max_participants
+        nombre_max_participants,
+        type_entrainement,
+        distance_km,
+        denivele_positif_m,
+        duree_estimee_minutes
       `
         )
         .eq("organisateur_id", user.id)
@@ -103,6 +159,95 @@ export default async function MesSortiesPage() {
         }, {});
 
     // ------------------------------------------------
+    // MES PROPRES DEMANDES DE PARTICIPATION EN ATTENTE
+    // ------------------------------------------------
+
+    const {
+        data: mesDemandesEnAttenteData,
+        error: mesDemandesEnAttenteError,
+    } = await supabase
+        .from("demandes_participation")
+        .select("sortie_id")
+        .eq("utilisateur_id", user.id)
+        .eq("statut", "en_attente");
+
+    if (mesDemandesEnAttenteError) {
+        return (
+            <main className="mx-auto max-w-2xl p-6">
+                <p>
+                    Erreur lors du chargement de vos demandes.
+                </p>
+            </main>
+        );
+    }
+
+    const idsMesDemandesEnAttente = [
+        ...new Set(
+            (mesDemandesEnAttenteData ?? []).map(
+                (demande) => demande.sortie_id
+            )
+        ),
+    ];
+
+    let sortiesEnAttente: {
+        id: string;
+        titre: string;
+        date_heure_depart: string;
+        lieu_depart: string;
+        type_sortie: string;
+        nombre_max_participants: number;
+
+        type_entrainement: string | null;
+        distance_km: number | null;
+        denivele_positif_m: number | null;
+        duree_estimee_minutes: number | null;
+    }[] = [];
+
+    if (idsMesDemandesEnAttente.length > 0) {
+        const {
+            data,
+            error: sortiesEnAttenteError,
+        } = await supabase
+            .from("sorties")
+            .select(`
+        id,
+        titre,
+        date_heure_depart,
+        lieu_depart,
+        type_sortie,
+        nombre_max_participants,
+        type_entrainement,
+        distance_km,
+        denivele_positif_m,
+        duree_estimee_minutes
+    `)
+            .in(
+                "id",
+                idsMesDemandesEnAttente
+            )
+            .gte(
+                "date_heure_depart",
+                new Date().toISOString()
+            )
+            .order(
+                "date_heure_depart",
+                { ascending: true }
+            );
+
+        if (sortiesEnAttenteError) {
+            return (
+                <main className="mx-auto max-w-2xl p-6">
+                    <p>
+                        Erreur lors du chargement des sorties en attente.
+                    </p>
+                </main>
+            );
+        }
+
+        sortiesEnAttente = data ?? [];
+    }
+
+    // ------------------------------------------------
     // PARTICIPATIONS DE L'UTILISATEUR
     // ------------------------------------------------
 
@@ -130,6 +275,11 @@ export default async function MesSortiesPage() {
         lieu_depart: string;
         type_sortie: string;
         nombre_max_participants: number;
+
+        type_entrainement: string | null;
+        distance_km: number | null;
+        denivele_positif_m: number | null;
+        duree_estimee_minutes: number | null;
     }[] = [];
 
     if (idsSortiesParticipees.length > 0) {
@@ -145,7 +295,11 @@ export default async function MesSortiesPage() {
           date_heure_depart,
           lieu_depart,
           type_sortie,
-          nombre_max_participants
+          nombre_max_participants,
+          type_entrainement,
+distance_km,
+denivele_positif_m,
+duree_estimee_minutes
         `
             )
             .in("id", idsSortiesParticipees)
@@ -201,9 +355,16 @@ export default async function MesSortiesPage() {
             date_heure_depart: string;
             lieu_depart: string;
             type_sortie: string;
+            nombre_max_participants: number;
+            type_entrainement: string | null;
+            distance_km: number | null;
+            denivele_positif_m: number | null;
+            duree_estimee_minutes: number | null;
         },
-        estOrganisateur: boolean
+        estOrganisateur: boolean,
+        demandeEnAttente: boolean = false
     ) {
+
         const dateKey = getDateKey(
             new Date(sortie.date_heure_depart)
         );
@@ -227,11 +388,79 @@ export default async function MesSortiesPage() {
                         {sortie.titre}
                     </h3>
 
+
+                    {/* TYPE DE SORTIE + ENTRAÎNEMENT */}
+
                     <p className="mt-1 text-sm font-medium">
+
                         {sortie.type_sortie === "trail"
                             ? "Trail"
                             : "Route"}
+
+                        {sortie.type_entrainement && (
+                            <>
+                                {" · "}
+                                {afficherTypeEntrainement(
+                                    sortie.type_entrainement
+                                )}
+                            </>
+                        )}
+
                     </p>
+
+
+                    {/* DISTANCE + D+ + DURÉE */}
+
+                    {(
+                        sortie.distance_km !== null ||
+                        sortie.denivele_positif_m !== null ||
+                        sortie.duree_estimee_minutes !== null
+                    ) && (
+
+                            <p className="mt-2 text-sm text-gray-600">
+
+                                {sortie.distance_km !== null && (
+                                    <>
+                                        {Number(
+                                            sortie.distance_km
+                                        ).toLocaleString(
+                                            "fr-FR",
+                                            {
+                                                maximumFractionDigits: 1,
+                                            }
+                                        )} km
+                                    </>
+                                )}
+
+
+                                {sortie.denivele_positif_m !== null && (
+                                    <>
+                                        {sortie.distance_km !== null &&
+                                            " · "}
+
+                                        {sortie.denivele_positif_m} m D+
+                                    </>
+                                )}
+
+
+                                {sortie.duree_estimee_minutes !== null && (
+                                    <>
+                                        {(
+                                            sortie.distance_km !== null ||
+                                            sortie.denivele_positif_m !== null
+                                        ) && " · "}
+
+                                        {afficherDuree(
+                                            sortie.duree_estimee_minutes
+                                        )}
+                                    </>
+                                )}
+
+                            </p>
+                        )}
+
+
+                    {/* DATE */}
 
                     <p className="mt-2">
                         {formatDateLongue(dateKey)}
@@ -247,6 +476,13 @@ export default async function MesSortiesPage() {
                         {sortie.lieu_depart}
                     </p>
 
+                    {demandeEnAttente && (
+                        <div className="mt-3">
+                            <span className="inline-block rounded-full border px-3 py-1 text-sm font-medium">
+                                En attente de validation
+                            </span>
+                        </div>
+                    )}
 
                     {/* Demandes en attente */}
                     {estOrganisateur &&
@@ -325,7 +561,31 @@ export default async function MesSortiesPage() {
                 )}
 
             </section>
+            
+{/* ------------------------------------------------
+    MES DEMANDES EN ATTENTE
+------------------------------------------------ */}
 
+            {sortiesEnAttente.length > 0 && (
+                <section className="mb-10">
+
+                    <h2 className="mb-4 text-xl font-semibold">
+                        Mes demandes en attente
+                    </h2>
+
+                    <div className="space-y-4">
+                        {sortiesEnAttente.map(
+                            (sortie) =>
+                                afficherSortie(
+                                    sortie,
+                                    false,
+                                    true
+                                )
+                        )}
+                    </div>
+
+                </section>
+            )}
 
             {/* SORTIES AUXQUELLES JE PARTICIPE */}
 
@@ -349,6 +609,7 @@ export default async function MesSortiesPage() {
                 )}
 
             </section>
+
 
         </main>
     );

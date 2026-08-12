@@ -5,14 +5,15 @@ import {
     redirect,
 } from "next/navigation";
 
-
 import ModifierSortieForm from "./modifier-sortie-form";
+
 
 type PageProps = {
     params: Promise<{
         id: string;
     }>;
 };
+
 
 export default async function ModifierSortiePage({
     params,
@@ -21,7 +22,11 @@ export default async function ModifierSortiePage({
 
     const supabase = await createClient();
 
-    // Utilisateur connecté
+
+    // ------------------------------------------------
+    // UTILISATEUR CONNECTÉ
+    // ------------------------------------------------
+
     const {
         data: { user },
     } = await supabase.auth.getUser();
@@ -30,24 +35,33 @@ export default async function ModifierSortiePage({
         redirect("/auth/login");
     }
 
-    // Recherche uniquement une sortie
-    // appartenant à cet utilisateur
+
+    // ------------------------------------------------
+    // SORTIE
+    // ------------------------------------------------
+
     const {
         data: sortie,
         error,
     } = await supabase
         .from("sorties")
-        .select(
-            `
-    id,
-    titre,
-    nombre_max_participants,
-    date_heure_depart,
-    lieu_depart,
-    type_sortie,
-    mode_inscription
-  `
-        )
+        .select(`
+            id,
+            titre,
+            organisateur_id,
+            nombre_max_participants,
+            date_heure_depart,
+            lieu_depart,
+            type_sortie,
+            mode_inscription,
+            type_entrainement,
+            distance_km,
+            denivele_positif_m,
+            duree_estimee_minutes,
+            intensite,
+            allure_secondes_km,
+            description
+        `)
         .eq("id", id)
         .eq("organisateur_id", user.id)
         .maybeSingle();
@@ -56,7 +70,11 @@ export default async function ModifierSortiePage({
         notFound();
     }
 
-    // Nombre de participants déjà inscrits
+
+    // ------------------------------------------------
+    // NOMBRE DE PARTICIPANTS
+    // ------------------------------------------------
+
     const { count } = await supabase
         .from("participations")
         .select("*", {
@@ -65,9 +83,14 @@ export default async function ModifierSortiePage({
         })
         .eq("sortie_id", id);
 
-    // +1 car l'organisateur compte lui-même
+    // L'organisateur compte comme participant.
     const nombreParticipants =
         (count ?? 0) + 1;
+
+
+    // ------------------------------------------------
+    // AFFICHAGE
+    // ------------------------------------------------
 
     return (
         <main className="mx-auto max-w-2xl p-6">

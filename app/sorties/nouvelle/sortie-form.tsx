@@ -20,6 +20,15 @@ export default function SortieForm({
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [modeInscription, setModeInscription] = useState("automatique");
+    const [typeEntrainement, setTypeEntrainement] = useState("endurance_fondamentale");
+    const [distanceKm, setDistanceKm] = useState("");
+    const [denivelePositif, setDenivelePositif] = useState("");
+    const [dureeHeures, setDureeHeures] = useState("");
+    const [dureeMinutes, setDureeMinutes] = useState("");
+    const [intensite, setIntensite] = useState("moderee");
+    const [allureMinutes, setAllureMinutes] = useState("");
+    const [allureSecondes, setAllureSecondes] = useState("");
+    const [description, setDescription] = useState("");
 
     async function creerSortie() {
         setMessage("");
@@ -55,6 +64,120 @@ export default function SortieForm({
             );
             return;
         }
+
+
+        // ------------------------------------------------
+        // DONNÉES SPORTIVES
+        // ------------------------------------------------
+
+        const distance =
+            Number(
+                distanceKm.replace(",", ".")
+            );
+
+        const denivele =
+            Number(denivelePositif);
+
+        const heures =
+            Number(dureeHeures || 0);
+
+        const minutes =
+            Number(dureeMinutes || 0);
+
+
+        // Distance
+        if (
+            !Number.isFinite(distance) ||
+            distance <= 0
+        ) {
+            setMessage(
+                "La distance doit être supérieure à 0."
+            );
+            return;
+        }
+
+
+        // Dénivelé
+        if (
+            !Number.isInteger(denivele) ||
+            denivele < 0
+        ) {
+            setMessage(
+                "Le dénivelé doit être égal ou supérieur à 0."
+            );
+            return;
+        }
+
+
+        // Durée
+        if (
+            !Number.isInteger(heures) ||
+            heures < 0 ||
+            !Number.isInteger(minutes) ||
+            minutes < 0 ||
+            minutes > 59
+        ) {
+            setMessage(
+                "La durée indiquée n'est pas valide."
+            );
+            return;
+        }
+
+        const dureeEstimeeMinutes =
+            heures * 60 + minutes;
+
+        if (dureeEstimeeMinutes <= 0) {
+            setMessage(
+                "La durée de la sortie doit être supérieure à 0."
+            );
+            return;
+        }
+
+
+        // ------------------------------------------------
+        // ALLURE - ROUTE UNIQUEMENT
+        // ------------------------------------------------
+
+        let allureSecondesKm:
+            number | null = null;
+
+        if (
+            typeSortie === "route" &&
+            (
+                allureMinutes !== "" ||
+                allureSecondes !== ""
+            )
+        ) {
+            const allureMin =
+                Number(allureMinutes);
+
+            const allureSec =
+                Number(allureSecondes);
+
+            if (
+                !Number.isInteger(allureMin) ||
+                allureMin < 0 ||
+                !Number.isInteger(allureSec) ||
+                allureSec < 0 ||
+                allureSec > 59
+            ) {
+                setMessage(
+                    "L'allure indiquée n'est pas valide."
+                );
+                return;
+            }
+
+            allureSecondesKm =
+                allureMin * 60 + allureSec;
+
+            if (allureSecondesKm <= 0) {
+                setMessage(
+                    "L'allure indiquée n'est pas valide."
+                );
+                return;
+            }
+        }
+
         setLoading(true);
 
         // Recherche les coordonnées du lieu de départ
@@ -89,7 +212,28 @@ export default function SortieForm({
                 type_sortie: typeSortie,
                 position_depart:
                     `POINT(${localisation.longitude} ${localisation.latitude})`,
+                type_entrainement:
+                    typeEntrainement,
 
+                distance_km:
+                    distance,
+
+                denivele_positif_m:
+                    denivele,
+
+                duree_estimee_minutes:
+                    dureeEstimeeMinutes,
+
+                intensite:
+                    intensite,
+
+                allure_secondes_km:
+                    typeSortie === "route"
+                        ? allureSecondesKm
+                        : null,
+
+                description:
+                    description.trim() || null,
                 mode_inscription: modeInscription,
             });
 
@@ -104,6 +248,17 @@ export default function SortieForm({
             setDateHeure("");
             setLieuDepart("");
             setTypeSortie("route");
+
+            setTypeEntrainement("endurance_fondamentale");
+            setDistanceKm("");
+            setDenivelePositif("");
+            setDureeHeures("");
+            setDureeMinutes("");
+            setIntensite("moderee");
+            setAllureMinutes("");
+            setAllureSecondes("");
+            setDescription("");
+            setModeInscription("automatique");
         }
 
         setLoading(false);
@@ -167,6 +322,294 @@ export default function SortieForm({
                 />
             </div>
 
+            <div>
+                <label className="mb-1 block font-medium">
+                    Type d&apos;entraînement
+                </label>
+
+                <select
+                    value={typeEntrainement}
+                    onChange={(e) =>
+                        setTypeEntrainement(
+                            e.target.value
+                        )
+                    }
+                    className="w-full rounded border p-2"
+                    required
+                >
+                    <option value="endurance_fondamentale">
+                        Endurance fondamentale
+                    </option>
+
+                    <option value="sortie_longue">
+                        Sortie longue
+                    </option>
+
+                    <option value="tempo_seuil">
+                        Tempo / seuil
+                    </option>
+
+                    <option value="fractionne">
+                        Fractionné
+                    </option>
+
+                    <option value="cotes">
+                        Côtes
+                    </option>
+
+                    <option value="recuperation">
+                        Récupération
+                    </option>
+
+                    <option value="libre">
+                        Sortie libre
+                    </option>
+                </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Distance
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            inputMode="decimal"
+                            value={distanceKm}
+                            onChange={(e) =>
+                                setDistanceKm(
+                                    e.target.value
+                                )
+                            }
+                            className="w-full rounded border p-2"
+                            required
+                        />
+
+                        <span>km</span>
+                    </div>
+                </div>
+
+
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Dénivelé positif
+                    </label>
+
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={denivelePositif}
+                            onChange={(e) =>
+                                setDenivelePositif(
+                                    e.target.value
+                                )
+                            }
+                            className="w-full rounded border p-2"
+                            required
+                        />
+
+                        <span>m D+</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div>
+                <label className="mb-1 block font-medium">
+                    Durée estimée
+                </label>
+
+                <div className="flex items-center gap-2">
+
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="1"
+                        value={dureeHeures}
+                        onChange={(e) =>
+                            setDureeHeures(
+                                e.target.value
+                            )
+                        }
+                        className="w-20 rounded border p-2"
+                    />
+
+                    <span>h</span>
+
+                    <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        step="1"
+                        placeholder="30"
+                        value={dureeMinutes}
+                        onChange={(e) =>
+                            setDureeMinutes(
+                                e.target.value
+                            )
+                        }
+                        className="w-20 rounded border p-2"
+                    />
+
+                    <span>min</span>
+
+                </div>
+            </div>
+
+            <div>
+                <p className="mb-2 font-medium">
+                    Intensité
+                </p>
+
+                <div className="space-y-2">
+
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="radio"
+                            name="intensite"
+                            value="tranquille"
+                            checked={
+                                intensite ===
+                                "tranquille"
+                            }
+                            onChange={(e) =>
+                                setIntensite(
+                                    e.target.value
+                                )
+                            }
+                        />
+
+                        Tranquille
+                    </label>
+
+
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="radio"
+                            name="intensite"
+                            value="moderee"
+                            checked={
+                                intensite ===
+                                "moderee"
+                            }
+                            onChange={(e) =>
+                                setIntensite(
+                                    e.target.value
+                                )
+                            }
+                        />
+
+                        Modérée
+                    </label>
+
+
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="radio"
+                            name="intensite"
+                            value="soutenue"
+                            checked={
+                                intensite ===
+                                "soutenue"
+                            }
+                            onChange={(e) =>
+                                setIntensite(
+                                    e.target.value
+                                )
+                            }
+                        />
+
+                        Soutenue
+                    </label>
+
+                </div>
+            </div>
+
+            {typeSortie === "route" && (
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Allure prévue
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                            (facultatif)
+                        </span>
+                    </label>
+
+                    <div className="flex items-center gap-2">
+
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="5"
+                            value={allureMinutes}
+                            onChange={(e) =>
+                                setAllureMinutes(
+                                    e.target.value
+                                )
+                            }
+                            className="w-20 rounded border p-2"
+                        />
+
+                        <span>:</span>
+
+                        <input
+                            type="number"
+                            min="0"
+                            max="59"
+                            step="1"
+                            placeholder="30"
+                            value={allureSecondes}
+                            onChange={(e) =>
+                                setAllureSecondes(
+                                    e.target.value
+                                )
+                            }
+                            className="w-20 rounded border p-2"
+                        />
+
+                        <span>/ km</span>
+
+                    </div>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                        Exemple : 5:30 / km
+                    </p>
+                </div>
+            )}
+
+            <div>
+                <label className="mb-1 block font-medium">
+                    Description
+                    <span className="ml-1 text-sm font-normal text-gray-500">
+                        (facultatif)
+                    </span>
+                </label>
+
+                <textarea
+                    value={description}
+                    onChange={(e) =>
+                        setDescription(
+                            e.target.value
+                        )
+                    }
+                    maxLength={1000}
+                    rows={5}
+                    placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
+                    className="w-full rounded border p-2"
+                />
+
+                <p className="mt-1 text-sm text-gray-500">
+                    {description.length} / 1000
+                </p>
+            </div>
 
             <div>
                 <label className="mb-1 block font-medium">

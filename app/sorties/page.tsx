@@ -25,6 +25,57 @@ type SortiesPageProps = {
     }>;
 };
 
+function afficherTypeEntrainement(
+    type: string | null
+) {
+    switch (type) {
+        case "endurance_fondamentale":
+            return "Endurance fondamentale";
+
+        case "sortie_longue":
+            return "Sortie longue";
+
+        case "tempo_seuil":
+            return "Tempo / seuil";
+
+        case "fractionne":
+            return "Fractionné";
+
+        case "cotes":
+            return "Côtes";
+
+        case "recuperation":
+            return "Récupération";
+
+        case "libre":
+            return "Sortie libre";
+
+        default:
+            return null;
+    }
+}
+
+
+function afficherDuree(
+    totalMinutes: number
+) {
+    const heures =
+        Math.floor(totalMinutes / 60);
+
+    const minutes =
+        totalMinutes % 60;
+
+    if (heures === 0) {
+        return `${minutes} min`;
+    }
+
+    if (minutes === 0) {
+        return `${heures} h`;
+    }
+
+    return `${heures} h ${minutes}`;
+}
+
 export default async function SortiesPage({
     searchParams,
 }: SortiesPageProps) {
@@ -367,12 +418,72 @@ export default async function SortiesPage({
                                                     {sortie.titre}
                                                 </h3>
 
+
+                                                {/* TYPE + ENTRAÎNEMENT */}
+
                                                 <p className="mt-1 text-sm font-medium">
-                                                    {sortie.type_sortie ===
-                                                        "trail"
+                                                    {sortie.type_sortie === "trail"
                                                         ? "Trail"
                                                         : "Route"}
+
+                                                    {sortie.type_entrainement && (
+                                                        <>
+                                                            {" · "}
+                                                            {afficherTypeEntrainement(
+                                                                sortie.type_entrainement
+                                                            )}
+                                                        </>
+                                                    )}
                                                 </p>
+
+
+                                                {/* CARACTÉRISTIQUES SPORTIVES */}
+
+                                                {(
+                                                    sortie.distance_km !== null ||
+                                                    sortie.denivele_positif_m !== null ||
+                                                    sortie.duree_estimee_minutes !== null
+                                                ) && (
+                                                        <p className="mt-2 text-sm">
+
+                                                            {sortie.distance_km !== null && (
+                                                                <>
+                                                                    {Number(
+                                                                        sortie.distance_km
+                                                                    ).toLocaleString(
+                                                                        "fr-FR",
+                                                                        {
+                                                                            maximumFractionDigits: 1,
+                                                                        }
+                                                                    )} km
+                                                                </>
+                                                            )}
+
+
+                                                            {sortie.denivele_positif_m !== null && (
+                                                                <>
+                                                                    {sortie.distance_km !== null &&
+                                                                        " · "}
+
+                                                                    {sortie.denivele_positif_m} m D+
+                                                                </>
+                                                            )}
+
+
+                                                            {sortie.duree_estimee_minutes !== null && (
+                                                                <>
+                                                                    {(sortie.distance_km !== null ||
+                                                                        sortie.denivele_positif_m !== null) &&
+                                                                        " · "}
+
+                                                                    {afficherDuree(
+                                                                        sortie.duree_estimee_minutes
+                                                                    )}
+                                                                </>
+                                                            )}
+
+                                                        </p>
+                                                    )}
 
                                                 <p className="mt-2">
                                                     Départ à{" "}
@@ -389,7 +500,7 @@ export default async function SortiesPage({
 
                                                 <p className="text-sm text-gray-500">
                                                     À{" "}
-                                                    {sortie.distance_km.toFixed(1)
+                                                    {sortie.distance_geo_km.toFixed(1)
                                                         .replace(".", ",")}{" "}
                                                     km de {filtreLieu}
                                                 </p>
