@@ -464,7 +464,28 @@ export default async function MesSortiesPage() {
     }
 
     const listeSortiesOrganisees =
-        sortiesOrganisees ?? [];
+        (sortiesOrganisees ?? []).filter(
+            (sortie) =>
+                sortie.statut === "planifiee"
+        );
+
+    const sortiesOrganiseesAnnulees =
+        (sortiesOrganisees ?? []).filter(
+            (sortie) =>
+                sortie.statut === "annulee"
+        );
+
+    const listeSortiesParticipees =
+        sortiesParticipees.filter(
+            (sortie) =>
+                sortie.statut === "planifiee"
+        );
+
+    const sortiesParticipeesAnnulees =
+        sortiesParticipees.filter(
+            (sortie) =>
+                sortie.statut === "annulee"
+        );
 
     // ------------------------------------------------
     // PETIT COMPOSANT D'AFFICHAGE
@@ -752,14 +773,70 @@ export default async function MesSortiesPage() {
                     </p>
                 ) : (
                     <div className="space-y-4">
-                        {sortiesParticipees.map(
+                        {listeSortiesParticipees.map(
                             (sortie) =>
-                                afficherSortie(sortie, false)
+                                afficherSortie(
+                                    sortie,
+                                    false
+                                )
                         )}
                     </div>
                 )}
 
             </section>
+
+            {(
+                sortiesOrganiseesAnnulees.length > 0 ||
+                sortiesParticipeesAnnulees.length > 0
+            ) && (
+                    <section className="space-y-4">
+
+                        <h2 className="text-2xl font-semibold">
+                            Sorties annulées
+                        </h2>
+
+
+                        {sortiesOrganiseesAnnulees.length > 0 && (
+                            <div className="space-y-3">
+
+                                <h3 className="font-semibold">
+                                    J&apos;organisais
+                                </h3>
+
+                                {sortiesOrganiseesAnnulees.map(
+                                    (sortie) =>
+                                        afficherSortie(
+                                            sortie,
+                                            false
+                                        )
+                                )}
+
+                            </div>
+                        )}
+
+
+                        {sortiesParticipeesAnnulees.length > 0 && (
+                            <div className="space-y-3">
+
+                                <h3 className="font-semibold">
+                                    Je participais
+                                </h3>
+
+                                {sortiesParticipeesAnnulees.map(
+                                    (sortie) =>
+                                        afficherSortie(
+                                            sortie,
+                                            false
+                                        )
+                                )}
+
+                            </div>
+                        )}
+
+                    </section>
+                )}
+
+
             {/* ------------------------------------------------
     HISTORIQUE
 ------------------------------------------------ */}
