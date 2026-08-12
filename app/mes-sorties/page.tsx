@@ -2,63 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import SupprimerSortieButton from "./supprimer-sortie-button";
-
+import {
+    afficherDuree,
+    afficherTypeEntrainement,
+} from "@/lib/sortie-utils";
+import AnnulerSortieButton from "./annuler-sortie-button";
 import {
     formatDateLongue,
     formatHeure,
     getDateKey,
 } from "@/lib/date-utils";
-
-function afficherTypeEntrainement(
-    type: string | null
-) {
-    switch (type) {
-        case "endurance_fondamentale":
-            return "Endurance fondamentale";
-
-        case "sortie_longue":
-            return "Sortie longue";
-
-        case "tempo_seuil":
-            return "Tempo / seuil";
-
-        case "fractionne":
-            return "Fractionné";
-
-        case "cotes":
-            return "Côtes";
-
-        case "recuperation":
-            return "Récupération";
-
-        case "libre":
-            return "Sortie libre";
-
-        default:
-            return null;
-    }
-}
-
-
-function afficherDuree(
-    totalMinutes: number
-) {
-    const heures =
-        Math.floor(totalMinutes / 60);
-
-    const minutes =
-        totalMinutes % 60;
-
-    if (heures === 0) {
-        return `${minutes} min`;
-    }
-
-    if (minutes === 0) {
-        return `${heures} h`;
-    }
-
-    return `${heures} h ${minutes}`;
-}
 
 
 export default async function MesSortiesPage() {
@@ -96,7 +49,8 @@ export default async function MesSortiesPage() {
         type_entrainement,
         distance_km,
         denivele_positif_m,
-        duree_estimee_minutes
+        duree_estimee_minutes,
+        statut
       `
         )
         .eq("organisateur_id", user.id)
@@ -127,7 +81,8 @@ export default async function MesSortiesPage() {
         type_entrainement,
         distance_km,
         denivele_positif_m,
-        duree_estimee_minutes
+        duree_estimee_minutes,
+        statut
     `)
         .eq("organisateur_id", user.id)
         .lt(
@@ -147,22 +102,33 @@ export default async function MesSortiesPage() {
             (sortie) => sortie.id
         ) ?? [];
 
-    let demandesEnAttente: {
+    // ------------------------------------------------
+    // INTERACTIONS SUR MES SORTIES
+    // ------------------------------------------------
+
+    let demandesSurMesSorties: {
+        sortie_id: string;
+        statut: string;
+    }[] = [];
+
+    let participationsSurMesSorties: {
         sortie_id: string;
     }[] = [];
 
+
     if (idsSortiesOrganisees.length > 0) {
+
+        // Toutes les demandes, quel que soit leur statut
         const {
-            data,
+            data: demandesData,
             error: demandesError,
         } = await supabase
             .from("demandes_participation")
-            .select("sortie_id")
+            .select("sortie_id, statut")
             .in(
                 "sortie_id",
                 idsSortiesOrganisees
-            )
-            .eq("statut", "en_attente");
+            );
 
         if (demandesError) {
             return (
@@ -174,8 +140,51 @@ export default async function MesSortiesPage() {
             );
         }
 
-        demandesEnAttente = data ?? [];
+        demandesSurMesSorties =
+            demandesData ?? [];
+
+
+        // Participants inscrits
+        const {
+            data: participationsData,
+            error: participationsMesSortiesError,
+        } = await supabase
+            .from("participations")
+            .select("sortie_id")
+            .in(
+                "sortie_id",
+                idsSortiesOrganisees
+            );
+
+        if (participationsMesSortiesError) {
+            return (
+                <main className="mx-auto max-w-2xl p-6">
+                    <p>
+                        Erreur lors du chargement des participants.
+                    </p>
+                </main>
+            );
+        }
+
+        participationsSurMesSorties =
+            participationsData ?? [];
     }
+
+
+    // ------------------------------------------------
+    // DEMANDES EN ATTENTE UNIQUEMENT
+    // ------------------------------------------------
+
+    const demandesEnAttente =
+        demandesSurMesSorties.filter(
+            (demande) =>
+                demande.statut === "en_attente"
+        );
+
+
+    // ------------------------------------------------
+    // NOMBRE DE DEMANDES EN ATTENTE PAR SORTIE
+    // ------------------------------------------------
 
     const nombreDemandesParSortie =
         demandesEnAttente.reduce<
@@ -188,6 +197,21 @@ export default async function MesSortiesPage() {
             return compteur;
         }, {});
 
+    const sortiesAvecDemandes =
+        new Set(
+            demandesSurMesSorties.map(
+                (demande) =>
+                    demande.sortie_id
+            )
+        );
+
+    const sortiesAvecParticipants =
+        new Set(
+            participationsSurMesSorties.map(
+                (participation) =>
+                    participation.sortie_id
+            )
+        );
     // ------------------------------------------------
     // MES PROPRES DEMANDES DE PARTICIPATION EN ATTENTE
     // ------------------------------------------------
@@ -231,6 +255,7 @@ export default async function MesSortiesPage() {
         distance_km: number | null;
         denivele_positif_m: number | null;
         duree_estimee_minutes: number | null;
+        statut: string;
     }[] = [];
 
     if (idsMesDemandesEnAttente.length > 0) {
@@ -249,7 +274,8 @@ export default async function MesSortiesPage() {
         type_entrainement,
         distance_km,
         denivele_positif_m,
-        duree_estimee_minutes
+        duree_estimee_minutes,
+        statut
     `)
             .in(
                 "id",
@@ -310,6 +336,7 @@ export default async function MesSortiesPage() {
         distance_km: number | null;
         denivele_positif_m: number | null;
         duree_estimee_minutes: number | null;
+        statut: string;
     }[] = [];
 
     if (idsSortiesParticipees.length > 0) {
@@ -327,9 +354,10 @@ export default async function MesSortiesPage() {
           type_sortie,
           nombre_max_participants,
           type_entrainement,
-distance_km,
-denivele_positif_m,
-duree_estimee_minutes
+        distance_km,
+        denivele_positif_m,
+        duree_estimee_minutes,
+        statut
         `
             )
             .in("id", idsSortiesParticipees)
@@ -369,6 +397,7 @@ duree_estimee_minutes
         distance_km: number | null;
         denivele_positif_m: number | null;
         duree_estimee_minutes: number | null;
+        statut: string;
     }[] = [];
 
     if (idsSortiesParticipees.length > 0) {
@@ -387,7 +416,8 @@ duree_estimee_minutes
             type_entrainement,
             distance_km,
             denivele_positif_m,
-            duree_estimee_minutes
+            duree_estimee_minutes,
+            statut
         `)
             .in(
                 "id",
@@ -452,6 +482,7 @@ duree_estimee_minutes
             distance_km: number | null;
             denivele_positif_m: number | null;
             duree_estimee_minutes: number | null;
+            statut: string;
         },
         estOrganisateur: boolean,
         demandeEnAttente: boolean = false
@@ -463,6 +494,18 @@ duree_estimee_minutes
         const nombreDemandes =
             nombreDemandesParSortie[sortie.id] ?? 0;
 
+        const peutSupprimer =
+            estOrganisateur &&
+            sortie.statut === "planifiee" &&
+            new Date(
+                sortie.date_heure_depart
+            ).getTime() > Date.now() &&
+            !sortiesAvecDemandes.has(
+                sortie.id
+            ) &&
+            !sortiesAvecParticipants.has(
+                sortie.id
+            );
 
         return (
             <div
@@ -480,6 +523,13 @@ duree_estimee_minutes
                         {sortie.titre}
                     </h3>
 
+                    {sortie.statut === "annulee" && (
+                        <div className="mt-2">
+                            <span className="inline-block rounded-full border px-3 py-1 text-sm font-semibold">
+                                Sortie annulée
+                            </span>
+                        </div>
+                    )}
 
                     {/* TYPE DE SORTIE + ENTRAÎNEMENT */}
 
@@ -595,23 +645,32 @@ duree_estimee_minutes
 
 
                 {/* Actions de l'organisateur */}
-                {estOrganisateur && (
-                    <div className="mt-4 flex gap-3">
+                {estOrganisateur &&
+                    sortie.statut === "planifiee" && (
 
-                        <Link
-                            href={`/sorties/${sortie.id}/modifier`}
-                            className="rounded border px-4 py-2"
-                        >
-                            Modifier
-                        </Link>
+                        <div className="mt-4 flex flex-wrap gap-3">
 
-                        <SupprimerSortieButton
-                            sortieId={sortie.id}
-                            titre={sortie.titre}
-                        />
+                            <Link
+                                href={`/sorties/${sortie.id}/modifier`}
+                                className="rounded border px-4 py-2"
+                            >
+                                Modifier
+                            </Link>
 
-                    </div>
-                )}
+                            <AnnulerSortieButton
+                                sortieId={sortie.id}
+                                titre={sortie.titre}
+                            />
+
+                            {peutSupprimer && (
+                                <SupprimerSortieButton
+                                    sortieId={sortie.id}
+                                    titre={sortie.titre}
+                                />
+                            )}
+
+                        </div>
+                    )}
 
             </div>
         );

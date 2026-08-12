@@ -5,25 +5,32 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 
-type SupprimerSortieButtonProps = {
+
+type AnnulerSortieButtonProps = {
     sortieId: string;
     titre: string;
 };
 
-export default function SupprimerSortieButton({
+
+export default function AnnulerSortieButton({
     sortieId,
     titre,
-}: SupprimerSortieButtonProps) {
+}: AnnulerSortieButtonProps) {
     const supabase = createClient();
     const router = useRouter();
 
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
+    const [loading, setLoading] =
+        useState(false);
 
-    async function supprimerSortie() {
-        const confirmation = window.confirm(
-            `Supprimer définitivement la sortie "${titre}" ?`
-        );
+    const [message, setMessage] =
+        useState("");
+
+
+    async function annulerSortie() {
+        const confirmation =
+            window.confirm(
+                `Annuler la sortie "${titre}" ?`
+            );
 
         if (!confirmation) {
             return;
@@ -33,22 +40,16 @@ export default function SupprimerSortieButton({
         setMessage("");
 
         const { error } = await supabase.rpc(
-            "supprimer_sortie_sans_interaction",
+            "annuler_sortie",
             {
                 p_sortie_id: sortieId,
             }
         );
 
         if (error) {
-            console.error(
-                "Erreur suppression :",
-                error
-            );
-
             setMessage(
-                "Impossible de supprimer la sortie."
+                "Impossible d'annuler la sortie."
             );
-
             setLoading(false);
             return;
         }
@@ -56,17 +57,18 @@ export default function SupprimerSortieButton({
         router.refresh();
     }
 
+
     return (
         <div>
             <button
                 type="button"
-                onClick={supprimerSortie}
+                onClick={annulerSortie}
                 disabled={loading}
                 className="rounded border px-4 py-2 disabled:opacity-40"
             >
                 {loading
-                    ? "Suppression..."
-                    : "Supprimer définitivement"}
+                    ? "Annulation..."
+                    : "Annuler la sortie"}
             </button>
 
             {message && (

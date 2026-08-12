@@ -65,7 +65,8 @@ export default async function DetailSortiePage({
     duree_estimee_minutes,
     intensite,
     allure_secondes_km,
-    description
+    description,
+    statut
 `)
         .eq("id", id)
         .maybeSingle();
@@ -311,6 +312,13 @@ export default async function DetailSortiePage({
                 </h1>
             </div>
 
+            {sortie.statut === "annulee" && (
+                <div className="mt-3">
+                    <span className="inline-block rounded-full border px-3 py-1 text-sm font-semibold">
+                        Sortie annulée
+                    </span>
+                </div>
+            )}
 
             {/* INFORMATIONS PRINCIPALES */}
 
@@ -538,7 +546,8 @@ export default async function DetailSortiePage({
 
             {/* DEMANDES DE PARTICIPATION */}
 
-            {estOrganisateur &&
+            {sortie.statut === "planifiee" &&
+                estOrganisateur &&
                 demandesRecues.length > 0 && (
 
                     <section className="mb-8">
@@ -653,32 +662,45 @@ export default async function DetailSortiePage({
 
             {/* PARTICIPATION */}
 
-            <section className="border-t pt-6">
+{/* PARTICIPATION */}
 
-                <ParticiperButton
-                    sortieId={sortie.id}
-                    userId={user.id}
-                    nombreMax={
-                        sortie.nombre_max_participants
-                    }
-                    dejaParticipant={
-                        dejaParticipant
-                    }
-                    estOrganisateur={
-                        estOrganisateur
-                    }
-                    complet={complet}
+<section className="border-t pt-6">
 
-                    modeInscription={
-                        sortie.mode_inscription
-                    }
+    {sortie.statut === "annulee" ? (
 
-                    demandeEnAttente={
-                        Boolean(demandeParticipation)
-                    }
-                />
+        <p className="font-medium">
+            Cette sortie a été annulée par
+            l&apos;organisateur.
+        </p>
 
-            </section>
+    ) : (
+
+        <ParticiperButton
+            sortieId={sortie.id}
+            userId={user.id}
+            nombreMax={
+                sortie.nombre_max_participants
+            }
+            dejaParticipant={
+                dejaParticipant
+            }
+            estOrganisateur={
+                estOrganisateur
+            }
+            complet={complet}
+            modeInscription={
+                sortie.mode_inscription
+            }
+            demandeEnAttente={
+                Boolean(
+                    demandeParticipation
+                )
+            }
+        />
+
+    )}
+
+</section>
 
         </main>
     );
