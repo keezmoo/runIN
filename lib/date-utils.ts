@@ -86,3 +86,21 @@ export function formatHeure(date: string) {
         timeZone: TIME_ZONE,
     }).format(new Date(date));
 }
+// ------------------------------------------------
+// DATE / HEURE LOCALE POUR INPUT DATETIME-LOCAL
+// ------------------------------------------------
+
+export function maintenantDatetimeLocal() {
+    const maintenant = new Date();
+
+    const decalage =
+        maintenant.getTimezoneOffset() *
+        60 *
+        1000;
+
+    return new Date(
+        maintenant.getTime() - decalage
+    )
+        .toISOString()
+        .slice(0, 16);
+}

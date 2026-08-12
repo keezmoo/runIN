@@ -3,7 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
+import { maintenantDatetimeLocal, } from "@/lib/date-utils";
+import {
+    TYPES_ENTRAINEMENT,
+    INTENSITES,
+    validerDonneesSportives,
+} from "@/lib/sortie-utils";
 
 type Sortie = {
     id: string;
@@ -28,20 +33,6 @@ type ModifierSortieFormProps = {
     nombreParticipants: number;
 };
 
-function maintenantDatetimeLocal() {
-    const maintenant = new Date();
-
-    const decalage =
-        maintenant.getTimezoneOffset() *
-        60 *
-        1000;
-
-    return new Date(
-        maintenant.getTime() - decalage
-    )
-        .toISOString()
-        .slice(0, 16);
-}
 
 
 function versDatetimeLocal(
@@ -247,105 +238,31 @@ export default function ModifierSortieForm({
         // DONNÉES SPORTIVES
         // ------------------------------------------------
 
-        const distance =
-            Number(
-                distanceKm.replace(",", ".")
-            );
+        const validationSportive =
+            validerDonneesSportives({
+                typeSortie,
+                distanceKm,
+                denivelePositif,
+                dureeHeures,
+                dureeMinutes,
+                allureMinutes,
+                allureSecondes,
+            });
 
-        const denivele =
-            Number(denivelePositif);
-
-        const heures =
-            Number(dureeHeures || 0);
-
-        const minutes =
-            Number(dureeMinutes || 0);
-
-
-        if (
-            !Number.isFinite(distance) ||
-            distance <= 0
-        ) {
+        if (!validationSportive.ok) {
             setMessage(
-                "La distance doit être supérieure à 0."
+                validationSportive.message
             );
             return;
         }
 
-
-        if (
-            !Number.isInteger(denivele) ||
-            denivele < 0
-        ) {
-            setMessage(
-                "Le dénivelé doit être égal ou supérieur à 0."
-            );
-            return;
-        }
-
-
-        if (
-            !Number.isInteger(heures) ||
-            heures < 0 ||
-            !Number.isInteger(minutes) ||
-            minutes < 0 ||
-            minutes > 59
-        ) {
-            setMessage(
-                "La durée indiquée n'est pas valide."
-            );
-            return;
-        }
-
-
-        const dureeEstimeeMinutes =
-            heures * 60 + minutes;
-
-        if (dureeEstimeeMinutes <= 0) {
-            setMessage(
-                "La durée doit être supérieure à 0."
-            );
-            return;
-        }
-        let allureSecondesKm:
-            number | null = null;
-
-        if (
-            typeSortie === "route" &&
-            (
-                allureMinutes !== "" ||
-                allureSecondes !== ""
-            )
-        ) {
-            const allureMin =
-                Number(allureMinutes);
-
-            const allureSec =
-                Number(allureSecondes);
-
-            if (
-                !Number.isInteger(allureMin) ||
-                allureMin < 0 ||
-                !Number.isInteger(allureSec) ||
-                allureSec < 0 ||
-                allureSec > 59
-            ) {
-                setMessage(
-                    "L'allure indiquée n'est pas valide."
-                );
-                return;
-            }
-
-            allureSecondesKm =
-                allureMin * 60 + allureSec;
-
-            if (allureSecondesKm <= 0) {
-                setMessage(
-                    "L'allure indiquée n'est pas valide."
-                );
-                return;
-            }
-        }
+        const {
+            distance,
+            denivele,
+            dureeEstimeeMinutes,
+            allureSecondesKm,
+        } = validationSportive;
+        
         setLoading(true);
 
         // Recalcule la position géographique
@@ -515,33 +432,16 @@ export default function ModifierSortieForm({
                     className="w-full rounded border p-2"
                     required
                 >
-                    <option value="endurance_fondamentale">
-                        Endurance fondamentale
-                    </option>
-
-                    <option value="sortie_longue">
-                        Sortie longue
-                    </option>
-
-                    <option value="tempo_seuil">
-                        Tempo / seuil
-                    </option>
-
-                    <option value="fractionne">
-                        Fractionné
-                    </option>
-
-                    <option value="cotes">
-                        Côtes
-                    </option>
-
-                    <option value="recuperation">
-                        Récupération
-                    </option>
-
-                    <option value="libre">
-                        Sortie libre
-                    </option>
+                    {TYPES_ENTRAINEMENT.map(
+                        (type) => (
+                            <option
+                                key={type.value}
+                                value={type.value}
+                            >
+                                {type.label}
+                            </option>
+                        )
+                    )}
                 </select>
             </div>
 
@@ -648,66 +548,31 @@ export default function ModifierSortieForm({
                 </p>
 
                 <div className="space-y-2">
+                    {INTENSITES.map(
+                        (item) => (
+                            <label
+                                key={item.value}
+                                className="flex items-center gap-2"
+                            >
+                                <input
+                                    type="radio"
+                                    name="intensite"
+                                    value={item.value}
+                                    checked={
+                                        intensite ===
+                                        item.value
+                                    }
+                                    onChange={(e) =>
+                                        setIntensite(
+                                            e.target.value
+                                        )
+                                    }
+                                />
 
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="radio"
-                            name="intensite"
-                            value="tranquille"
-                            checked={
-                                intensite ===
-                                "tranquille"
-                            }
-                            onChange={(e) =>
-                                setIntensite(
-                                    e.target.value
-                                )
-                            }
-                        />
-
-                        Tranquille
-                    </label>
-
-
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="radio"
-                            name="intensite"
-                            value="moderee"
-                            checked={
-                                intensite ===
-                                "moderee"
-                            }
-                            onChange={(e) =>
-                                setIntensite(
-                                    e.target.value
-                                )
-                            }
-                        />
-
-                        Modérée
-                    </label>
-
-
-                    <label className="flex items-center gap-2">
-                        <input
-                            type="radio"
-                            name="intensite"
-                            value="soutenue"
-                            checked={
-                                intensite ===
-                                "soutenue"
-                            }
-                            onChange={(e) =>
-                                setIntensite(
-                                    e.target.value
-                                )
-                            }
-                        />
-
-                        Soutenue
-                    </label>
-
+                                {item.label}
+                            </label>
+                        )
+                    )}
                 </div>
             </div>
 

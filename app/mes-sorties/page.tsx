@@ -109,6 +109,36 @@ export default async function MesSortiesPage() {
         });
 
     // ------------------------------------------------
+    // SORTIES PASSÉES QUE J'AI ORGANISÉES
+    // ------------------------------------------------
+
+    const {
+        data: sortiesOrganiseesPassees,
+        error: sortiesOrganiseesPasseesError,
+    } = await supabase
+        .from("sorties")
+        .select(`
+        id,
+        titre,
+        date_heure_depart,
+        lieu_depart,
+        type_sortie,
+        nombre_max_participants,
+        type_entrainement,
+        distance_km,
+        denivele_positif_m,
+        duree_estimee_minutes
+    `)
+        .eq("organisateur_id", user.id)
+        .lt(
+            "date_heure_depart",
+            new Date().toISOString()
+        )
+        .order("date_heure_depart", {
+            ascending: false,
+        });
+
+    // ------------------------------------------------
     // DEMANDES EN ATTENTE SUR MES SORTIES
     // ------------------------------------------------
 
@@ -325,11 +355,73 @@ duree_estimee_minutes
     }
 
     // ------------------------------------------------
+    // SORTIES PASSÉES AUXQUELLES J'AI PARTICIPÉ
+    // ------------------------------------------------
+
+    let sortiesParticipeesPassees: {
+        id: string;
+        titre: string;
+        date_heure_depart: string;
+        lieu_depart: string;
+        type_sortie: string;
+        nombre_max_participants: number;
+        type_entrainement: string | null;
+        distance_km: number | null;
+        denivele_positif_m: number | null;
+        duree_estimee_minutes: number | null;
+    }[] = [];
+
+    if (idsSortiesParticipees.length > 0) {
+        const {
+            data,
+            error: sortiesParticipeesPasseesError,
+        } = await supabase
+            .from("sorties")
+            .select(`
+            id,
+            titre,
+            date_heure_depart,
+            lieu_depart,
+            type_sortie,
+            nombre_max_participants,
+            type_entrainement,
+            distance_km,
+            denivele_positif_m,
+            duree_estimee_minutes
+        `)
+            .in(
+                "id",
+                idsSortiesParticipees
+            )
+            .lt(
+                "date_heure_depart",
+                new Date().toISOString()
+            )
+            .order("date_heure_depart", {
+                ascending: false,
+            });
+
+        if (sortiesParticipeesPasseesError) {
+            return (
+                <main className="mx-auto max-w-2xl p-6">
+                    <p>
+                        Erreur lors du chargement de l&apos;historique.
+                    </p>
+                </main>
+            );
+        }
+
+        sortiesParticipeesPassees =
+            data ?? [];
+    }
+
+    // ------------------------------------------------
     // ERREURS
     // ------------------------------------------------
 
     if (
         sortiesOrganiseesError ||
+        sortiesOrganiseesPasseesError ||
         participationsError
     ) {
         return (
@@ -561,8 +653,8 @@ duree_estimee_minutes
                 )}
 
             </section>
-            
-{/* ------------------------------------------------
+
+            {/* ------------------------------------------------
     MES DEMANDES EN ATTENTE
 ------------------------------------------------ */}
 
@@ -609,7 +701,75 @@ duree_estimee_minutes
                 )}
 
             </section>
+            {/* ------------------------------------------------
+    HISTORIQUE
+------------------------------------------------ */}
 
+            <section className="mt-12 border-t pt-8">
+
+                <h2 className="mb-6 text-2xl font-bold">
+                    Historique
+                </h2>
+
+
+                {/* J'AI ORGANISÉ */}
+
+                <div className="mb-10">
+
+                    <h3 className="mb-4 text-xl font-semibold">
+                        J&apos;ai organisé
+                    </h3>
+
+                    {(sortiesOrganiseesPassees ?? []).length === 0 ? (
+                        <p className="text-gray-500">
+                            Aucune sortie organisée dans l&apos;historique.
+                        </p>
+                    ) : (
+                        <div className="space-y-4">
+
+                            {(sortiesOrganiseesPassees ?? []).map(
+                                (sortie) =>
+                                    afficherSortie(
+                                        sortie,
+                                        false
+                                    )
+                            )}
+
+                        </div>
+                    )}
+
+                </div>
+
+
+                {/* J'AI PARTICIPÉ */}
+
+                <div>
+
+                    <h3 className="mb-4 text-xl font-semibold">
+                        J&apos;ai participé
+                    </h3>
+
+                    {sortiesParticipeesPassees.length === 0 ? (
+                        <p className="text-gray-500">
+                            Aucune participation dans l&apos;historique.
+                        </p>
+                    ) : (
+                        <div className="space-y-4">
+
+                            {sortiesParticipeesPassees.map(
+                                (sortie) =>
+                                    afficherSortie(
+                                        sortie,
+                                        false
+                                    )
+                            )}
+
+                        </div>
+                    )}
+
+                </div>
+
+            </section>
 
         </main>
     );

@@ -3,6 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import GererDemandeButtons from "./gerer-demande-buttons";
 import ParticiperButton from "../participer-button";
+import {
+    afficherAllure,
+    afficherDuree,
+    afficherIntensite,
+    afficherTypeEntrainement,
+} from "@/lib/sortie-utils";
 
 import {
     formatDateLongue,
@@ -15,88 +21,6 @@ type PageProps = {
         id: string;
     }>;
 };
-function afficherTypeEntrainement(
-    type: string | null
-) {
-    switch (type) {
-        case "endurance_fondamentale":
-            return "Endurance fondamentale";
-
-        case "sortie_longue":
-            return "Sortie longue";
-
-        case "tempo_seuil":
-            return "Tempo / seuil";
-
-        case "fractionne":
-            return "Fractionné";
-
-        case "cotes":
-            return "Côtes";
-
-        case "recuperation":
-            return "Récupération";
-
-        case "libre":
-            return "Sortie libre";
-
-        default:
-            return null;
-    }
-}
-
-
-function afficherIntensite(
-    intensite: string | null
-) {
-    switch (intensite) {
-        case "tranquille":
-            return "Tranquille";
-
-        case "moderee":
-            return "Modérée";
-
-        case "soutenue":
-            return "Soutenue";
-
-        default:
-            return null;
-    }
-}
-
-
-function afficherDuree(
-    totalMinutes: number
-) {
-    const heures =
-        Math.floor(totalMinutes / 60);
-
-    const minutes =
-        totalMinutes % 60;
-
-    if (heures === 0) {
-        return `${minutes} min`;
-    }
-
-    if (minutes === 0) {
-        return `${heures} h`;
-    }
-
-    return `${heures} h ${minutes}`;
-}
-
-
-function afficherAllure(
-    totalSecondes: number
-) {
-    const minutes =
-        Math.floor(totalSecondes / 60);
-
-    const secondes =
-        totalSecondes % 60;
-
-    return `${minutes}:${String(secondes).padStart(2, "0")} /km`;
-}
 
 export default async function DetailSortiePage({
     params,
