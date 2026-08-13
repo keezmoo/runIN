@@ -16,6 +16,8 @@ import {
     formatHeure,
     getDateKey,
 } from "@/lib/date-utils";
+import ContacterParticipantButton
+    from "./contacter-participant-button";
 
 type PageProps = {
     params: Promise<{
@@ -312,6 +314,12 @@ export default async function DetailSortiePage({
             sortie.date_heure_depart
         ).getTime() > Date.now();
 
+    const peutContacterParticipants =
+        estOrganisateur &&
+        sortie.statut === "planifiee" &&
+        new Date(
+            sortie.date_heure_depart
+        ).getTime() > Date.now();
 
     // ------------------------------------------------
     // AFFICHAGE
@@ -494,6 +502,87 @@ export default async function DetailSortiePage({
                             {nombreActuel} /{" "}
                             {sortie.nombre_max_participants}
                         </p>
+
+
+                        {/* Liste détaillée visible par l'organisateur */}
+                        {estOrganisateur &&
+                            listeParticipations.length > 0 && (
+
+                                <div className="mt-3 space-y-2">
+
+                                    {listeParticipations.map(
+                                        (participation) => {
+
+                                            const profil =
+                                                listeProfils.find(
+                                                    (profil) =>
+                                                        profil.id ===
+                                                        participation.utilisateur_id
+                                                );
+
+
+                                            if (!profil) {
+                                                return null;
+                                            }
+
+
+                                            return (
+                                                <div
+                                                    key={
+                                                        participation.utilisateur_id
+                                                    }
+                                                    className="
+                                flex
+                                items-center
+                                justify-between
+                                gap-3
+                                rounded
+                                border
+                                p-3
+                            "
+                                                >
+
+                                                    <div>
+                                                        <p className="font-medium">
+                                                            {profil.nom}
+                                                        </p>
+
+                                                        <p className="text-sm text-gray-500">
+                                                            {profil.age} ans
+                                                        </p>
+                                                    </div>
+
+
+                                                    {peutContacterParticipants && (
+
+                                                        <ContacterParticipantButton
+                                                            sortieId={
+                                                                sortie.id
+                                                            }
+                                                            utilisateurId={
+                                                                participation.utilisateur_id
+                                                            }
+                                                        />
+
+                                                    )}
+
+                                                </div>
+                                            );
+                                        }
+                                    )}
+
+                                </div>
+                            )}
+
+
+                        {estOrganisateur &&
+                            listeParticipations.length === 0 && (
+
+                                <p className="mt-2 text-sm text-gray-500">
+                                    Aucun participant inscrit pour le moment.
+                                </p>
+
+                            )}
                     </div>
 
 
@@ -529,8 +618,6 @@ export default async function DetailSortiePage({
 
                     </section>
                 )}
-
-            {/* ORGANISATEUR */}
 
             {/* ORGANISATEUR */}
 
