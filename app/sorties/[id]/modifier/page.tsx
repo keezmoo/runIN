@@ -64,7 +64,9 @@ export default async function ModifierSortiePage({
         `)
         .eq("id", id)
         .eq("organisateur_id", user.id)
+        .eq("statut", "planifiee")
         .maybeSingle();
+        
 
     if (error || !sortie) {
         notFound();

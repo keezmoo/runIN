@@ -9,7 +9,8 @@ import {
     afficherIntensite,
     afficherTypeEntrainement,
 } from "@/lib/sortie-utils";
-
+import ContacterOrganisateurButton
+    from "./contacter-organisateur-button";
 import {
     formatDateLongue,
     formatHeure,
@@ -134,6 +135,8 @@ export default async function DetailSortiePage({
             </main>
         );
     }
+
+
 
     // ------------------------------------------------
     // PROFILS
@@ -297,6 +300,19 @@ export default async function DetailSortiePage({
         afficherIntensite(
             sortie.intensite
         );
+
+    // ------------------------------------------------
+    // peut contacter l'organisateur
+    // ------------------------------------------------
+
+    const peutContacterOrganisateur =
+        !estOrganisateur &&
+        sortie.statut === "planifiee" &&
+        new Date(
+            sortie.date_heure_depart
+        ).getTime() > Date.now();
+
+
     // ------------------------------------------------
     // AFFICHAGE
     // ------------------------------------------------
@@ -516,25 +532,39 @@ export default async function DetailSortiePage({
 
             {/* ORGANISATEUR */}
 
+            {/* ORGANISATEUR */}
+
             <section className="mb-8">
 
                 <h2 className="mb-3 text-xl font-semibold">
                     Organisateur
                 </h2>
 
-                {organisateur ? (
-                    <Link
-                        href={`/membres/${organisateur.id}`}
-                        className="block rounded border p-4 hover:bg-gray-500/10"
-                    >
-                        <p className="font-semibold">
-                            {organisateur.nom}
-                        </p>
 
-                        <p className="text-sm text-gray-500">
-                            {organisateur.age} ans
-                        </p>
-                    </Link>
+                {organisateur ? (
+                    <div className="space-y-3">
+
+                        <Link
+                            href={`/membres/${organisateur.id}`}
+                            className="block rounded border p-4 hover:bg-gray-500/10"
+                        >
+                            <p className="font-semibold">
+                                {organisateur.nom}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                                {organisateur.age} ans
+                            </p>
+                        </Link>
+
+
+                        {peutContacterOrganisateur && (
+                            <ContacterOrganisateurButton
+                                sortieId={sortie.id}
+                            />
+                        )}
+
+                    </div>
                 ) : (
                     <p>
                         Profil indisponible.
@@ -662,45 +692,45 @@ export default async function DetailSortiePage({
 
             {/* PARTICIPATION */}
 
-{/* PARTICIPATION */}
+            {/* PARTICIPATION */}
 
-<section className="border-t pt-6">
+            <section className="border-t pt-6">
 
-    {sortie.statut === "annulee" ? (
+                {sortie.statut === "annulee" ? (
 
-        <p className="font-medium">
-            Cette sortie a été annulée par
-            l&apos;organisateur.
-        </p>
+                    <p className="font-medium">
+                        Cette sortie a été annulée par
+                        l&apos;organisateur.
+                    </p>
 
-    ) : (
+                ) : (
 
-        <ParticiperButton
-            sortieId={sortie.id}
-            userId={user.id}
-            nombreMax={
-                sortie.nombre_max_participants
-            }
-            dejaParticipant={
-                dejaParticipant
-            }
-            estOrganisateur={
-                estOrganisateur
-            }
-            complet={complet}
-            modeInscription={
-                sortie.mode_inscription
-            }
-            demandeEnAttente={
-                Boolean(
-                    demandeParticipation
-                )
-            }
-        />
+                    <ParticiperButton
+                        sortieId={sortie.id}
+                        userId={user.id}
+                        nombreMax={
+                            sortie.nombre_max_participants
+                        }
+                        dejaParticipant={
+                            dejaParticipant
+                        }
+                        estOrganisateur={
+                            estOrganisateur
+                        }
+                        complet={complet}
+                        modeInscription={
+                            sortie.mode_inscription
+                        }
+                        demandeEnAttente={
+                            Boolean(
+                                demandeParticipation
+                            )
+                        }
+                    />
 
-    )}
+                )}
 
-</section>
+            </section>
 
         </main>
     );
