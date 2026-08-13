@@ -492,100 +492,17 @@ export default async function DetailSortiePage({
                         )}
 
 
-                    {/* PARTICIPANTS */}
-                    <div>
-                        <p className="text-sm text-gray-500">
-                            Participants
-                        </p>
+                   {/* PARTICIPANTS */}
+<div>
+    <p className="text-sm text-gray-500">
+        Participants
+    </p>
 
-                        <p>
-                            {nombreActuel} /{" "}
-                            {sortie.nombre_max_participants}
-                        </p>
-
-
-                        {/* Liste détaillée visible par l'organisateur */}
-                        {estOrganisateur &&
-                            listeParticipations.length > 0 && (
-
-                                <div className="mt-3 space-y-2">
-
-                                    {listeParticipations.map(
-                                        (participation) => {
-
-                                            const profil =
-                                                listeProfils.find(
-                                                    (profil) =>
-                                                        profil.id ===
-                                                        participation.utilisateur_id
-                                                );
-
-
-                                            if (!profil) {
-                                                return null;
-                                            }
-
-
-                                            return (
-                                                <div
-                                                    key={
-                                                        participation.utilisateur_id
-                                                    }
-                                                    className="
-                                flex
-                                items-center
-                                justify-between
-                                gap-3
-                                rounded
-                                border
-                                p-3
-                            "
-                                                >
-
-                                                    <div>
-                                                        <p className="font-medium">
-                                                            {profil.nom}
-                                                        </p>
-
-                                                        <p className="text-sm text-gray-500">
-                                                            {profil.age} ans
-                                                        </p>
-                                                    </div>
-
-
-                                                    {peutContacterParticipants && (
-
-                                                        <ContacterParticipantButton
-                                                            sortieId={
-                                                                sortie.id
-                                                            }
-                                                            utilisateurId={
-                                                                participation.utilisateur_id
-                                                            }
-                                                        />
-
-                                                    )}
-
-                                                </div>
-                                            );
-                                        }
-                                    )}
-
-                                </div>
-                            )}
-
-
-                        {estOrganisateur &&
-                            listeParticipations.length === 0 && (
-
-                                <p className="mt-2 text-sm text-gray-500">
-                                    Aucun participant inscrit pour le moment.
-                                </p>
-
-                            )}
-                    </div>
-
-
+    <p>
+        {nombreActuel} /{" "}
+        {sortie.nombre_max_participants}
+    </p>
+</div>
                     {/* INSCRIPTION */}
                     <div>
                         <p className="text-sm text-gray-500">
@@ -619,46 +536,67 @@ export default async function DetailSortiePage({
                     </section>
                 )}
 
-            {/* ORGANISATEUR */}
+ {/* ORGANISATEUR */}
 
-            <section className="mb-8">
+<section className="mb-8">
 
-                <h2 className="mb-3 text-xl font-semibold">
-                    Organisateur
-                </h2>
-
-
-                {organisateur ? (
-                    <div className="space-y-3">
-
-                        <Link
-                            href={`/membres/${organisateur.id}`}
-                            className="block rounded border p-4 hover:bg-gray-500/10"
-                        >
-                            <p className="font-semibold">
-                                {organisateur.nom}
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                                {organisateur.age} ans
-                            </p>
-                        </Link>
+    <h2 className="mb-3 text-xl font-semibold">
+        Organisateur
+    </h2>
 
 
-                        {peutContacterOrganisateur && (
-                            <ContacterOrganisateurButton
-                                sortieId={sortie.id}
-                            />
-                        )}
+    {organisateur && (
 
-                    </div>
-                ) : (
-                    <p>
-                        Profil indisponible.
-                    </p>
-                )}
+        <div
+            className="
+                flex
+                items-center
+                justify-between
+                gap-3
+                rounded
+                border
+                p-3
+            "
+        >
 
-            </section>
+            {/* PROFIL DE L'ORGANISATEUR */}
+
+            <Link
+                href={`/membres/${organisateur.id}`}
+                className="
+                    flex-1
+                    hover:opacity-70
+                "
+            >
+
+                <p className="font-medium">
+                    {organisateur.nom}
+                </p>
+
+                <p className="text-sm text-gray-500">
+                    {organisateur.age} ans
+                </p>
+
+            </Link>
+
+
+            {/* CONTACTER L'ORGANISATEUR */}
+
+            {peutContacterOrganisateur && (
+
+                <ContacterOrganisateurButton
+                    sortieId={
+                        sortie.id
+                    }
+                />
+
+            )}
+
+        </div>
+
+    )}
+
+</section>
 
 
             {/* DEMANDES DE PARTICIPATION */}
@@ -720,64 +658,103 @@ export default async function DetailSortiePage({
                     </section>
                 )}
 
-            {/* PARTICIPANTS */}
+{/* PARTICIPANTS */}
 
-            <section className="mb-8">
+<section className="mb-8">
 
-                <h2 className="mb-3 text-xl font-semibold">
-                    Participants
-                </h2>
+    <h2 className="mb-3 text-xl font-semibold">
+        Participants
+    </h2>
 
-                <div className="space-y-2">
+    <div className="space-y-2">
 
-                    {idsProfilsUniques.map(
-                        (profilId) => {
-                            const profil =
-                                listeProfils.find(
-                                    (item) =>
-                                        item.id === profilId
-                                );
+        {idsProfilsUniques.map(
+            (profilId) => {
 
-                            if (!profil) {
-                                return null;
-                            }
+                const profil =
+                    listeProfils.find(
+                        (item) =>
+                            item.id === profilId
+                    );
 
-                            const estOrganisateurListe =
-                                profil.id ===
-                                sortie.organisateur_id;
-
-                            return (
-                                <Link
-                                    key={profil.id}
-                                    href={`/membres/${profil.id}`}
-                                    className="flex items-center justify-between rounded border p-3 hover:bg-gray-500/10"
-                                >
-                                    <div>
-                                        <p className="font-medium">
-                                            {profil.nom}
-                                        </p>
-
-                                        <p className="text-sm text-gray-500">
-                                            {profil.age} ans
-                                        </p>
-                                    </div>
-
-                                    {estOrganisateurListe && (
-                                        <span className="text-sm text-gray-500">
-                                            Organisateur
-                                        </span>
-                                    )}
-                                </Link>
-                            );
-                        }
-                    )}
-
-                </div>
-
-            </section>
+                if (!profil) {
+                    return null;
+                }
 
 
-            {/* PARTICIPATION */}
+                const estOrganisateurListe =
+                    profil.id ===
+                    sortie.organisateur_id;
+
+
+                return (
+                    <div
+                        key={profil.id}
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                            gap-3
+                            rounded
+                            border
+                            p-3
+                        "
+                    >
+
+                        {/* PROFIL DU PARTICIPANT */}
+
+                        <Link
+                            href={`/membres/${profil.id}`}
+                            className="
+                                flex-1
+                                hover:opacity-70
+                            "
+                        >
+                            <p className="font-medium">
+                                {profil.nom}
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                                {profil.age} ans
+                            </p>
+                        </Link>
+
+
+                        {/* ORGANISATEUR */}
+
+                        {estOrganisateurListe && (
+
+                            <span className="text-sm text-gray-500">
+                                Organisateur
+                            </span>
+
+                        )}
+
+
+                        {/* CONTACTER LE PARTICIPANT */}
+
+                        {!estOrganisateurListe &&
+                            peutContacterParticipants && (
+
+                            <ContacterParticipantButton
+                                sortieId={
+                                    sortie.id
+                                }
+                                utilisateurId={
+                                    profil.id
+                                }
+                            />
+
+                        )}
+
+                    </div>
+                );
+            }
+        )}
+
+    </div>
+
+</section>
 
             {/* PARTICIPATION */}
 

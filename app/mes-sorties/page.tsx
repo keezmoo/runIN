@@ -115,6 +115,9 @@ export default async function MesSortiesPage() {
         sortie_id: string;
     }[] = [];
 
+    let conversationsSurMesSorties: {
+        sortie_id: string;
+    }[] = [];
 
     if (idsSortiesOrganisees.length > 0) {
 
@@ -168,9 +171,34 @@ export default async function MesSortiesPage() {
 
         participationsSurMesSorties =
             participationsData ?? [];
+
+        // Toutes les conversations créées
+        const {
+            data: conversationsData,
+            error: conversationsError,
+        } = await supabase
+            .from("conversations_sortie")
+            .select("sortie_id")
+            .in(
+                "sortie_id",
+                idsSortiesOrganisees
+            );
+
+        if (conversationsError) {
+            return (
+                <main className="mx-auto max-w-2xl p-6">
+                    <p>
+                        Erreur lors du chargement des conversations.
+                    </p>
+                </main>
+            );
+        }
+
+        conversationsSurMesSorties =
+            conversationsData ?? [];
+
     }
-
-
+    
     // ------------------------------------------------
     // DEMANDES EN ATTENTE UNIQUEMENT
     // ------------------------------------------------
@@ -212,6 +240,15 @@ export default async function MesSortiesPage() {
                     participation.sortie_id
             )
         );
+
+    const sortiesAvecConversations =
+        new Set(
+            conversationsSurMesSorties.map(
+                (conversation) =>
+                    conversation.sortie_id
+            )
+        );
+
     // ------------------------------------------------
     // MES PROPRES DEMANDES DE PARTICIPATION EN ATTENTE
     // ------------------------------------------------
@@ -525,6 +562,9 @@ export default async function MesSortiesPage() {
                 sortie.id
             ) &&
             !sortiesAvecParticipants.has(
+                sortie.id
+            ) &&
+            !sortiesAvecConversations.has(
                 sortie.id
             );
 
