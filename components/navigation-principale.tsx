@@ -42,6 +42,12 @@ const liens = [
     label: "Profil",
     icone: "profile",
   },
+  {
+    href: "/notifications",
+    label: "Alertes",
+    icone: "bell",
+  },
+
 ];
 
 
@@ -149,7 +155,27 @@ function Icone({ type }: IconeProps) {
   }
 
 
+  // Notifications
+  if (type === "bell") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+        <path d="M10 21h4" />
+      </svg>
+    );
+  }
+
+
   // Profil
+  // Le return final sert de valeur par défaut.
   return (
     <svg
       viewBox="0 0 24 24"
@@ -192,6 +218,10 @@ export default function NavigationPrincipale() {
     setNombreMessagesNonLus,
   ] = useState(0);
 
+  const [
+    nombreNotificationsNonLues,
+    setNombreNotificationsNonLues,
+  ] = useState(0);
 
   const chargerMessagesNonLus =
     useCallback(async () => {
@@ -224,6 +254,38 @@ export default function NavigationPrincipale() {
       );
     }, []);
 
+  const chargerNotificationsNonLues =
+    useCallback(async () => {
+
+      const supabase =
+        createClient();
+
+
+      const {
+        data,
+        error,
+      } = await supabase.rpc(
+        "nombre_notifications_non_lues"
+      );
+
+
+      if (error) {
+
+        console.error(
+          "Erreur compteur notifications :",
+          error
+        );
+
+        return;
+      }
+
+
+      setNombreNotificationsNonLues(
+        Number(data ?? 0)
+      );
+
+    }, []);
+
   // ------------------------------------------------
   // ACTUALISATION DU COMPTEUR
   // LORS D'UN CHANGEMENT DE PAGE
@@ -235,12 +297,48 @@ export default function NavigationPrincipale() {
     }
 
     chargerMessagesNonLus();
-
+    chargerNotificationsNonLues();
   }, [
     pathname,
     estPageAuth,
     chargerMessagesNonLus,
+    chargerNotificationsNonLues,
   ]);
+
+  useEffect(() => {
+
+    if (estPageAuth) {
+      return;
+    }
+
+
+    function actualiserNotifications() {
+
+      chargerNotificationsNonLues();
+
+    }
+
+
+    window.addEventListener(
+      "notifications-non-lues-modifiees",
+      actualiserNotifications
+    );
+
+
+    return () => {
+
+      window.removeEventListener(
+        "notifications-non-lues-modifiees",
+        actualiserNotifications
+      );
+
+    };
+
+  }, [
+    estPageAuth,
+    chargerNotificationsNonLues,
+  ]);
+
 
   // ------------------------------------------------
   // ÉVÉNEMENT INTERNE :
@@ -338,6 +436,72 @@ export default function NavigationPrincipale() {
   ]);
 
   // ------------------------------------------------
+  // REALTIME :
+  // NOUVELLE NOTIFICATION ET NOTIFICATION LUS
+  // ------------------------------------------------
+useEffect(() => {
+
+  if (estPageAuth) {
+    return;
+  }
+
+
+  const supabase =
+    createClient();
+
+
+  const channel = supabase
+    .channel(
+      "navigation-notifications-global"
+    )
+
+    // Nouvelle notification
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+      },
+      () => {
+
+        chargerNotificationsNonLues();
+
+      }
+    )
+
+    // Notification marquée comme lue
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "notifications",
+      },
+      () => {
+
+        chargerNotificationsNonLues();
+
+      }
+    )
+
+    .subscribe();
+
+
+  return () => {
+
+    supabase.removeChannel(
+      channel
+    );
+
+  };
+
+}, [
+  estPageAuth,
+  chargerNotificationsNonLues,
+]);
+
+  // ------------------------------------------------
   // PAS DE MENU SUR LES PAGES AUTH
   // IMPORTANT : APRÈS TOUS LES HOOKS
   // ------------------------------------------------
@@ -401,7 +565,11 @@ export default function NavigationPrincipale() {
       return pathname === "/profil";
     }
 
-
+    if (href === "/notifications") {
+      return pathname.startsWith(
+        "/notifications"
+      );
+    }
     return pathname === href;
   }
 
@@ -492,14 +660,13 @@ export default function NavigationPrincipale() {
                   md:py-2
                   md:text-sm
 
-                  ${
-                    lien.principal
-                      ? "bg-[#8ED8B6] text-black"
+                  ${lien.principal
+                    ? "bg-[#8ED8B6] text-black"
 
-                      : actif
-                        ? "text-[#8ED8B6]"
+                    : actif
+                      ? "text-[#8ED8B6]"
 
-                        : "text-foreground hover:bg-gray-500/10"
+                      : "text-foreground hover:bg-gray-500/10"
                   }
                 `}
               >
@@ -516,7 +683,7 @@ export default function NavigationPrincipale() {
                   {lien.href ===
                     "/messages" &&
                     nombreMessagesNonLus >
-                      0 && (
+                    0 && (
 
                       <span
                         className="
@@ -541,12 +708,38 @@ export default function NavigationPrincipale() {
                         "
                       >
                         {nombreMessagesNonLus >
-                        99
+                          99
                           ? "99+"
                           : nombreMessagesNonLus}
                       </span>
                     )}
 
+                  {lien.href === "/notifications" &&
+                    nombreNotificationsNonLues > 0 && (
+
+                      <span
+                        className="
+                        absolute
+                        -right-3
+                        -top-2
+                        flex
+                        min-h-4
+                        min-w-4
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-[#8ED8B6]
+                        px-1
+                        text-[10px]
+                        font-bold
+                        text-black
+                      "
+                      >
+                        {nombreNotificationsNonLues > 99
+                          ? "99+"
+                          : nombreNotificationsNonLues}
+                      </span>
+                    )}
                 </div>
 
 

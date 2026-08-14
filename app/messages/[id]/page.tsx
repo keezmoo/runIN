@@ -10,6 +10,8 @@ import ScrollVersDernierMessage
     from "./scroll-vers-dernier-message";
 import StatutConversation
     from "./statut-conversation";
+    import ContacterParticipantButton
+    from "../../sorties/[id]/contacter-participant-button";
 
 type PageProps = {
     params: Promise<{
