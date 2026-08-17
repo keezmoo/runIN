@@ -3,6 +3,9 @@ import NotificationsEmailButton
 import CompteParametres
     from "./compte-parametres";
 import SuppressionCompte from "./suppression-compte";
+import MfaParametres from "./mfa-parametres";
+import SessionsParametres from "./sessions-parametres";
+import Link from "next/link";
 
 export default function ParametresPage() {
 
@@ -64,20 +67,116 @@ export default function ParametresPage() {
 
             </section>
 
+            {/* MFA parametre */}
+
+            <section
+                className="
+        rounded-xl
+        border
+        border-zinc-800
+        bg-zinc-900
+        p-4
+    "
+            >
+
+                <h2 className="text-lg font-semibold">
+                    Sécurité
+                </h2>
+
+                <div className="mt-4">
+
+                    <MfaParametres />
+                    <div className="my-6 border-t border-zinc-800" />
+
+                    <SessionsParametres />
+                </div>
+
+            </section>
 
             {/* CONFIDENTIALITÉ */}
-            <section className="mb-8">
+            <section
+                className="
+        mb-8
+        rounded-xl
+        border
+        border-zinc-800
+        bg-zinc-900
+        p-4
+    "
+            >
 
-                <h2 className="mb-3 text-lg font-semibold">
+                <h2 className="mb-4 text-lg font-semibold">
                     Confidentialité
                 </h2>
 
-                <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
 
-                    <p className="text-sm text-gray-600">
-                        Les options de visibilité du profil seront
-                        disponibles ici.
-                    </p>
+                <div className="space-y-4">
+
+                    <div>
+
+                        <p className="font-medium text-white">
+                            Données personnelles
+                        </p>
+
+                        <p className="mt-1 text-sm text-zinc-400">
+                            Consultez les informations concernant
+                            l&apos;utilisation et la protection de
+                            vos données personnelles.
+                        </p>
+
+                    </div>
+
+
+                    <Link
+                        href="/confidentialite"
+                        className="
+                inline-block
+                rounded-lg
+                border
+                border-zinc-700
+                bg-zinc-800
+                px-4
+                py-2
+                text-sm
+                font-medium
+                text-white
+                hover:bg-zinc-700
+            "
+                    >
+                        Politique de confidentialité
+                    </Link>
+
+
+                    <div className="border-t border-zinc-800 pt-4">
+
+                        <p className="text-sm text-zinc-400">
+                            Vous pouvez télécharger une copie des
+                            principales données associées à votre
+                            compte runIN.
+                        </p>
+
+
+                        <a
+                            href="/api/compte/export"
+                            className="
+                    mt-3
+                    inline-block
+                    rounded-lg
+                    border
+                    border-zinc-700
+                    bg-zinc-800
+                    px-4
+                    py-2
+                    text-sm
+                    font-medium
+                    text-white
+                    hover:bg-zinc-700
+                "
+                        >
+                            Télécharger mes données
+                        </a>
+
+                    </div>
 
                 </div>
 

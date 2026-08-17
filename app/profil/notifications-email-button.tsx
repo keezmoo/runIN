@@ -82,7 +82,7 @@ export default function NotificationsEmailButton() {
                     "id",
                     user.id
                 )
-                .single();
+                .maybeSingle();
 
 
             if (error) {
@@ -92,18 +92,33 @@ export default function NotificationsEmailButton() {
                     error
                 );
 
-                setErreur(
-                    "Impossible de charger la préférence."
-                );
+                setChargement(false);
 
                 return;
+
+            }
+
+
+            if (!data) {
+
+                // Le compte Auth existe mais le profil
+                // n'a pas encore été créé.
+
+                setChargement(false);
+
+                return;
+
             }
 
 
             setActif(
                 data.notifications_email_activees
             );
+
+
+            setChargement(false);
         }
+
 
 
         chargerPreference();

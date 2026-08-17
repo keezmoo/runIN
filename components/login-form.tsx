@@ -33,17 +33,61 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/sorties");
+
+      const { error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+
+      if (error) {
+        throw error;
+      }
+
+
+      // Vérifie si ce compte possède un second facteur MFA.
+      const {
+        data: aal,
+        error: aalError,
+      } =
+        await supabase.auth.mfa
+          .getAuthenticatorAssuranceLevel();
+
+
+      if (aalError) {
+        throw aalError;
+      }
+
+
+      // Mot de passe validé, mais MFA encore nécessaire.
+      if (
+        aal.currentLevel === "aal1" &&
+        aal.nextLevel === "aal2"
+      ) {
+
+        router.replace("/auth/mfa");
+        return;
+
+      }
+
+
+      // Aucun MFA nécessaire, ou MFA déjà validé.
+      router.replace("/sorties");
+
+
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An error occurred"
+      );
+
     } finally {
+
       setIsLoading(false);
+
     }
   };
 

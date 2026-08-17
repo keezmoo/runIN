@@ -69,6 +69,11 @@ export default function CompteParametres() {
         setChargementEmail,
     ] = useState(false);
 
+    const [
+        motDePasseActuel,
+        setMotDePasseActuel,
+    ] = useState("");
+
     useEffect(() => {
 
         async function chargerUtilisateur() {
@@ -105,12 +110,26 @@ export default function CompteParametres() {
         setErreur("");
 
 
+        // ------------------------------------------------
+        // Vérifications locales
+        // ------------------------------------------------
+
+        if (!motDePasseActuel) {
+
+            setErreur(
+                "Saisissez votre mot de passe actuel."
+            );
+
+            return;
+        }
+
+
         if (
             nouveauMotDePasse.length < 8
         ) {
 
             setErreur(
-                "Le mot de passe doit contenir au moins 8 caractères."
+                "Le nouveau mot de passe doit contenir au moins 8 caractères."
             );
 
             return;
@@ -123,7 +142,7 @@ export default function CompteParametres() {
         ) {
 
             setErreur(
-                "Les deux mots de passe ne correspondent pas."
+                "Les deux nouveaux mots de passe ne correspondent pas."
             );
 
             return;
@@ -137,16 +156,67 @@ export default function CompteParametres() {
             createClient();
 
 
+        // ------------------------------------------------
+        // Vérification MFA
+        // ------------------------------------------------
+
+        const {
+            data: aal,
+            error: aalError,
+        } =
+            await supabase.auth.mfa
+                .getAuthenticatorAssuranceLevel();
+
+
+        if (aalError) {
+
+            console.error(
+                "Erreur vérification MFA :",
+                aalError
+            );
+
+            setErreur(
+                "Impossible de vérifier le niveau de sécurité de la session."
+            );
+
+            setChargement(false);
+
+            return;
+        }
+
+
+        // Si le compte possède un MFA,
+        // la session doit être en AAL2.
+
+        if (
+            aal.nextLevel === "aal2" &&
+            aal.currentLevel !== "aal2"
+        ) {
+
+            setErreur(
+                "Vous devez valider l'authentification à deux facteurs avant de modifier votre mot de passe."
+            );
+
+            setChargement(false);
+
+            return;
+        }
+
+
+        // ------------------------------------------------
+        // Modification du mot de passe
+        // ------------------------------------------------
+
         const {
             error,
         } =
             await supabase.auth.updateUser({
                 password:
                     nouveauMotDePasse,
+
+                current_password:
+                    motDePasseActuel,
             });
-
-
-        setChargement(false);
 
 
         if (error) {
@@ -157,19 +227,28 @@ export default function CompteParametres() {
             );
 
             setErreur(
-                "Impossible de modifier le mot de passe."
+                "Le mot de passe actuel est incorrect ou la modification est impossible."
             );
+
+            setChargement(false);
 
             return;
         }
 
 
+        // ------------------------------------------------
+        // Succès
+        // ------------------------------------------------
+
+        setMotDePasseActuel("");
         setNouveauMotDePasse("");
         setConfirmation("");
 
         setMessage(
             "Mot de passe modifié."
         );
+
+        setChargement(false);
 
     }
 
@@ -218,6 +297,44 @@ export default function CompteParametres() {
         const supabase =
             createClient();
 
+        const {
+            data: aal,
+            error: aalError,
+        } =
+            await supabase.auth.mfa
+                .getAuthenticatorAssuranceLevel();
+
+
+        if (aalError) {
+
+            console.error(
+                "Erreur vérification MFA :",
+                aalError
+            );
+
+            setErreurEmail(
+                "Impossible de vérifier le niveau de sécurité de la session."
+            );
+
+            setChargementEmail(false);
+
+            return;
+        }
+
+
+        if (
+            aal.nextLevel === "aal2" &&
+            aal.currentLevel !== "aal2"
+        ) {
+
+            setErreurEmail(
+                "Vous devez valider l'authentification à deux facteurs avant de modifier votre adresse e-mail."
+            );
+
+            setChargementEmail(false);
+
+            return;
+        }
 
         const {
             error,
@@ -234,12 +351,32 @@ export default function CompteParametres() {
 
             console.error(
                 "Erreur modification e-mail :",
-                error
+                {
+                    message: error.message,
+                    code: error.code,
+                    status: error.status,
+                }
             );
 
-            setErreurEmail(
-                "Impossible de modifier l'adresse e-mail."
-            );
+
+            if (
+                error.code ===
+                "over_email_send_rate_limit"
+            ) {
+
+                setErreurEmail(
+                    "Trop d'e-mails d'authentification ont été envoyés. Réessayez plus tard."
+                );
+
+            } else {
+
+                setErreurEmail(
+                    error.message ||
+                    "Impossible de modifier l'adresse e-mail."
+                );
+
+            }
+
 
             return;
         }
@@ -397,7 +534,40 @@ export default function CompteParametres() {
 
                 </div>
 
+                <div>
 
+                    <label
+                        htmlFor="mot-de-passe-actuel"
+                        className="mb-1 block text-sm text-zinc-300"
+                    >
+                        Mot de passe actuel
+                    </label>
+
+                    <input
+                        id="mot-de-passe-actuel"
+                        type="password"
+                        autoComplete="current-password"
+                        value={motDePasseActuel}
+                        onChange={(event) =>
+                            setMotDePasseActuel(
+                                event.target.value
+                            )
+                        }
+                        className="
+            w-full
+            rounded-lg
+            border
+            border-zinc-700
+            bg-zinc-950
+            px-3
+            py-2
+            text-white
+            outline-none
+            focus:border-[#8ED8B6]
+        "
+                    />
+
+                </div>
                 <div>
 
                     <label

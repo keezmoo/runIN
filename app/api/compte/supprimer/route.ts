@@ -88,6 +88,61 @@ export async function DELETE() {
 
         }
 
+        // ----------------------------------------------------
+        // Vérification du niveau MFA de la session
+        // ----------------------------------------------------
+
+        const {
+            data: aal,
+            error: aalError,
+        } =
+            await supabase.auth.mfa
+                .getAuthenticatorAssuranceLevel();
+
+
+        if (aalError) {
+
+            console.error(
+                "Erreur vérification niveau MFA :",
+                aalError
+            );
+
+
+            return Response.json(
+                {
+                    error:
+                        "Impossible de vérifier le niveau de sécurité de la session.",
+                },
+                {
+                    status: 500,
+                }
+            );
+
+        }
+
+
+        // Si le compte possède un facteur MFA,
+        // la session doit obligatoirement être en AAL2.
+
+        if (
+            aal.nextLevel === "aal2" &&
+            aal.currentLevel !== "aal2"
+        ) {
+
+            return Response.json(
+                {
+                    error:
+                        "Une vérification à deux facteurs est nécessaire avant de supprimer le compte.",
+
+                    code:
+                        "mfa_required",
+                },
+                {
+                    status: 403,
+                }
+            );
+
+        }
 
         // ----------------------------------------------------
         // 3. Client Admin
