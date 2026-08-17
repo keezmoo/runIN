@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { maintenantDatetimeLocal, } from "@/lib/date-utils";
 import {
     TYPES_ENTRAINEMENT,
@@ -16,6 +17,7 @@ type SortieFormProps = {
 export default function SortieForm({
     userId,
 }: SortieFormProps) {
+    const router = useRouter();
     const [titre, setTitre] = useState("");
     const [nombreMax, setNombreMax] = useState("2");
 
@@ -139,7 +141,10 @@ export default function SortieForm({
 
         const supabase = createClient();
 
-        const { error } = await supabase
+        const {
+            data: sortieCreee,
+            error,
+        } = await supabase
             .from("sorties")
             .insert({
                 titre: titre.trim(),
@@ -173,263 +178,199 @@ export default function SortieForm({
 
                 description:
                     description.trim() || null,
-                mode_inscription: modeInscription,
-            });
+
+                mode_inscription:
+                    modeInscription,
+            })
+            .select("id")
+            .single();
 
         if (error) {
-            setMessage("Erreur : " + error.message);
-        } else {
-            setMessage("Sortie créée.");
 
-            // Vide le formulaire
-            setTitre("");
-            setNombreMax("2");
-            setDateHeure("");
-            setLieuDepart("");
-            setTypeSortie("route");
+            console.error(
+                "Erreur création sortie :",
+                error
+            );
 
-            setTypeEntrainement("endurance_fondamentale");
-            setDistanceKm("");
-            setDenivelePositif("");
-            setDureeHeures("");
-            setDureeMinutes("");
-            setIntensite("moderee");
-            setAllureMinutes("");
-            setAllureSecondes("");
-            setDescription("");
-            setModeInscription("automatique");
+            setMessage(
+                "Erreur : " + error.message
+            );
+
+            setLoading(false);
+
+            return;
         }
 
-        setLoading(false);
+
+        if (!sortieCreee) {
+
+            setMessage(
+                "La sortie a été créée mais son identifiant n'a pas pu être récupéré."
+            );
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        // La sortie est créée :
+        // on ouvre directement sa fiche.
+
+        router.replace(
+            `/sorties/${sortieCreee.id}`
+        );
     }
 
-    return (
-        <div className="space-y-5">
 
-            <div>
-                <label className="mb-1 block font-medium">
-                    Titre de la sortie
-                </label>
 
-                <input
-                    type="text"
-                    value={titre}
-                    onChange={(e) => setTitre(e.target.value)}
-                    className="w-full rounded border p-2"
-                    placeholder="Trail tranquille au Nivolet"
-                />
-            </div>
-            <div>
-                <label className="mb-1 block font-medium">
-                    Lieu de départ
-                </label>
 
-                <input
-                    type="text"
-                    value={lieuDepart}
-                    onChange={(e) => setLieuDepart(e.target.value)}
-                    className="w-full rounded border p-2"
-                    placeholder="Chambéry"
-                />
-            </div>
-
-            <div>
-                <label className="mb-1 block font-medium">
-                    Type de sortie
-                </label>
-
-                <select
-                    value={typeSortie}
-                    onChange={(e) => setTypeSortie(e.target.value)}
-                    className="w-full rounded border p-2"
-                >
-                    <option value="route">Route</option>
-                    <option value="trail">Trail</option>
-                </select>
-            </div>
-
-            <div>
-                <label className="mb-1 block font-medium">
-                    Date et heure de départ
-                </label>
-
-                <input
-                    type="datetime-local"
-                    value={dateHeure}
-                    onChange={(e) =>
-                        setDateHeure(e.target.value)
-                    }
-                    min={maintenantDatetimeLocal()}
-                    className="w-full rounded border p-2"
-                />
-            </div>
-
-            <div>
-                <label className="mb-1 block font-medium">
-                    Type d&apos;entraînement
-                </label>
-
-                <select
-                    value={typeEntrainement}
-                    onChange={(e) =>
-                        setTypeEntrainement(
-                            e.target.value
-                        )
-                    }
-                    className="w-full rounded border p-2"
-                    required
-                >
-                    {TYPES_ENTRAINEMENT.map(
-                        (type) => (
-                            <option
-                                key={type.value}
-                                value={type.value}
-                            >
-                                {type.label}
-                            </option>
-                        )
-                    )}
-                </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+        return (
+            <div className="space-y-5">
 
                 <div>
                     <label className="mb-1 block font-medium">
-                        Distance
+                        Titre de la sortie
                     </label>
-
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="number"
-                            min="0.1"
-                            step="0.1"
-                            inputMode="decimal"
-                            value={distanceKm}
-                            onChange={(e) =>
-                                setDistanceKm(
-                                    e.target.value
-                                )
-                            }
-                            className="w-full rounded border p-2"
-                            required
-                        />
-
-                        <span>km</span>
-                    </div>
-                </div>
-
-
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Dénivelé positif
-                    </label>
-
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            value={denivelePositif}
-                            onChange={(e) =>
-                                setDenivelePositif(
-                                    e.target.value
-                                )
-                            }
-                            className="w-full rounded border p-2"
-                            required
-                        />
-
-                        <span>m D+</span>
-                    </div>
-                </div>
-
-            </div>
-
-            <div>
-                <label className="mb-1 block font-medium">
-                    Durée estimée
-                </label>
-
-                <div className="flex items-center gap-2">
 
                     <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        placeholder="1"
-                        value={dureeHeures}
+                        type="text"
+                        value={titre}
+                        onChange={(e) => setTitre(e.target.value)}
+                        className="w-full rounded border p-2"
+                        placeholder="Trail tranquille au Nivolet"
+                    />
+                </div>
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Lieu de départ
+                    </label>
+
+                    <input
+                        type="text"
+                        value={lieuDepart}
+                        onChange={(e) => setLieuDepart(e.target.value)}
+                        className="w-full rounded border p-2"
+                        placeholder="Chambéry"
+                    />
+                </div>
+
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Type de sortie
+                    </label>
+
+                    <select
+                        value={typeSortie}
+                        onChange={(e) => setTypeSortie(e.target.value)}
+                        className="w-full rounded border p-2"
+                    >
+                        <option value="route">Route</option>
+                        <option value="trail">Trail</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Date et heure de départ
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        value={dateHeure}
                         onChange={(e) =>
-                            setDureeHeures(
+                            setDateHeure(e.target.value)
+                        }
+                        min={maintenantDatetimeLocal()}
+                        className="w-full rounded border p-2"
+                    />
+                </div>
+
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Type d&apos;entraînement
+                    </label>
+
+                    <select
+                        value={typeEntrainement}
+                        onChange={(e) =>
+                            setTypeEntrainement(
                                 e.target.value
                             )
                         }
-                        className="w-20 rounded border p-2"
-                    />
-
-                    <span>h</span>
-
-                    <input
-                        type="number"
-                        min="0"
-                        max="59"
-                        step="1"
-                        placeholder="30"
-                        value={dureeMinutes}
-                        onChange={(e) =>
-                            setDureeMinutes(
-                                e.target.value
+                        className="w-full rounded border p-2"
+                        required
+                    >
+                        {TYPES_ENTRAINEMENT.map(
+                            (type) => (
+                                <option
+                                    key={type.value}
+                                    value={type.value}
+                                >
+                                    {type.label}
+                                </option>
                             )
-                        }
-                        className="w-20 rounded border p-2"
-                    />
+                        )}
+                    </select>
+                </div>
 
-                    <span>min</span>
+                <div className="grid grid-cols-2 gap-4">
+
+                    <div>
+                        <label className="mb-1 block font-medium">
+                            Distance
+                        </label>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                inputMode="decimal"
+                                value={distanceKm}
+                                onChange={(e) =>
+                                    setDistanceKm(
+                                        e.target.value
+                                    )
+                                }
+                                className="w-full rounded border p-2"
+                                required
+                            />
+
+                            <span>km</span>
+                        </div>
+                    </div>
+
+
+                    <div>
+                        <label className="mb-1 block font-medium">
+                            Dénivelé positif
+                        </label>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={denivelePositif}
+                                onChange={(e) =>
+                                    setDenivelePositif(
+                                        e.target.value
+                                    )
+                                }
+                                className="w-full rounded border p-2"
+                                required
+                            />
+
+                            <span>m D+</span>
+                        </div>
+                    </div>
 
                 </div>
-            </div>
 
-            <div>
-                <p className="mb-2 font-medium">
-                    Intensité
-                </p>
-
-                <div className="space-y-2">
-                    {INTENSITES.map(
-                        (item) => (
-                            <label
-                                key={item.value}
-                                className="flex items-center gap-2"
-                            >
-                                <input
-                                    type="radio"
-                                    name="intensite"
-                                    value={item.value}
-                                    checked={
-                                        intensite ===
-                                        item.value
-                                    }
-                                    onChange={(e) =>
-                                        setIntensite(
-                                            e.target.value
-                                        )
-                                    }
-                                />
-
-                                {item.label}
-                            </label>
-                        )
-                    )}
-                </div>
-            </div>
-
-            {typeSortie === "route" && (
                 <div>
                     <label className="mb-1 block font-medium">
-                        Allure prévue
-                        <span className="ml-1 text-sm font-normal text-gray-500">
-                            (facultatif)
-                        </span>
+                        Durée estimée
                     </label>
 
                     <div className="flex items-center gap-2">
@@ -438,17 +379,17 @@ export default function SortieForm({
                             type="number"
                             min="0"
                             step="1"
-                            placeholder="5"
-                            value={allureMinutes}
+                            placeholder="1"
+                            value={dureeHeures}
                             onChange={(e) =>
-                                setAllureMinutes(
+                                setDureeHeures(
                                     e.target.value
                                 )
                             }
                             className="w-20 rounded border p-2"
                         />
 
-                        <span>:</span>
+                        <span>h</span>
 
                         <input
                             type="number"
@@ -456,144 +397,225 @@ export default function SortieForm({
                             max="59"
                             step="1"
                             placeholder="30"
-                            value={allureSecondes}
+                            value={dureeMinutes}
                             onChange={(e) =>
-                                setAllureSecondes(
+                                setDureeMinutes(
                                     e.target.value
                                 )
                             }
                             className="w-20 rounded border p-2"
                         />
 
-                        <span>/ km</span>
+                        <span>min</span>
 
                     </div>
+                </div>
+
+                <div>
+                    <p className="mb-2 font-medium">
+                        Intensité
+                    </p>
+
+                    <div className="space-y-2">
+                        {INTENSITES.map(
+                            (item) => (
+                                <label
+                                    key={item.value}
+                                    className="flex items-center gap-2"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="intensite"
+                                        value={item.value}
+                                        checked={
+                                            intensite ===
+                                            item.value
+                                        }
+                                        onChange={(e) =>
+                                            setIntensite(
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+
+                                    {item.label}
+                                </label>
+                            )
+                        )}
+                    </div>
+                </div>
+
+                {typeSortie === "route" && (
+                    <div>
+                        <label className="mb-1 block font-medium">
+                            Allure prévue
+                            <span className="ml-1 text-sm font-normal text-gray-500">
+                                (facultatif)
+                            </span>
+                        </label>
+
+                        <div className="flex items-center gap-2">
+
+                            <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="5"
+                                value={allureMinutes}
+                                onChange={(e) =>
+                                    setAllureMinutes(
+                                        e.target.value
+                                    )
+                                }
+                                className="w-20 rounded border p-2"
+                            />
+
+                            <span>:</span>
+
+                            <input
+                                type="number"
+                                min="0"
+                                max="59"
+                                step="1"
+                                placeholder="30"
+                                value={allureSecondes}
+                                onChange={(e) =>
+                                    setAllureSecondes(
+                                        e.target.value
+                                    )
+                                }
+                                className="w-20 rounded border p-2"
+                            />
+
+                            <span>/ km</span>
+
+                        </div>
+
+                        <p className="mt-1 text-sm text-gray-500">
+                            Exemple : 5:30 / km
+                        </p>
+                    </div>
+                )}
+
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Description
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                            (facultatif)
+                        </span>
+                    </label>
+
+                    <textarea
+                        value={description}
+                        onChange={(e) =>
+                            setDescription(
+                                e.target.value
+                            )
+                        }
+                        maxLength={1000}
+                        rows={5}
+                        placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
+                        className="w-full rounded border p-2"
+                    />
 
                     <p className="mt-1 text-sm text-gray-500">
-                        Exemple : 5:30 / km
+                        {description.length} / 1000
                     </p>
                 </div>
-            )}
 
-            <div>
-                <label className="mb-1 block font-medium">
-                    Description
-                    <span className="ml-1 text-sm font-normal text-gray-500">
-                        (facultatif)
-                    </span>
-                </label>
-
-                <textarea
-                    value={description}
-                    onChange={(e) =>
-                        setDescription(
-                            e.target.value
-                        )
-                    }
-                    maxLength={1000}
-                    rows={5}
-                    placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
-                    className="w-full rounded border p-2"
-                />
-
-                <p className="mt-1 text-sm text-gray-500">
-                    {description.length} / 1000
-                </p>
-            </div>
-
-            <div>
-                <label className="mb-1 block font-medium">
-                    Nombre maximum de participants
-                </label>
-                <input
-                    type="number"
-                    value={nombreMax}
-                    onChange={(e) => setNombreMax(e.target.value)}
-                    className="w-full rounded border p-2"
-                    min="2"
-                    max="100"
-                />
-
-                <p className="mt-1 text-sm text-gray-500">
-                    L'organisateur est compris dans ce nombre.
-                </p>
-            </div>
-            <div>
-                <label className="mb-2 block font-medium">
-                    Inscription des participants
-                </label>
-
-                <div className="space-y-3">
-
-                    <label className="flex cursor-pointer gap-3 rounded border p-3">
-                        <input
-                            type="radio"
-                            name="modeInscription"
-                            value="automatique"
-                            checked={modeInscription === "automatique"}
-                            onChange={(e) =>
-                                setModeInscription(e.target.value)
-                            }
-                        />
-
-                        <div>
-                            <p className="font-medium">
-                                Inscription automatique
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                                Toute personne qui clique sur Participer
-                                rejoint immédiatement la sortie.
-                            </p>
-                        </div>
+                <div>
+                    <label className="mb-1 block font-medium">
+                        Nombre maximum de participants
                     </label>
+                    <input
+                        type="number"
+                        value={nombreMax}
+                        onChange={(e) => setNombreMax(e.target.value)}
+                        className="w-full rounded border p-2"
+                        min="2"
+                        max="100"
+                    />
 
-
-                    <label className="flex cursor-pointer gap-3 rounded border p-3">
-                        <input
-                            type="radio"
-                            name="modeInscription"
-                            value="validation"
-                            checked={modeInscription === "validation"}
-                            onChange={(e) =>
-                                setModeInscription(e.target.value)
-                            }
-                        />
-
-                        <div>
-                            <p className="font-medium">
-                                Validation par l&apos;organisateur
-                            </p>
-
-                            <p className="text-sm text-gray-500">
-                                Vous acceptez ou refusez chaque demande
-                                avant que la personne rejoigne la sortie.
-                            </p>
-                        </div>
-                    </label>
-
+                    <p className="mt-1 text-sm text-gray-500">
+                        L'organisateur est compris dans ce nombre.
+                    </p>
                 </div>
+                <div>
+                    <label className="mb-2 block font-medium">
+                        Inscription des participants
+                    </label>
+
+                    <div className="space-y-3">
+
+                        <label className="flex cursor-pointer gap-3 rounded border p-3">
+                            <input
+                                type="radio"
+                                name="modeInscription"
+                                value="automatique"
+                                checked={modeInscription === "automatique"}
+                                onChange={(e) =>
+                                    setModeInscription(e.target.value)
+                                }
+                            />
+
+                            <div>
+                                <p className="font-medium">
+                                    Inscription automatique
+                                </p>
+
+                                <p className="text-sm text-gray-500">
+                                    Toute personne qui clique sur Participer
+                                    rejoint immédiatement la sortie.
+                                </p>
+                            </div>
+                        </label>
+
+
+                        <label className="flex cursor-pointer gap-3 rounded border p-3">
+                            <input
+                                type="radio"
+                                name="modeInscription"
+                                value="validation"
+                                checked={modeInscription === "validation"}
+                                onChange={(e) =>
+                                    setModeInscription(e.target.value)
+                                }
+                            />
+
+                            <div>
+                                <p className="font-medium">
+                                    Validation par l&apos;organisateur
+                                </p>
+
+                                <p className="text-sm text-gray-500">
+                                    Vous acceptez ou refusez chaque demande
+                                    avant que la personne rejoigne la sortie.
+                                </p>
+                            </div>
+                        </label>
+
+                    </div>
+                </div>
+
+
+
+
+                <button
+                    type="button"
+                    onClick={creerSortie}
+                    disabled={loading}
+                    className="rounded bg-black px-4 py-2 text-white"
+                >
+                    {loading
+                        ? "Création..."
+                        : "Créer la sortie"}
+                </button>
+
+
+                {message && (
+                    <p>{message}</p>
+                )}
+
             </div>
-
-
-
-
-            <button
-                type="button"
-                onClick={creerSortie}
-                disabled={loading}
-                className="rounded bg-black px-4 py-2 text-white"
-            >
-                {loading
-                    ? "Création..."
-                    : "Créer la sortie"}
-            </button>
-
-
-            {message && (
-                <p>{message}</p>
-            )}
-
-        </div>
-    );
-}
+        );
+    }

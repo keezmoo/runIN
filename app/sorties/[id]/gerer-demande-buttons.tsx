@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import ContacterParticipantButton from "./contacter-participant-button";
 import { createClient } from "@/lib/supabase/client";
 
 type GererDemandeButtonsProps = {
   demandeId: string;
+  sortieId: string;
+  utilisateurId: string;
 };
 
 export default function GererDemandeButtons({
   demandeId,
+  sortieId,
+  utilisateurId,
 }: GererDemandeButtonsProps) {
   const supabase = createClient();
   const router = useRouter();
@@ -72,6 +76,11 @@ export default function GererDemandeButtons({
   return (
     <div>
       <div className="flex gap-2">
+
+        <ContacterParticipantButton
+          sortieId={sortieId}
+          utilisateurId={utilisateurId}
+        />
 
         <button
           type="button"

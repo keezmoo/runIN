@@ -41,9 +41,19 @@ export function LoginForm({
         });
 
 
-      if (error) {
-        throw error;
-      }
+if (error) {
+
+  if (error.code === "invalid_credentials") {
+
+    setError(
+      "Adresse e-mail ou mot de passe incorrect."
+    );
+
+    return;
+  }
+
+  throw error;
+}
 
 
       // Vérifie si ce compte possède un second facteur MFA.

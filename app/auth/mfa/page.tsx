@@ -197,13 +197,39 @@ export default function PageMfa() {
 
         if (error) {
 
+            // Un mauvais code MFA est une erreur utilisateur normale.
+            // On l'affiche dans l'interface sans polluer la console.
+
+            if (
+                error.code ===
+                "mfa_verification_failed"
+            ) {
+
+                setErreur(
+                    "Code incorrect ou expiré. Vérifiez le code affiché dans votre application d'authentification."
+                );
+
+                setVerification(false);
+
+                return;
+            }
+
+
+            // Les autres erreurs sont inattendues
+            // et restent utiles dans la console.
+
             console.error(
-                "Erreur vérification MFA :",
-                error
+                "Erreur inattendue lors de la vérification MFA :",
+                {
+                    message: error.message,
+                    code: error.code,
+                    status: error.status,
+                }
             );
 
+
             setErreur(
-                "Code incorrect ou expiré."
+                "Impossible de vérifier le code. Réessayez."
             );
 
             setVerification(false);
