@@ -9,47 +9,11 @@ import {
 } from "react";
 
 import { createClient } from "@/lib/supabase/client";
-
+import MenuProfil from "./menu-profil";
 
 // ------------------------------------------------
-// LIENS DE NAVIGATION
+// TYPES
 // ------------------------------------------------
-
-const liens = [
-  {
-    href: "/sorties",
-    label: "Sorties",
-    icone: "search",
-  },
-  {
-    href: "/mes-sorties",
-    label: "Mes sorties",
-    icone: "calendar",
-  },
-  {
-    href: "/sorties/nouvelle",
-    label: "Créer",
-    icone: "plus",
-    principal: true,
-  },
-  {
-    href: "/messages",
-    label: "Messages",
-    icone: "message",
-  },
-  {
-    href: "/profil",
-    label: "Profil",
-    icone: "profile",
-  },
-  {
-    href: "/notifications",
-    label: "Alertes",
-    icone: "bell",
-  },
-
-];
-
 
 type IconeProps = {
   type: string;
@@ -145,7 +109,17 @@ function Icone({ type }: IconeProps) {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 9.5 9.5 0 0 1-4-.9L3 21l1.7-4.5A8.5 8.5 0 1 1 21 11.5Z" />
+        <path
+          d="
+            M21 11.5
+            a8.4 8.4 0 0 1-9 8.5
+            9.5 9.5 0 0 1-4-.9
+            L3 21
+            l1.7-4.5
+            A8.5 8.5 0 1 1
+            21 11.5Z
+          "
+        />
 
         <path d="M8 12h.01" />
         <path d="M12 12h.01" />
@@ -167,7 +141,16 @@ function Icone({ type }: IconeProps) {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+        <path
+          d="
+            M18 8
+            a6 6 0 0 0-12 0
+            c0 7-3 7-3 9
+            h18
+            c0-2-3-2-3-9
+          "
+        />
+
         <path d="M10 21h4" />
       </svg>
     );
@@ -175,7 +158,6 @@ function Icone({ type }: IconeProps) {
 
 
   // Profil
-  // Le return final sert de valeur par défaut.
   return (
     <svg
       viewBox="0 0 24 24"
@@ -192,8 +174,60 @@ function Icone({ type }: IconeProps) {
         r="4"
       />
 
-      <path d="M4 21c1-5 4-7 8-7s7 2 8 7" />
+      <path
+        d="
+          M4 21
+          c1-5 4-7 8-7
+          s7 2 8 7
+        "
+      />
     </svg>
+  );
+}
+
+
+// ------------------------------------------------
+// BADGE
+// ------------------------------------------------
+
+function Badge({
+  nombre,
+}: {
+  nombre: number;
+}) {
+
+  if (nombre <= 0) {
+    return null;
+  }
+
+
+  return (
+    <span
+      className="
+        absolute
+        -right-2
+        -top-2
+
+        flex
+        min-h-4
+        min-w-4
+        items-center
+        justify-center
+
+        rounded-full
+        bg-[#8ED8B6]
+
+        px-1
+
+        text-[10px]
+        font-bold
+        text-black
+      "
+    >
+      {nombre > 99
+        ? "99+"
+        : nombre}
+    </span>
   );
 }
 
@@ -203,14 +237,17 @@ function Icone({ type }: IconeProps) {
 // ------------------------------------------------
 
 export default function NavigationPrincipale() {
-  const pathname = usePathname();
+
+  const pathname =
+    usePathname();
+
 
   const estPageAuth =
     pathname.startsWith("/auth");
 
 
   // ------------------------------------------------
-  // MESSAGES NON LUS
+  // COMPTEURS
   // ------------------------------------------------
 
   const [
@@ -218,15 +255,23 @@ export default function NavigationPrincipale() {
     setNombreMessagesNonLus,
   ] = useState(0);
 
+
   const [
     nombreNotificationsNonLues,
     setNombreNotificationsNonLues,
   ] = useState(0);
 
+
+  // ------------------------------------------------
+  // CHARGEMENT MESSAGES NON LUS
+  // ------------------------------------------------
+
   const chargerMessagesNonLus =
     useCallback(async () => {
+
       const supabase =
         createClient();
+
 
       const {
         data,
@@ -235,24 +280,40 @@ export default function NavigationPrincipale() {
         "nombre_messages_non_lus"
       );
 
+
       if (error) {
+
         console.error(
           "Erreur compteur messages :",
           {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
+            message:
+              error.message,
+
+            code:
+              error.code,
+
+            details:
+              error.details,
+
+            hint:
+              error.hint,
           }
         );
 
         return;
       }
 
+
       setNombreMessagesNonLus(
         Number(data ?? 0)
       );
+
     }, []);
+
+
+  // ------------------------------------------------
+  // CHARGEMENT NOTIFICATIONS NON LUES
+  // ------------------------------------------------
 
   const chargerNotificationsNonLues =
     useCallback(async () => {
@@ -286,24 +347,32 @@ export default function NavigationPrincipale() {
 
     }, []);
 
+
   // ------------------------------------------------
-  // ACTUALISATION DU COMPTEUR
-  // LORS D'UN CHANGEMENT DE PAGE
+  // ACTUALISATION AU CHANGEMENT DE PAGE
   // ------------------------------------------------
 
   useEffect(() => {
+
     if (estPageAuth) {
       return;
     }
 
+
     chargerMessagesNonLus();
     chargerNotificationsNonLues();
+
   }, [
     pathname,
     estPageAuth,
     chargerMessagesNonLus,
     chargerNotificationsNonLues,
   ]);
+
+
+  // ------------------------------------------------
+  // ÉVÉNEMENT INTERNE NOTIFICATIONS
+  // ------------------------------------------------
 
   useEffect(() => {
 
@@ -341,18 +410,20 @@ export default function NavigationPrincipale() {
 
 
   // ------------------------------------------------
-  // ÉVÉNEMENT INTERNE :
-  // DES MESSAGES VIENNENT D'ÊTRE LUS
+  // ÉVÉNEMENT INTERNE MESSAGES
   // ------------------------------------------------
 
   useEffect(() => {
+
     if (estPageAuth) {
       return;
     }
 
 
     function actualiserCompteur() {
+
       chargerMessagesNonLus();
+
     }
 
 
@@ -363,10 +434,12 @@ export default function NavigationPrincipale() {
 
 
     return () => {
+
       window.removeEventListener(
         "messages-non-lus-modifies",
         actualiserCompteur
       );
+
     };
 
   }, [
@@ -376,11 +449,11 @@ export default function NavigationPrincipale() {
 
 
   // ------------------------------------------------
-  // REALTIME :
-  // NOUVEAUX MESSAGES ET MESSAGES LUS
+  // REALTIME MESSAGES
   // ------------------------------------------------
 
   useEffect(() => {
+
     if (estPageAuth) {
       return;
     }
@@ -390,44 +463,49 @@ export default function NavigationPrincipale() {
       createClient();
 
 
-    const channel = supabase
-      .channel(
-        "navigation-messages-global"
-      )
+    const channel =
+      supabase
+        .channel(
+          "navigation-messages-global"
+        )
 
-      // Nouveau message
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        () => {
-          chargerMessagesNonLus();
-        }
-      )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+          },
+          () => {
 
-      // Message marqué comme lu
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "messages",
-        },
-        () => {
-          chargerMessagesNonLus();
-        }
-      )
+            chargerMessagesNonLus();
 
-      .subscribe();
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "messages",
+          },
+          () => {
+
+            chargerMessagesNonLus();
+
+          }
+        )
+
+        .subscribe();
 
 
     return () => {
+
       supabase.removeChannel(
         channel
       );
+
     };
 
   }, [
@@ -435,143 +513,132 @@ export default function NavigationPrincipale() {
     chargerMessagesNonLus,
   ]);
 
-  // ------------------------------------------------
-  // REALTIME :
-  // NOUVELLE NOTIFICATION ET NOTIFICATION LUS
-  // ------------------------------------------------
-useEffect(() => {
-
-  if (estPageAuth) {
-    return;
-  }
-
-
-  const supabase =
-    createClient();
-
-
-  const channel = supabase
-    .channel(
-      "navigation-notifications-global"
-    )
-
-    // Nouvelle notification
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "notifications",
-      },
-      () => {
-
-        chargerNotificationsNonLues();
-
-      }
-    )
-
-    // Notification marquée comme lue
-    .on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "notifications",
-      },
-      () => {
-
-        chargerNotificationsNonLues();
-
-      }
-    )
-
-    .subscribe();
-
-
-  return () => {
-
-    supabase.removeChannel(
-      channel
-    );
-
-  };
-
-}, [
-  estPageAuth,
-  chargerNotificationsNonLues,
-]);
 
   // ------------------------------------------------
-  // PAS DE MENU SUR LES PAGES AUTH
-  // IMPORTANT : APRÈS TOUS LES HOOKS
+  // REALTIME NOTIFICATIONS
+  // ------------------------------------------------
+
+  useEffect(() => {
+
+    if (estPageAuth) {
+      return;
+    }
+
+
+    const supabase =
+      createClient();
+
+
+    const channel =
+      supabase
+        .channel(
+          "navigation-notifications-global"
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+          },
+          () => {
+
+            chargerNotificationsNonLues();
+
+          }
+        )
+
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "notifications",
+          },
+          () => {
+
+            chargerNotificationsNonLues();
+
+          }
+        )
+
+        .subscribe();
+
+
+    return () => {
+
+      supabase.removeChannel(
+        channel
+      );
+
+    };
+
+  }, [
+    estPageAuth,
+    chargerNotificationsNonLues,
+  ]);
+
+
+  // ------------------------------------------------
+  // PAS DE NAVIGATION SUR AUTH
+  // IMPORTANT :
+  // APRÈS TOUS LES HOOKS
   // ------------------------------------------------
 
   if (estPageAuth) {
     return null;
   }
 
+
   // ------------------------------------------------
-  // LIEN ACTIF
+  // LIENS ACTIFS
   // ------------------------------------------------
 
-  function estActif(href: string) {
-    if (href === "/sorties") {
-      return (
-        pathname === "/sorties" ||
-        (
-          pathname.startsWith(
-            "/sorties/"
-          ) &&
-          !pathname.startsWith(
-            "/sorties/nouvelle"
-          ) &&
-          !pathname.includes(
-            "/modifier"
-          )
-        )
-      );
-    }
-
-
-    if (href === "/mes-sorties") {
-      return (
-        pathname === "/mes-sorties" ||
-        pathname.includes(
-          "/modifier"
-        )
-      );
-    }
-
-
-    if (
-      href ===
-      "/sorties/nouvelle"
-    ) {
-      return (
-        pathname ===
+  const sortiesActif =
+    pathname === "/sorties" ||
+    (
+      pathname.startsWith(
+        "/sorties/"
+      ) &&
+      !pathname.startsWith(
         "/sorties/nouvelle"
-      );
-    }
+      ) &&
+      !pathname.includes(
+        "/modifier"
+      )
+    );
 
 
-    if (href === "/messages") {
-      return pathname.startsWith(
-        "/messages"
-      );
-    }
+  const mesSortiesActif =
+    pathname === "/mes-sorties" ||
+    pathname.includes(
+      "/modifier"
+    );
 
 
-    if (href === "/profil") {
-      return pathname === "/profil";
-    }
+  const creerActif =
+    pathname ===
+    "/sorties/nouvelle";
 
-    if (href === "/notifications") {
-      return pathname.startsWith(
-        "/notifications"
-      );
-    }
-    return pathname === href;
-  }
+
+  const messagesActif =
+    pathname.startsWith(
+      "/messages"
+    );
+
+
+  const notificationsActif =
+    pathname.startsWith(
+      "/notifications"
+    );
+
+
+  const profilActif =
+    pathname === "/profil" ||
+    pathname.startsWith(
+      "/parametres"
+    );
 
 
   // ------------------------------------------------
@@ -579,180 +646,509 @@ useEffect(() => {
   // ------------------------------------------------
 
   return (
-    <nav
-      className="
-        fixed bottom-0 left-0 right-0 z-50
-        border-t bg-background
+    <>
 
-        md:sticky
-        md:top-0
-        md:bottom-auto
-        md:border-b
-        md:border-t-0
-      "
-    >
-      <div
+      {/* ============================================ */}
+      {/* MOBILE : BARRE DU HAUT                     */}
+      {/* ============================================ */}
+
+      <header
         className="
-          mx-auto flex h-16 max-w-5xl
-          items-center justify-between
-          px-2
+          sticky
+          top-0
+          z-40
 
-          md:px-6
+          border-b
+          border-zinc-800
+          bg-background
+
+          md:hidden
         "
       >
-
-        {/* Logo uniquement sur ordinateur */}
-
-        <Link
-          href="/sorties"
-          className="
-            hidden text-xl font-bold
-            md:block
-          "
-        >
-          runIN
-        </Link>
-
-
-        {/* Liens */}
-
         <div
           className="
-            flex w-full items-center
-
-            md:w-auto
-            md:justify-end
-            md:gap-2
+            mx-auto
+            flex
+            h-14
+            max-w-5xl
+            items-center
+            justify-between
+            px-4
           "
         >
-          {liens.map((lien) => {
-            const actif =
-              estActif(lien.href);
+
+          {/* LOGO */}
+
+          <Link
+            href="/sorties"
+            className="
+              text-xl
+              font-bold
+            "
+          >
+            runIN
+          </Link>
 
 
-            return (
-              <Link
-                key={lien.href}
-                href={lien.href}
+          {/* ACTIONS HAUTES */}
 
-                aria-current={
-                  actif
-                    ? "page"
-                    : undefined
+          <div
+            className="
+              flex
+              items-center
+              gap-1
+            "
+          >
+
+            {/* MESSAGES */}
+
+            <Link
+              href="/messages"
+              aria-label="Messages"
+              aria-current={
+                messagesActif
+                  ? "page"
+                  : undefined
+              }
+              className={`
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                transition
+
+                ${messagesActif
+                  ? "text-[#8ED8B6]"
+                  : "text-foreground hover:bg-zinc-800"
                 }
+              `}
+            >
+              <div className="relative">
 
-                className={`
-                  flex min-w-0 flex-1
-                  flex-col items-center
-                  justify-center gap-1
+                <Icone
+                  type="message"
+                />
 
-                  rounded
-                  px-1 py-1
-
-                  text-xs
-                  transition
-
-                  md:flex-none
-                  md:min-w-0
-                  md:flex-row
-                  md:gap-2
-                  md:px-3
-                  md:py-2
-                  md:text-sm
-
-                  ${lien.principal
-                    ? "bg-[#8ED8B6] text-black"
-
-                    : actif
-                      ? "text-[#8ED8B6]"
-
-                      : "text-foreground hover:bg-gray-500/10"
+                <Badge
+                  nombre={
+                    nombreMessagesNonLus
                   }
-                `}
-              >
+                />
 
-                {/* ICÔNE + BADGE MESSAGES */}
-
-                <div className="relative">
-
-                  <Icone
-                    type={lien.icone}
-                  />
+              </div>
+            </Link>
 
 
-                  {lien.href ===
-                    "/messages" &&
-                    nombreMessagesNonLus >
-                    0 && (
+            {/* NOTIFICATIONS */}
 
-                      <span
-                        className="
-                          absolute
-                          -right-3
-                          -top-2
+            <Link
+              href="/notifications"
+              aria-label="Alertes"
+              aria-current={
+                notificationsActif
+                  ? "page"
+                  : undefined
+              }
+              className={`
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                transition
 
-                          flex
-                          min-h-4
-                          min-w-4
-                          items-center
-                          justify-center
+                ${notificationsActif
+                  ? "text-[#8ED8B6]"
+                  : "text-foreground hover:bg-zinc-800"
+                }
+              `}
+            >
+              <div className="relative">
 
-                          rounded-full
-                          bg-[#8ED8B6]
+                <Icone
+                  type="bell"
+                />
 
-                          px-1
+                <Badge
+                  nombre={
+                    nombreNotificationsNonLues
+                  }
+                />
 
-                          text-[10px]
-                          font-bold
-                          text-black
-                        "
-                      >
-                        {nombreMessagesNonLus >
-                          99
-                          ? "99+"
-                          : nombreMessagesNonLus}
-                      </span>
-                    )}
-
-                  {lien.href === "/notifications" &&
-                    nombreNotificationsNonLues > 0 && (
-
-                      <span
-                        className="
-                        absolute
-                        -right-3
-                        -top-2
-                        flex
-                        min-h-4
-                        min-w-4
-                        items-center
-                        justify-center
-                        rounded-full
-                        bg-[#8ED8B6]
-                        px-1
-                        text-[10px]
-                        font-bold
-                        text-black
-                      "
-                      >
-                        {nombreNotificationsNonLues > 99
-                          ? "99+"
-                          : nombreNotificationsNonLues}
-                      </span>
-                    )}
-                </div>
+              </div>
+            </Link>
 
 
-                <span>
-                  {lien.label}
-                </span>
+            {/* PROFIL */}
 
-              </Link>
-            );
-          })}
+            <MenuProfil
+              actif={profilActif}
+            />
+
+          </div>
+
         </div>
+      </header>
 
-      </div>
-    </nav>
+
+      {/* ============================================ */}
+      {/* MOBILE : BARRE DU BAS                      */}
+      {/* ============================================ */}
+
+      <nav
+        className="
+          fixed
+          bottom-0
+          left-0
+          right-0
+          z-50
+
+          border-t
+          border-zinc-800
+          bg-background
+
+          md:hidden
+        "
+      >
+        <div
+          className="
+            mx-auto
+            flex
+            h-16
+            max-w-5xl
+            items-center
+          "
+        >
+
+          {/* SORTIES */}
+
+          <Link
+            href="/sorties"
+            aria-current={
+              sortiesActif
+                ? "page"
+                : undefined
+            }
+            className={`
+              flex
+              h-full
+              flex-1
+              flex-col
+              items-center
+              justify-center
+              gap-1
+              text-xs
+              transition
+
+              ${sortiesActif
+                ? "text-[#8ED8B6]"
+                : "text-foreground"
+              }
+            `}
+          >
+            <Icone
+              type="search"
+            />
+
+            <span>
+              Sorties
+            </span>
+          </Link>
+
+
+          {/* MES SORTIES */}
+
+          <Link
+            href="/mes-sorties"
+            aria-current={
+              mesSortiesActif
+                ? "page"
+                : undefined
+            }
+            className={`
+              flex
+              h-full
+              flex-1
+              flex-col
+              items-center
+              justify-center
+              gap-1
+              text-xs
+              transition
+
+              ${mesSortiesActif
+                ? "text-[#8ED8B6]"
+                : "text-foreground"
+              }
+            `}
+          >
+            <Icone
+              type="calendar"
+            />
+
+            <span>
+              Mes sorties
+            </span>
+          </Link>
+
+
+          {/* CRÉER */}
+
+          <Link
+            href="/sorties/nouvelle"
+            aria-current={
+              creerActif
+                ? "page"
+                : undefined
+            }
+            className="
+              flex
+              h-full
+              flex-1
+              flex-col
+              items-center
+              justify-center
+              gap-1
+              text-xs
+              font-medium
+              text-[#8ED8B6]
+            "
+          >
+            <div
+              className={`
+                flex
+                h-8
+                w-8
+                items-center
+                justify-center
+                rounded-full
+                border
+
+                ${creerActif
+                  ? "border-[#8ED8B6] bg-[#8ED8B6] text-black"
+                  : "border-[#8ED8B6]"
+                }
+              `}
+            >
+              <Icone
+                type="plus"
+              />
+            </div>
+
+            <span>
+              Créer
+            </span>
+          </Link>
+
+        </div>
+      </nav>
+
+
+      {/* ============================================ */}
+      {/* ORDINATEUR                                  */}
+      {/* ============================================ */}
+
+      <nav
+        className="
+          sticky
+          top-0
+          z-50
+
+          hidden
+          border-b
+          border-zinc-800
+          bg-background
+
+          md:block
+        "
+      >
+        <div
+          className="
+            mx-auto
+            flex
+            h-16
+            max-w-5xl
+            items-center
+            justify-between
+            px-6
+          "
+        >
+
+          {/* GAUCHE */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-4
+            "
+          >
+
+            <Link
+              href="/sorties"
+              className="
+                mr-3
+                text-xl
+                font-bold
+              "
+            >
+              runIN
+            </Link>
+
+
+            <Link
+              href="/sorties"
+              className={`
+                rounded-lg
+                px-3
+                py-2
+                text-sm
+                transition
+
+                ${sortiesActif
+                  ? "text-[#8ED8B6]"
+                  : "hover:bg-zinc-800"
+                }
+              `}
+            >
+              Sorties
+            </Link>
+
+
+            <Link
+              href="/mes-sorties"
+              className={`
+                rounded-lg
+                px-3
+                py-2
+                text-sm
+                transition
+
+                ${mesSortiesActif
+                  ? "text-[#8ED8B6]"
+                  : "hover:bg-zinc-800"
+                }
+              `}
+            >
+              Mes sorties
+            </Link>
+
+
+            <Link
+              href="/sorties/nouvelle"
+              className="
+                flex
+                items-center
+                gap-2
+                rounded-lg
+                bg-[#8ED8B6]
+                px-3
+                py-2
+                text-sm
+                font-medium
+                text-black
+              "
+            >
+              <Icone
+                type="plus"
+              />
+
+              Créer
+            </Link>
+
+          </div>
+
+
+          {/* DROITE */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-1
+            "
+          >
+
+            <Link
+              href="/messages"
+              aria-label="Messages"
+              className={`
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                transition
+
+                ${messagesActif
+                  ? "text-[#8ED8B6]"
+                  : "hover:bg-zinc-800"
+                }
+              `}
+            >
+              <div className="relative">
+
+                <Icone
+                  type="message"
+                />
+
+                <Badge
+                  nombre={
+                    nombreMessagesNonLus
+                  }
+                />
+
+              </div>
+            </Link>
+
+
+            <Link
+              href="/notifications"
+              aria-label="Alertes"
+              className={`
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                transition
+
+                ${notificationsActif
+                  ? "text-[#8ED8B6]"
+                  : "hover:bg-zinc-800"
+                }
+              `}
+            >
+              <div className="relative">
+
+                <Icone
+                  type="bell"
+                />
+
+                <Badge
+                  nombre={
+                    nombreNotificationsNonLues
+                  }
+                />
+
+              </div>
+            </Link>
+
+
+            <MenuProfil
+              actif={profilActif}
+            />
+
+          </div>
+
+        </div>
+      </nav>
+
+    </>
   );
 }

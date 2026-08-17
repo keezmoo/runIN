@@ -1,8 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ProfileForm from "./profile-form";
-import NotificationsEmailButton
-  from "./notifications-email-button";
 
 export default async function ProfilPage() {
   const supabase = await createClient();
@@ -27,7 +25,7 @@ export default async function ProfilPage() {
   return (
     <main className="mx-auto max-w-xl p-6">
       <h1 className="mb-6 text-2xl font-bold">Mon profil</h1>
-
+      
       <ProfileForm
         userId={user.id}
         initialProfile={profile}
@@ -44,24 +42,6 @@ export default async function ProfilPage() {
           Se déconnecter
         </button>
       </form>
-
-      <section className="mt-8">
-
-        <h2 className="mb-3 text-xl font-semibold">
-          Notifications e-mail
-        </h2>
-
-
-        <p className="mb-4 text-sm text-gray-500">
-          Autoriser runIN à vous envoyer
-          certaines notifications importantes
-          par e-mail.
-        </p>
-
-
-        <NotificationsEmailButton />
-
-      </section>
 
     </main>
 
