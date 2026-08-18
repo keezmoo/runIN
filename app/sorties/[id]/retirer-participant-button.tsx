@@ -52,6 +52,39 @@ export default function RetirerParticipantButton({
 
         if (error) {
 
+            // Le participant a peut-être quitté la sortie
+            // juste avant que l'organisateur clique sur "Retirer".
+            const {
+                data: participationEncorePresente,
+                error: verificationError,
+            } = await supabase
+                .from("participations")
+                .select("sortie_id")
+                .eq("sortie_id", sortieId)
+                .eq("utilisateur_id", utilisateurId)
+                .maybeSingle();
+
+
+            // S'il n'est déjà plus participant,
+            // le résultat souhaité est déjà atteint.
+            if (
+                !verificationError &&
+                !participationEncorePresente
+            ) {
+
+                setMessage(
+                    "Ce participant a déjà quitté la sortie."
+                );
+
+                setLoading(false);
+
+                router.refresh();
+
+                return;
+            }
+
+
+            // Sinon, il s'agit bien d'une vraie erreur.
             console.error(
                 "Erreur retrait participant :",
                 error

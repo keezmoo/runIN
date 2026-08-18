@@ -141,6 +141,36 @@ export default async function DetailSortiePage({
     }
 
     // ------------------------------------------------
+    // NOMBRE DE DEMANDES EN ATTENTE
+    // ------------------------------------------------
+
+    const {
+        data: nombreDemandesEnAttente,
+        error: nombreDemandesEnAttenteError,
+    } = await supabase.rpc(
+        "nombre_demandes_en_attente_sortie",
+        {
+            p_sortie_id: sortie.id,
+        }
+    );
+
+
+    if (nombreDemandesEnAttenteError) {
+        return (
+            <main className="mx-auto max-w-2xl p-6">
+                <p>
+                    Erreur lors du chargement des demandes en attente.
+                </p>
+            </main>
+        );
+    }
+
+
+    const totalDemandesEnAttente =
+        nombreDemandesEnAttente ?? 0;
+
+
+    // ------------------------------------------------
     // UTILISATEUR RETIRÉ PAR L'ORGANISATEUR ?
     // ------------------------------------------------
 
@@ -313,7 +343,11 @@ export default async function DetailSortiePage({
         nombreActuel >=
         sortie.nombre_max_participants;
 
-
+    const nombrePlacesDisponibles =
+        Math.max(
+            0,
+            sortie.nombre_max_participants - nombreActuel
+        );
     // ------------------------------------------------
     // DATE
     // ------------------------------------------------
@@ -638,6 +672,8 @@ export default async function DetailSortiePage({
 
                         <h2 className="mb-3 text-xl font-semibold">
                             Demandes de participation
+                            {" "}
+                            ({totalDemandesEnAttente})
                         </h2>
 
                         <div className="space-y-3">
@@ -830,28 +866,76 @@ export default async function DetailSortiePage({
 
                 ) : (
 
-                    <ParticiperButton
-                        sortieId={sortie.id}
-                        userId={user.id}
-                        nombreMax={
-                            sortie.nombre_max_participants
-                        }
-                        dejaParticipant={
-                            dejaParticipant
-                        }
-                        estOrganisateur={
-                            estOrganisateur
-                        }
-                        complet={complet}
-                        modeInscription={
-                            sortie.mode_inscription
-                        }
-                        demandeEnAttente={
-                            Boolean(
-                                demandeParticipation
-                            )
-                        }
-                    />
+                    <>
+                        {demandeParticipation &&
+                            sortie.mode_inscription === "validation" && (
+
+                                <div className="mb-4 rounded border p-4">
+
+                                    <p className="font-medium">
+                                        Votre demande est en attente.
+                                    </p>
+
+
+                                    {complet ? (
+
+                                        <>
+                                            <p className="mt-2 text-sm text-gray-400">
+                                                La sortie est actuellement complète.
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-gray-400">
+                                                Votre demande reste active si une place se libère.
+                                            </p>
+                                        </>
+
+                                    ) : (
+
+                                        <p className="mt-2 text-sm text-gray-400">
+                                            {nombrePlacesDisponibles}{" "}
+                                            {nombrePlacesDisponibles === 1
+                                                ? "place disponible"
+                                                : "places disponibles"}.
+                                        </p>
+
+                                    )}
+
+
+                                    <p className="mt-2 text-sm text-gray-400">
+                                        {totalDemandesEnAttente}{" "}
+                                        {totalDemandesEnAttente === 1
+                                            ? "demande est actuellement en attente."
+                                            : "demandes sont actuellement en attente."}
+                                    </p>
+
+                                </div>
+
+                            )}
+
+
+                        <ParticiperButton
+                            sortieId={sortie.id}
+                            userId={user.id}
+                            nombreMax={
+                                sortie.nombre_max_participants
+                            }
+                            dejaParticipant={
+                                dejaParticipant
+                            }
+                            estOrganisateur={
+                                estOrganisateur
+                            }
+                            complet={complet}
+                            modeInscription={
+                                sortie.mode_inscription
+                            }
+                            demandeEnAttente={
+                                Boolean(
+                                    demandeParticipation
+                                )
+                            }
+                        />
+                    </>
 
                 )}
 
