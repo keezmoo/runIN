@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import HCaptcha from "@hcaptcha/react-hcaptcha";
 
 export function LoginForm({
   className,
@@ -24,80 +25,82 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<HCaptcha>(null);
+
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const supabase = createClient();
+
     setIsLoading(true);
     setError(null);
 
+    if (!captchaToken) {
+      setError("Please complete the captcha");
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          captchaToken,
+        },
+      });
 
-      const { error } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      if (error) {
+        if (error.code === "invalid_credentials") {
+          setError("Adresse e-mail ou mot de passe incorrect.");
 
+          captchaRef.current?.resetCaptcha();
+          setCaptchaToken(null);
 
-if (error) {
+          return;
+        }
 
-  if (error.code === "invalid_credentials") {
-
-    setError(
-      "Adresse e-mail ou mot de passe incorrect."
-    );
-
-    return;
-  }
-
-  throw error;
-}
-
+        throw error;
+      }
 
       // Vérifie si ce compte possède un second facteur MFA.
       const {
         data: aal,
         error: aalError,
-      } =
-        await supabase.auth.mfa
-          .getAuthenticatorAssuranceLevel();
-
+      } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
       if (aalError) {
         throw aalError;
       }
-
 
       // Mot de passe validé, mais MFA encore nécessaire.
       if (
         aal.currentLevel === "aal1" &&
         aal.nextLevel === "aal2"
       ) {
-
         router.replace("/auth/mfa");
         return;
-
       }
-
 
       // Aucun MFA nécessaire, ou MFA déjà validé.
       router.replace("/sorties");
 
-
     } catch (error: unknown) {
-
       setError(
         error instanceof Error
           ? error.message
           : "An error occurred"
       );
 
+      captchaRef.current?.resetCaptcha();
+      setCaptchaToken(null);
+
     } finally {
-
       setIsLoading(false);
-
     }
   };
 
@@ -110,9 +113,11 @@ if (error) {
             Enter your email below to login to your account
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
+
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -124,9 +129,11 @@ if (error) {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
+
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
+
                   <Link
                     href="/auth/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
@@ -134,6 +141,7 @@ if (error) {
                     Forgot your password?
                   </Link>
                 </div>
+
                 <Input
                   id="password"
                   type="password"
@@ -142,13 +150,40 @@ if (error) {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+
+              <HCaptcha
+                ref={captchaRef}
+                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                onVerify={(token) => {
+                  setCaptchaToken(token);
+                }}
+                onExpire={() => {
+                  setCaptchaToken(null);
+                }}
+                onError={() => {
+                  setCaptchaToken(null);
+                }}
+              />
+
+              {error && (
+                <p className="text-sm text-red-500">
+                  {error}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
+
             </div>
+
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
+
               <Link
                 href="/auth/sign-up"
                 className="underline underline-offset-4"
