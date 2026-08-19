@@ -10,13 +10,7 @@ import {
     validerDonneesSportives,
 } from "@/lib/sortie-utils";
 
-type SortieFormProps = {
-    userId: string;
-};
-
-export default function SortieForm({
-    userId,
-}: SortieFormProps) {
+export default function SortieForm() {
     const router = useRouter();
     const [titre, setTitre] = useState("");
     const [nombreMax, setNombreMax] = useState("2");
@@ -136,93 +130,164 @@ export default function SortieForm({
             return;
         }
 
-        const localisation =
-            await geocodeResponse.json();
-
-        const supabase = createClient();
-
-        const {
-            data: sortieCreee,
-            error,
-        } = await supabase
-            .from("sorties")
-            .insert({
-                titre: titre.trim(),
-                organisateur_id: userId,
-                nombre_max_participants: nombre,
-                date_heure_depart:
-                    new Date(dateHeure).toISOString(),
-                lieu_depart: lieuDepart.trim(),
-                type_sortie: typeSortie,
-                position_depart:
-                    `POINT(${localisation.longitude} ${localisation.latitude})`,
-                type_entrainement:
-                    typeEntrainement,
-
-                distance_km:
-                    distance,
-
-                denivele_positif_m:
-                    denivele,
-
-                duree_estimee_minutes:
-                    dureeEstimeeMinutes,
-
-                intensite:
-                    intensite,
-
-                allure_secondes_km:
-                    typeSortie === "route"
-                        ? allureSecondesKm
-                        : null,
-
-                description:
-                    description.trim() || null,
-
-                mode_inscription:
-                    modeInscription,
-            })
-            .select("id")
-            .single();
-
-        if (error) {
-
-            console.error(
-                "Erreur création sortie :",
-                error
-            );
-
-            setMessage(
-                "Erreur : " + error.message
-            );
-
-            setLoading(false);
-
-            return;
-        }
+       const localisation =
+    await geocodeResponse.json();
 
 
-        if (!sortieCreee) {
-
-            setMessage(
-                "La sortie a été créée mais son identifiant n'a pas pu être récupéré."
-            );
-
-            setLoading(false);
-
-            return;
-        }
+const supabase = createClient();
 
 
-        // La sortie est créée :
-        // on ouvre directement sa fiche.
+const {
+    data,
+    error,
+} = await supabase.rpc(
+    "creer_sortie_securisee",
+    {
+        p_titre:
+            titre.trim(),
 
-        router.replace(
-            `/sorties/${sortieCreee.id}`
+        p_nombre_max_participants:
+            nombre,
+
+        p_date_heure_depart:
+            new Date(
+                dateHeure
+            ).toISOString(),
+
+        p_lieu_depart:
+            lieuDepart.trim(),
+
+        p_type_sortie:
+            typeSortie,
+
+        p_longitude:
+            localisation.longitude,
+
+        p_latitude:
+            localisation.latitude,
+
+        p_mode_inscription:
+            modeInscription,
+
+        p_type_entrainement:
+            typeEntrainement,
+
+        p_distance_km:
+            distance,
+
+        p_denivele_positif_m:
+            denivele,
+
+        p_duree_estimee_minutes:
+            dureeEstimeeMinutes,
+
+        p_intensite:
+            intensite,
+
+        p_allure_secondes_km:
+            typeSortie === "route"
+                ? allureSecondesKm
+                : null,
+
+        p_description:
+            description.trim() || null,
+    }
+);
+
+
+if (error) {
+
+    console.error(
+        "Erreur création sortie :",
+        error
+    );
+
+    setMessage(
+        "Impossible de créer la sortie."
+    );
+
+    setLoading(false);
+
+    return;
+}
+
+
+const resultat =
+    data as {
+        statut?: string;
+        sortie_id?: string;
+        secondes_restantes?: number;
+    } | null;
+
+
+// ------------------------------------------------
+// ANTI-SPAM
+// ------------------------------------------------
+
+if (
+    resultat?.statut ===
+    "BLOQUEE"
+) {
+
+    const secondes =
+        resultat.secondes_restantes ??
+        3600;
+
+    const minutes =
+        Math.max(
+            1,
+            Math.ceil(
+                secondes / 60
+            )
         );
+
+
+    if (minutes >= 60) {
+
+        setMessage(
+            "Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans environ 1 heure."
+        );
+
+    } else {
+
+        setMessage(
+            `Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans ${minutes} min.`
+        );
+
     }
 
 
+    setLoading(false);
+
+    return;
+}
+
+
+// ------------------------------------------------
+// SORTIE CRÉÉE
+// ------------------------------------------------
+
+if (
+    resultat?.statut !==
+        "CREEE" ||
+    !resultat.sortie_id
+) {
+
+    setMessage(
+        "La sortie n'a pas pu être créée."
+    );
+
+    setLoading(false);
+
+    return;
+}
+
+
+router.replace(
+    `/sorties/${resultat.sortie_id}`
+);
+
+}
 
 
         return (

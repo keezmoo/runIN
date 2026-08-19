@@ -33,7 +33,7 @@ export default async function NouvelleSortiePage() {
       </h1>
 
       {/* Formulaire */}
-      <SortieForm userId={user.id} />
+      <SortieForm  />
 
     </main>
   );

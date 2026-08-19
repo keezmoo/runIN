@@ -10,7 +10,7 @@ import ScrollVersDernierMessage
     from "./scroll-vers-dernier-message";
 import StatutConversation
     from "./statut-conversation";
-    import ContacterParticipantButton
+import ContacterParticipantButton
     from "../../sorties/[id]/contacter-participant-button";
 
 type PageProps = {
@@ -213,7 +213,19 @@ export default async function ConversationPage({
     // ------------------------------------------------
 
     return (
-        <main className="mx-auto max-w-2xl p-6">
+        <main
+            className="
+            mx-auto
+            flex
+            h-[calc(100dvh-8rem)]
+            max-w-2xl
+            flex-col
+            overflow-hidden
+            p-4
+            md:h-[calc(100dvh-5rem)]
+            md:p-6
+        "
+        >
 
             <MarquerMessagesLus
                 conversationId={
@@ -230,9 +242,12 @@ export default async function ConversationPage({
                 }
             />
 
-            {/* EN-TÊTE */}
 
-            <header className="mb-6 border-b pb-4">
+            {/* ------------------------------------------------ */}
+            {/* EN-TÊTE */}
+            {/* ------------------------------------------------ */}
+
+            <header className="shrink-0 border-b pb-4">
 
                 <Link
                     href={`/sorties/${sortie.id}`}
@@ -255,103 +270,165 @@ export default async function ConversationPage({
 
             </header>
 
-            <StatutConversation
-                statutSortie={sortie.statut}
-                dateFinEstimee={
-                    dateFinEstimee.toISOString()
-                }
-                dateCloture={
-                    dateClotureConversation.toISOString()
-                }
-            />
 
-            {/* MESSAGES */}
+            {/* ------------------------------------------------ */}
+            {/* STATUT */}
+            {/* ------------------------------------------------ */}
 
-            <section className="space-y-3">
+            <div className="shrink-0 py-3">
 
-                {(messages ?? []).length === 0 ? (
-
-                    <p className="text-gray-500">
-                        Aucun message pour le moment.
-                    </p>
-
-                ) : (
-
-                    (messages ?? []).map(
-                        (message) => {
-
-                            const estMoi =
-                                message.expediteur_id ===
-                                user.id;
-
-                            return (
-                                <div
-                                    key={message.id}
-                                    className={
-                                        estMoi
-                                            ? "flex justify-end"
-                                            : "flex justify-start"
-                                    }
-                                >
-                                    <div className="max-w-[80%] rounded border px-4 py-3">
-
-                                        <p className="text-sm font-semibold">
-                                            {estMoi
-                                                ? "Vous"
-                                                : interlocuteur?.nom ??
-                                                "Utilisateur"}
-                                        </p>
-
-                                        <p className="mt-1 whitespace-pre-wrap">
-                                            {message.contenu}
-                                        </p>
-
-                                        <p className="mt-2 text-xs text-gray-500">
-                                            {new Date(
-                                                message.created_at
-                                            ).toLocaleString(
-                                                "fr-FR",
-                                                {
-                                                    dateStyle:
-                                                        "short",
-                                                    timeStyle:
-                                                        "short",
-                                                }
-                                            )}
-                                        </p>
-
-                                    </div>
-                                </div>
-                            );
-                        }
-                    )
-
-                )}
-
-                <ScrollVersDernierMessage
-                    dernierMessageId={
-                        messages && messages.length > 0
-                            ? messages[messages.length - 1].id
-                            : undefined
+                <StatutConversation
+                    statutSortie={
+                        sortie.statut
+                    }
+                    dateFinEstimee={
+                        dateFinEstimee.toISOString()
+                    }
+                    dateCloture={
+                        dateClotureConversation.toISOString()
                     }
                 />
+
+            </div>
+
+
+            {/* ------------------------------------------------ */}
+            {/* ZONE SCROLLABLE DES MESSAGES */}
+            {/* ------------------------------------------------ */}
+
+            <section
+                data-messages-scroll
+                className="
+                min-h-0
+                flex-1
+                overflow-y-auto
+                pr-1
+            "
+            >
+
+                <div className="space-y-3 pb-3">
+
+                    {(messages ?? []).length === 0 ? (
+
+                        <p className="text-gray-500">
+                            Aucun message pour le moment.
+                        </p>
+
+                    ) : (
+
+                        (messages ?? []).map(
+                            (message) => {
+
+                                const estMoi =
+                                    message.expediteur_id ===
+                                    user.id;
+
+                                return (
+                                    <div
+                                        key={message.id}
+                                        className={
+                                            estMoi
+                                                ? "flex justify-end"
+                                                : "flex justify-start"
+                                        }
+                                    >
+
+                                        <div
+                                            className="
+                                            max-w-[80%]
+                                            rounded
+                                            border
+                                            px-4
+                                            py-3
+                                        "
+                                        >
+
+                                            <p className="text-sm font-semibold">
+                                                {estMoi
+                                                    ? "Vous"
+                                                    : interlocuteur?.nom ??
+                                                    "Utilisateur"}
+                                            </p>
+
+                                            <p className="mt-1 whitespace-pre-wrap">
+                                                {message.contenu}
+                                            </p>
+
+                                            <p className="mt-2 text-xs text-gray-500">
+
+                                                {new Date(
+                                                    message.created_at
+                                                ).toLocaleString(
+                                                    "fr-FR",
+                                                    {
+                                                        dateStyle:
+                                                            "short",
+
+                                                        timeStyle:
+                                                            "short",
+                                                    }
+                                                )}
+
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+                                );
+                            }
+                        )
+
+                    )}
+
+
+                    <ScrollVersDernierMessage
+                        dernierMessageId={
+                            messages &&
+                                messages.length > 0
+                                ? messages[
+                                    messages.length - 1
+                                ].id
+                                : undefined
+                        }
+
+                        dernierMessageEstMoi={
+                            messages &&
+                                messages.length > 0
+                                ? messages[
+                                    messages.length - 1
+                                ].expediteur_id ===
+                                user.id
+                                : false
+                        }
+                    />
+
+                </div>
 
             </section>
 
 
-            {/* ENVOI D'UN MESSAGE */}
+            {/* ------------------------------------------------ */}
+            {/* ZONE D'ÉCRITURE */}
+            {/* ------------------------------------------------ */}
 
             {conversationOuverte && (
-                <section className="mt-6 border-t pt-4">
+
+                <section
+                    className="
+                    shrink-0
+                    border-t
+                    pt-4
+                "
+                >
 
                     <MessageForm
                         conversationId={
                             conversation.id
                         }
-                        userId={user.id}
                     />
 
                 </section>
+
             )}
 
         </main>

@@ -50,6 +50,34 @@ export default function ParticiperButton({
     setSecondesCooldown,
   ] = useState(0);
 
+  // ------------------------------------------------
+  // Format du cooldown
+  // ------------------------------------------------
+
+  function formaterDureeCooldown(
+    secondes: number
+  ) {
+    if (secondes >= 3600) {
+      const heures =
+        Math.ceil(secondes / 3600);
+
+      return heures === 1
+        ? "environ 1 heure"
+        : `environ ${heures} heures`;
+    }
+
+    if (secondes >= 60) {
+      const minutes =
+        Math.ceil(secondes / 60);
+
+      return `${minutes} min`;
+    }
+
+    return `${secondes} s`;
+  }
+
+  const blocageAntiSpam =
+    secondesCooldown > 30;
 
   // ------------------------------------------------
   // CHARGER LE COOLDOWN
@@ -311,134 +339,134 @@ export default function ParticiperButton({
 
   async function demanderParticipation() {
 
-  if (secondesCooldown > 0) {
-    setMessage(
-      `Nouvelle demande possible dans ${secondesCooldown} s.`
-    );
-
-    return false;
-  }
-
-
-  if (complet) {
-    setMessage(
-      "Cette sortie est complète."
-    );
-
-    return false;
-  }
-
-
-  const { error } = await supabase.rpc(
-    "demander_participation_sortie",
-    {
-      p_sortie_id: sortieId,
-    }
-  );
-
-
-  if (error) {
-
-    const erreur =
-      error.message ?? "";
-
-
-    // La page affiche encore le mode validation,
-    // mais l'organisateur vient de passer
-    // la sortie en inscription automatique.
-    if (
-      erreur.includes(
-        "SORTIE_MODE_AUTOMATIQUE"
-      )
-    ) {
+    if (secondesCooldown > 0) {
       setMessage(
-        "Le mode d'inscription de cette sortie vient d'être modifié."
+        `Nouvelle demande possible dans ${secondesCooldown} s.`
       );
-
-      router.refresh();
 
       return false;
     }
 
 
-    if (
-      erreur.includes(
-        "SORTIE_COMPLETE"
-      )
-    ) {
+    if (complet) {
       setMessage(
         "Cette sortie est complète."
       );
 
-      router.refresh();
-
       return false;
     }
 
 
-    if (
-      erreur.includes(
-        "COOLDOWN_REINSCRIPTION"
-      )
-    ) {
-      const secondes =
-        await chargerCooldown();
-
-      setMessage(
-        `Nouvelle demande possible dans ${secondes} s.`
-      );
-
-      return false;
-    }
-
-
-    if (
-      erreur.includes(
-        "UTILISATEUR_EXCLU"
-      )
-    ) {
-      setMessage(
-        "L'organisateur vous a retiré de cette sortie."
-      );
-
-      router.refresh();
-
-      return false;
-    }
-
-
-    if (
-      erreur.includes(
-        "SORTIE_INDISPONIBLE"
-      )
-    ) {
-      setMessage(
-        "Cette sortie n'est plus disponible."
-      );
-
-      router.refresh();
-
-      return false;
-    }
-
-
-    console.error(
-      "Erreur demande de participation :",
-      error
+    const { error } = await supabase.rpc(
+      "demander_participation_sortie",
+      {
+        p_sortie_id: sortieId,
+      }
     );
 
-    setMessage(
-      "Impossible d'envoyer la demande."
-    );
 
-    return false;
+    if (error) {
+
+      const erreur =
+        error.message ?? "";
+
+
+      // La page affiche encore le mode validation,
+      // mais l'organisateur vient de passer
+      // la sortie en inscription automatique.
+      if (
+        erreur.includes(
+          "SORTIE_MODE_AUTOMATIQUE"
+        )
+      ) {
+        setMessage(
+          "Le mode d'inscription de cette sortie vient d'être modifié."
+        );
+
+        router.refresh();
+
+        return false;
+      }
+
+
+      if (
+        erreur.includes(
+          "SORTIE_COMPLETE"
+        )
+      ) {
+        setMessage(
+          "Cette sortie est complète."
+        );
+
+        router.refresh();
+
+        return false;
+      }
+
+
+      if (
+        erreur.includes(
+          "COOLDOWN_REINSCRIPTION"
+        )
+      ) {
+        const secondes =
+          await chargerCooldown();
+
+        setMessage(
+          `Nouvelle demande possible dans ${secondes} s.`
+        );
+
+        return false;
+      }
+
+
+      if (
+        erreur.includes(
+          "UTILISATEUR_EXCLU"
+        )
+      ) {
+        setMessage(
+          "L'organisateur vous a retiré de cette sortie."
+        );
+
+        router.refresh();
+
+        return false;
+      }
+
+
+      if (
+        erreur.includes(
+          "SORTIE_INDISPONIBLE"
+        )
+      ) {
+        setMessage(
+          "Cette sortie n'est plus disponible."
+        );
+
+        router.refresh();
+
+        return false;
+      }
+
+
+      console.error(
+        "Erreur demande de participation :",
+        error
+      );
+
+      setMessage(
+        "Impossible d'envoyer la demande."
+      );
+
+      return false;
+    }
+
+
+    setDemandeActive(true);
+
+    return true;
   }
-
-
-  setDemandeActive(true);
-
-  return true;
-}
 
 
   // ------------------------------------------------
@@ -579,6 +607,14 @@ export default function ParticiperButton({
       "Annuler ma demande";
 
   } else if (
+    blocageAntiSpam &&
+    tenteNouvelleInscription
+  ) {
+
+    texteBouton =
+      "Participation temporairement bloquée";
+
+  } else if (
     secondesCooldown > 0 &&
     modeInscription === "validation"
   ) {
@@ -658,17 +694,36 @@ export default function ParticiperButton({
       {secondesCooldown > 0 &&
         tenteNouvelleInscription && (
 
-          <p className="mt-2 text-sm text-gray-500">
+          <div className="mt-2 text-sm">
 
-            {modeInscription === "validation"
-              ? "Vous venez d'annuler votre participation ou votre demande. "
-              : "Vous venez de quitter cette sortie. "}
+            {blocageAntiSpam ? (
 
-            {modeInscription === "validation"
-              ? `Nouvelle demande possible dans ${secondesCooldown} s.`
-              : `Réinscription possible dans ${secondesCooldown} s.`}
+              <p className="text-red-500">
+                Trop d&apos;actions rapprochées.
+                Vous pourrez de nouveau participer à
+                cette sortie dans{" "}
+                {formaterDureeCooldown(
+                  secondesCooldown
+                )}.
+              </p>
 
-          </p>
+            ) : (
+
+              <p className="text-gray-500">
+
+                {modeInscription === "validation"
+                  ? "Vous venez d'annuler votre demande. "
+                  : "Vous venez de quitter cette sortie. "}
+
+                {modeInscription === "validation"
+                  ? `Nouvelle demande possible dans ${secondesCooldown} s.`
+                  : `Réinscription possible dans ${secondesCooldown} s.`}
+
+              </p>
+
+            )}
+
+          </div>
 
         )}
 

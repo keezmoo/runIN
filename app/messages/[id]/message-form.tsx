@@ -12,13 +12,11 @@ import { createClient } from "@/lib/supabase/client";
 
 type MessageFormProps = {
     conversationId: string;
-    userId: string;
 };
 
 
 export default function MessageForm({
     conversationId,
-    userId,
 }: MessageFormProps) {
 
     const supabase = createClient();
@@ -61,19 +59,30 @@ export default function MessageForm({
         setMessageErreur("");
 
 
-        const { error } = await supabase
-            .from("messages")
-            .insert({
-                conversation_id:
+        const {
+            data,
+            error,
+        } = await supabase.rpc(
+            "envoyer_message_sortie",
+            {
+                p_conversation_id:
                     conversationId,
 
-                expediteur_id:
-                    userId,
-
-                contenu:
+                p_contenu:
                     contenuNettoye,
-            });
+            }
+        );
 
+        if (data === "SPAM_MESSAGES") {
+
+            setMessageErreur(
+                "Vous envoyez des messages trop rapidement. Réessayez dans une minute."
+            );
+
+            setLoading(false);
+
+            return;
+        }
 
         if (error) {
 
