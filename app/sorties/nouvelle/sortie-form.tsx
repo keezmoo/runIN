@@ -130,312 +130,396 @@ export default function SortieForm() {
             return;
         }
 
-       const localisation =
-    await geocodeResponse.json();
+        const localisation =
+            await geocodeResponse.json();
 
 
-const supabase = createClient();
+        const supabase = createClient();
 
 
-const {
-    data,
-    error,
-} = await supabase.rpc(
-    "creer_sortie_securisee",
-    {
-        p_titre:
-            titre.trim(),
+        const {
+            data,
+            error,
+        } = await supabase.rpc(
+            "creer_sortie_securisee",
+            {
+                p_titre:
+                    titre.trim(),
 
-        p_nombre_max_participants:
-            nombre,
+                p_nombre_max_participants:
+                    nombre,
 
-        p_date_heure_depart:
-            new Date(
-                dateHeure
-            ).toISOString(),
+                p_date_heure_depart:
+                    new Date(
+                        dateHeure
+                    ).toISOString(),
 
-        p_lieu_depart:
-            lieuDepart.trim(),
+                p_lieu_depart:
+                    lieuDepart.trim(),
 
-        p_type_sortie:
-            typeSortie,
+                p_type_sortie:
+                    typeSortie,
 
-        p_longitude:
-            localisation.longitude,
+                p_longitude:
+                    localisation.longitude,
 
-        p_latitude:
-            localisation.latitude,
+                p_latitude:
+                    localisation.latitude,
 
-        p_mode_inscription:
-            modeInscription,
+                p_mode_inscription:
+                    modeInscription,
 
-        p_type_entrainement:
-            typeEntrainement,
+                p_type_entrainement:
+                    typeEntrainement,
 
-        p_distance_km:
-            distance,
+                p_distance_km:
+                    distance,
 
-        p_denivele_positif_m:
-            denivele,
+                p_denivele_positif_m:
+                    denivele,
 
-        p_duree_estimee_minutes:
-            dureeEstimeeMinutes,
+                p_duree_estimee_minutes:
+                    dureeEstimeeMinutes,
 
-        p_intensite:
-            intensite,
+                p_intensite:
+                    intensite,
 
-        p_allure_secondes_km:
-            typeSortie === "route"
-                ? allureSecondesKm
-                : null,
+                p_allure_secondes_km:
+                    typeSortie === "route"
+                        ? allureSecondesKm
+                        : null,
 
-        p_description:
-            description.trim() || null,
+                p_description:
+                    description.trim() || null,
+            }
+        );
+
+
+        if (error) {
+
+            console.error(
+                "Erreur création sortie :",
+                error
+            );
+
+            setMessage(
+                "Impossible de créer la sortie."
+            );
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        const resultat =
+            data as {
+                statut?: string;
+                sortie_id?: string;
+                secondes_restantes?: number;
+            } | null;
+
+
+        // ------------------------------------------------
+        // ANTI-SPAM
+        // ------------------------------------------------
+
+        if (
+            resultat?.statut ===
+            "BLOQUEE"
+        ) {
+
+            const secondes =
+                resultat.secondes_restantes ??
+                3600;
+
+            const minutes =
+                Math.max(
+                    1,
+                    Math.ceil(
+                        secondes / 60
+                    )
+                );
+
+
+            if (minutes >= 60) {
+
+                setMessage(
+                    "Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans environ 1 heure."
+                );
+
+            } else {
+
+                setMessage(
+                    `Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans ${minutes} min.`
+                );
+
+            }
+
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        // ------------------------------------------------
+        // SORTIE CRÉÉE
+        // ------------------------------------------------
+
+        if (
+            resultat?.statut !==
+            "CREEE" ||
+            !resultat.sortie_id
+        ) {
+
+            setMessage(
+                "La sortie n'a pas pu être créée."
+            );
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        router.replace(
+            `/sorties/${resultat.sortie_id}`
+        );
+
     }
-);
 
 
-if (error) {
+    return (
+        <div className="space-y-5">
 
-    console.error(
-        "Erreur création sortie :",
-        error
-    );
+            <div>
+                <label className="mb-1 block font-medium">
+                    Titre de la sortie
+                </label>
 
-    setMessage(
-        "Impossible de créer la sortie."
-    );
+                <input
+                    type="text"
+                    value={titre}
+                    onChange={(e) => setTitre(e.target.value)}
+                    className="w-full rounded border p-2"
+                    placeholder="Trail tranquille au Nivolet"
+                />
+            </div>
+            <div>
+                <label className="mb-1 block font-medium">
+                    Lieu de départ
+                </label>
 
-    setLoading(false);
+                <input
+                    type="text"
+                    value={lieuDepart}
+                    onChange={(e) => setLieuDepart(e.target.value)}
+                    className="w-full rounded border p-2"
+                    placeholder="Chambéry"
+                />
+                <p className="mt-1 text-sm font-normal text-gray-500">
+                    Données de localisation © contributeurs OpenStreetMap
+                </p>
+            </div>
 
-    return;
-}
+            <div>
+                <label className="mb-1 block font-medium">
+                    Type de sortie
+                </label>
 
+                <select
+                    value={typeSortie}
+                    onChange={(e) => setTypeSortie(e.target.value)}
+                    className="w-full rounded border p-2"
+                >
+                    <option value="route">Route</option>
+                    <option value="trail">Trail</option>
+                </select>
+            </div>
 
-const resultat =
-    data as {
-        statut?: string;
-        sortie_id?: string;
-        secondes_restantes?: number;
-    } | null;
+            <div>
+                <label className="mb-1 block font-medium">
+                    Date et heure de départ
+                </label>
 
+                <input
+                    type="datetime-local"
+                    value={dateHeure}
+                    onChange={(e) =>
+                        setDateHeure(e.target.value)
+                    }
+                    min={maintenantDatetimeLocal()}
+                    className="w-full rounded border p-2"
+                />
+            </div>
 
-// ------------------------------------------------
-// ANTI-SPAM
-// ------------------------------------------------
+            <div>
+                <label className="mb-1 block font-medium">
+                    Type d&apos;entraînement
+                </label>
 
-if (
-    resultat?.statut ===
-    "BLOQUEE"
-) {
+                <select
+                    value={typeEntrainement}
+                    onChange={(e) =>
+                        setTypeEntrainement(
+                            e.target.value
+                        )
+                    }
+                    className="w-full rounded border p-2"
+                    required
+                >
+                    {TYPES_ENTRAINEMENT.map(
+                        (type) => (
+                            <option
+                                key={type.value}
+                                value={type.value}
+                            >
+                                {type.label}
+                            </option>
+                        )
+                    )}
+                </select>
+            </div>
 
-    const secondes =
-        resultat.secondes_restantes ??
-        3600;
-
-    const minutes =
-        Math.max(
-            1,
-            Math.ceil(
-                secondes / 60
-            )
-        );
-
-
-    if (minutes >= 60) {
-
-        setMessage(
-            "Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans environ 1 heure."
-        );
-
-    } else {
-
-        setMessage(
-            `Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans ${minutes} min.`
-        );
-
-    }
-
-
-    setLoading(false);
-
-    return;
-}
-
-
-// ------------------------------------------------
-// SORTIE CRÉÉE
-// ------------------------------------------------
-
-if (
-    resultat?.statut !==
-        "CREEE" ||
-    !resultat.sortie_id
-) {
-
-    setMessage(
-        "La sortie n'a pas pu être créée."
-    );
-
-    setLoading(false);
-
-    return;
-}
-
-
-router.replace(
-    `/sorties/${resultat.sortie_id}`
-);
-
-}
-
-
-        return (
-            <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
 
                 <div>
                     <label className="mb-1 block font-medium">
-                        Titre de la sortie
+                        Distance
                     </label>
 
-                    <input
-                        type="text"
-                        value={titre}
-                        onChange={(e) => setTitre(e.target.value)}
-                        className="w-full rounded border p-2"
-                        placeholder="Trail tranquille au Nivolet"
-                    />
-                </div>
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Lieu de départ
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            inputMode="decimal"
+                            value={distanceKm}
+                            onChange={(e) =>
+                                setDistanceKm(
+                                    e.target.value
+                                )
+                            }
+                            className="w-full rounded border p-2"
+                            required
+                        />
 
-                    <input
-                        type="text"
-                        value={lieuDepart}
-                        onChange={(e) => setLieuDepart(e.target.value)}
-                        className="w-full rounded border p-2"
-                        placeholder="Chambéry"
-                    />
+                        <span>km</span>
+                    </div>
                 </div>
 
+
                 <div>
                     <label className="mb-1 block font-medium">
-                        Type de sortie
+                        Dénivelé positif
                     </label>
 
-                    <select
-                        value={typeSortie}
-                        onChange={(e) => setTypeSortie(e.target.value)}
-                        className="w-full rounded border p-2"
-                    >
-                        <option value="route">Route</option>
-                        <option value="trail">Trail</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={denivelePositif}
+                            onChange={(e) =>
+                                setDenivelePositif(
+                                    e.target.value
+                                )
+                            }
+                            className="w-full rounded border p-2"
+                            required
+                        />
+
+                        <span>m D+</span>
+                    </div>
                 </div>
 
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Date et heure de départ
-                    </label>
+            </div>
+
+            <div>
+                <label className="mb-1 block font-medium">
+                    Durée estimée
+                </label>
+
+                <div className="flex items-center gap-2">
 
                     <input
-                        type="datetime-local"
-                        value={dateHeure}
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="1"
+                        value={dureeHeures}
                         onChange={(e) =>
-                            setDateHeure(e.target.value)
-                        }
-                        min={maintenantDatetimeLocal()}
-                        className="w-full rounded border p-2"
-                    />
-                </div>
-
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Type d&apos;entraînement
-                    </label>
-
-                    <select
-                        value={typeEntrainement}
-                        onChange={(e) =>
-                            setTypeEntrainement(
+                            setDureeHeures(
                                 e.target.value
                             )
                         }
-                        className="w-full rounded border p-2"
-                        required
-                    >
-                        {TYPES_ENTRAINEMENT.map(
-                            (type) => (
-                                <option
-                                    key={type.value}
-                                    value={type.value}
-                                >
-                                    {type.label}
-                                </option>
+                        className="w-20 rounded border p-2"
+                    />
+
+                    <span>h</span>
+
+                    <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        step="1"
+                        placeholder="30"
+                        value={dureeMinutes}
+                        onChange={(e) =>
+                            setDureeMinutes(
+                                e.target.value
                             )
-                        )}
-                    </select>
-                </div>
+                        }
+                        className="w-20 rounded border p-2"
+                    />
 
-                <div className="grid grid-cols-2 gap-4">
-
-                    <div>
-                        <label className="mb-1 block font-medium">
-                            Distance
-                        </label>
-
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                min="0.1"
-                                step="0.1"
-                                inputMode="decimal"
-                                value={distanceKm}
-                                onChange={(e) =>
-                                    setDistanceKm(
-                                        e.target.value
-                                    )
-                                }
-                                className="w-full rounded border p-2"
-                                required
-                            />
-
-                            <span>km</span>
-                        </div>
-                    </div>
-
-
-                    <div>
-                        <label className="mb-1 block font-medium">
-                            Dénivelé positif
-                        </label>
-
-                        <div className="flex items-center gap-2">
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={denivelePositif}
-                                onChange={(e) =>
-                                    setDenivelePositif(
-                                        e.target.value
-                                    )
-                                }
-                                className="w-full rounded border p-2"
-                                required
-                            />
-
-                            <span>m D+</span>
-                        </div>
-                    </div>
+                    <span>min</span>
 
                 </div>
+            </div>
 
+            <div>
+                <p className="mb-2 font-medium">
+                    Intensité
+                </p>
+
+                <div className="space-y-2">
+                    {INTENSITES.map(
+                        (item) => (
+                            <label
+                                key={item.value}
+                                className="flex items-center gap-2"
+                            >
+                                <input
+                                    type="radio"
+                                    name="intensite"
+                                    value={item.value}
+                                    checked={
+                                        intensite ===
+                                        item.value
+                                    }
+                                    onChange={(e) =>
+                                        setIntensite(
+                                            e.target.value
+                                        )
+                                    }
+                                />
+
+                                {item.label}
+                            </label>
+                        )
+                    )}
+                </div>
+            </div>
+
+            {typeSortie === "route" && (
                 <div>
                     <label className="mb-1 block font-medium">
-                        Durée estimée
+                        Allure prévue
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                            (facultatif)
+                        </span>
                     </label>
 
                     <div className="flex items-center gap-2">
@@ -444,17 +528,17 @@ router.replace(
                             type="number"
                             min="0"
                             step="1"
-                            placeholder="1"
-                            value={dureeHeures}
+                            placeholder="5"
+                            value={allureMinutes}
                             onChange={(e) =>
-                                setDureeHeures(
+                                setAllureMinutes(
                                     e.target.value
                                 )
                             }
                             className="w-20 rounded border p-2"
                         />
 
-                        <span>h</span>
+                        <span>:</span>
 
                         <input
                             type="number"
@@ -462,225 +546,144 @@ router.replace(
                             max="59"
                             step="1"
                             placeholder="30"
-                            value={dureeMinutes}
+                            value={allureSecondes}
                             onChange={(e) =>
-                                setDureeMinutes(
+                                setAllureSecondes(
                                     e.target.value
                                 )
                             }
                             className="w-20 rounded border p-2"
                         />
 
-                        <span>min</span>
+                        <span>/ km</span>
 
                     </div>
-                </div>
-
-                <div>
-                    <p className="mb-2 font-medium">
-                        Intensité
-                    </p>
-
-                    <div className="space-y-2">
-                        {INTENSITES.map(
-                            (item) => (
-                                <label
-                                    key={item.value}
-                                    className="flex items-center gap-2"
-                                >
-                                    <input
-                                        type="radio"
-                                        name="intensite"
-                                        value={item.value}
-                                        checked={
-                                            intensite ===
-                                            item.value
-                                        }
-                                        onChange={(e) =>
-                                            setIntensite(
-                                                e.target.value
-                                            )
-                                        }
-                                    />
-
-                                    {item.label}
-                                </label>
-                            )
-                        )}
-                    </div>
-                </div>
-
-                {typeSortie === "route" && (
-                    <div>
-                        <label className="mb-1 block font-medium">
-                            Allure prévue
-                            <span className="ml-1 text-sm font-normal text-gray-500">
-                                (facultatif)
-                            </span>
-                        </label>
-
-                        <div className="flex items-center gap-2">
-
-                            <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                placeholder="5"
-                                value={allureMinutes}
-                                onChange={(e) =>
-                                    setAllureMinutes(
-                                        e.target.value
-                                    )
-                                }
-                                className="w-20 rounded border p-2"
-                            />
-
-                            <span>:</span>
-
-                            <input
-                                type="number"
-                                min="0"
-                                max="59"
-                                step="1"
-                                placeholder="30"
-                                value={allureSecondes}
-                                onChange={(e) =>
-                                    setAllureSecondes(
-                                        e.target.value
-                                    )
-                                }
-                                className="w-20 rounded border p-2"
-                            />
-
-                            <span>/ km</span>
-
-                        </div>
-
-                        <p className="mt-1 text-sm text-gray-500">
-                            Exemple : 5:30 / km
-                        </p>
-                    </div>
-                )}
-
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Description
-                        <span className="ml-1 text-sm font-normal text-gray-500">
-                            (facultatif)
-                        </span>
-                    </label>
-
-                    <textarea
-                        value={description}
-                        onChange={(e) =>
-                            setDescription(
-                                e.target.value
-                            )
-                        }
-                        maxLength={1000}
-                        rows={5}
-                        placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
-                        className="w-full rounded border p-2"
-                    />
 
                     <p className="mt-1 text-sm text-gray-500">
-                        {description.length} / 1000
+                        Exemple : 5:30 / km
                     </p>
                 </div>
+            )}
 
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Nombre maximum de participants
-                    </label>
-                    <input
-                        type="number"
-                        value={nombreMax}
-                        onChange={(e) => setNombreMax(e.target.value)}
-                        className="w-full rounded border p-2"
-                        min="2"
-                        max="100"
-                    />
+            <div>
+                <label className="mb-1 block font-medium">
+                    Description
+                    <span className="ml-1 text-sm font-normal text-gray-500">
+                        (facultatif)
+                    </span>
+                </label>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                        L'organisateur est compris dans ce nombre.
-                    </p>
-                </div>
-                <div>
-                    <label className="mb-2 block font-medium">
-                        Inscription des participants
-                    </label>
+                <textarea
+                    value={description}
+                    onChange={(e) =>
+                        setDescription(
+                            e.target.value
+                        )
+                    }
+                    maxLength={1000}
+                    rows={5}
+                    placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
+                    className="w-full rounded border p-2"
+                />
 
-                    <div className="space-y-3">
-
-                        <label className="flex cursor-pointer gap-3 rounded border p-3">
-                            <input
-                                type="radio"
-                                name="modeInscription"
-                                value="automatique"
-                                checked={modeInscription === "automatique"}
-                                onChange={(e) =>
-                                    setModeInscription(e.target.value)
-                                }
-                            />
-
-                            <div>
-                                <p className="font-medium">
-                                    Inscription automatique
-                                </p>
-
-                                <p className="text-sm text-gray-500">
-                                    Toute personne qui clique sur Participer
-                                    rejoint immédiatement la sortie.
-                                </p>
-                            </div>
-                        </label>
-
-
-                        <label className="flex cursor-pointer gap-3 rounded border p-3">
-                            <input
-                                type="radio"
-                                name="modeInscription"
-                                value="validation"
-                                checked={modeInscription === "validation"}
-                                onChange={(e) =>
-                                    setModeInscription(e.target.value)
-                                }
-                            />
-
-                            <div>
-                                <p className="font-medium">
-                                    Validation par l&apos;organisateur
-                                </p>
-
-                                <p className="text-sm text-gray-500">
-                                    Vous acceptez ou refusez chaque demande
-                                    avant que la personne rejoigne la sortie.
-                                </p>
-                            </div>
-                        </label>
-
-                    </div>
-                </div>
-
-
-
-
-                <button
-                    type="button"
-                    onClick={creerSortie}
-                    disabled={loading}
-                    className="rounded bg-black px-4 py-2 text-white"
-                >
-                    {loading
-                        ? "Création..."
-                        : "Créer la sortie"}
-                </button>
-
-
-                {message && (
-                    <p>{message}</p>
-                )}
-
+                <p className="mt-1 text-sm text-gray-500">
+                    {description.length} / 1000
+                </p>
             </div>
-        );
-    }
+
+            <div>
+                <label className="mb-1 block font-medium">
+                    Nombre maximum de participants
+                </label>
+                <input
+                    type="number"
+                    value={nombreMax}
+                    onChange={(e) => setNombreMax(e.target.value)}
+                    className="w-full rounded border p-2"
+                    min="2"
+                    max="100"
+                />
+
+                <p className="mt-1 text-sm text-gray-500">
+                    L'organisateur est compris dans ce nombre.
+                </p>
+            </div>
+            <div>
+                <label className="mb-2 block font-medium">
+                    Inscription des participants
+                </label>
+
+                <div className="space-y-3">
+
+                    <label className="flex cursor-pointer gap-3 rounded border p-3">
+                        <input
+                            type="radio"
+                            name="modeInscription"
+                            value="automatique"
+                            checked={modeInscription === "automatique"}
+                            onChange={(e) =>
+                                setModeInscription(e.target.value)
+                            }
+                        />
+
+                        <div>
+                            <p className="font-medium">
+                                Inscription automatique
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                                Toute personne qui clique sur Participer
+                                rejoint immédiatement la sortie.
+                            </p>
+                        </div>
+                    </label>
+
+
+                    <label className="flex cursor-pointer gap-3 rounded border p-3">
+                        <input
+                            type="radio"
+                            name="modeInscription"
+                            value="validation"
+                            checked={modeInscription === "validation"}
+                            onChange={(e) =>
+                                setModeInscription(e.target.value)
+                            }
+                        />
+
+                        <div>
+                            <p className="font-medium">
+                                Validation par l&apos;organisateur
+                            </p>
+
+                            <p className="text-sm text-gray-500">
+                                Vous acceptez ou refusez chaque demande
+                                avant que la personne rejoigne la sortie.
+                            </p>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+
+
+
+            <button
+                type="button"
+                onClick={creerSortie}
+                disabled={loading}
+                className="rounded bg-black px-4 py-2 text-white"
+            >
+                {loading
+                    ? "Création..."
+                    : "Créer la sortie"}
+            </button>
+
+
+            {message && (
+                <p>{message}</p>
+            )}
+
+        </div>
+    );
+}

@@ -5,26 +5,39 @@ import { type NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const token_hash = searchParams.get("token_hash");
+
+  const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/";
 
-  if (token_hash && type) {
-    const supabase = await createClient();
+  const requestedNext = searchParams.get("next");
 
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
-    if (!error) {
-      // redirect user to specified redirect URL or root of app
-      redirect(next);
-    } else {
-      // redirect the user to an error page with some instructions
-      redirect(`/auth/error?error=${error?.message}`);
-    }
+  // Autorise uniquement une redirection interne au site.
+  const next =
+    requestedNext &&
+      requestedNext.startsWith("/") &&
+      !requestedNext.startsWith("//") &&
+      !requestedNext.includes("\\")
+      ? requestedNext
+      : "/";
+
+  if (!tokenHash || !type) {
+    redirect(
+      "/auth/error?error=Lien de confirmation invalide ou incomplet"
+    );
   }
 
-  // redirect the user to an error page with some instructions
-  redirect(`/auth/error?error=No token hash or type`);
+  const supabase = await createClient();
+
+  const { error } = await supabase.auth.verifyOtp({
+    type,
+    token_hash: tokenHash,
+  });
+
+  if (error) {
+    redirect(
+      "/auth/error?error=Lien de confirmation invalide ou expiré"
+    );
+  }
+
+  redirect(next);
 }
