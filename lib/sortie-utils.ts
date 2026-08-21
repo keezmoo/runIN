@@ -144,8 +144,8 @@ type ValidationDonneesSportivesResultat =
     | {
         ok: true;
         distance: number;
-        denivele: number;
-        dureeEstimeeMinutes: number;
+        denivele: number | null;
+        dureeEstimeeMinutes: number | null;
         allureSecondesKm: number | null;
     }
     | {
@@ -167,6 +167,7 @@ export function validerDonneesSportives({
 
     // ------------------------------------------------
     // DISTANCE
+    // Obligatoire pour Route et Trail
     // ------------------------------------------------
 
     const distance =
@@ -189,81 +190,120 @@ export function validerDonneesSportives({
 
     // ------------------------------------------------
     // DÉNIVELÉ
+    //
+    // Trail : obligatoire
+    // Route : facultatif
     // ------------------------------------------------
 
-    if (denivelePositif.trim() === "") {
+    let denivele: number | null = null;
+
+    if (denivelePositif.trim() !== "") {
+
+        const valeurDenivele =
+            Number(denivelePositif);
+
+        if (
+            !Number.isInteger(valeurDenivele) ||
+            valeurDenivele < 0
+        ) {
+            return {
+                ok: false,
+                message:
+                    "Le dénivelé doit être égal ou supérieur à 0.",
+            };
+        }
+
+        denivele = valeurDenivele;
+
+    } else if (typeSortie === "trail") {
+
         return {
             ok: false,
             message:
-                "Veuillez indiquer le dénivelé positif, même s'il est de 0.",
-        };
-    }
-
-    const denivele =
-        Number(denivelePositif);
-
-    if (
-        !Number.isInteger(denivele) ||
-        denivele < 0
-    ) {
-        return {
-            ok: false,
-            message:
-                "Le dénivelé doit être égal ou supérieur à 0.",
-        };
-    }
-
-
-    // ------------------------------------------------
-    // DURÉE
-    // ------------------------------------------------
-
-    const heures =
-        Number(dureeHeures || 0);
-
-    const minutes =
-        Number(dureeMinutes || 0);
-
-    if (
-        !Number.isInteger(heures) ||
-        heures < 0 ||
-        !Number.isInteger(minutes) ||
-        minutes < 0 ||
-        minutes > 59
-    ) {
-        return {
-            ok: false,
-            message:
-                "La durée indiquée n'est pas valide.",
-        };
-    }
-
-    const dureeEstimeeMinutes =
-        heures * 60 + minutes;
-
-    if (dureeEstimeeMinutes <= 0) {
-        return {
-            ok: false,
-            message:
-                "La durée de la sortie doit être supérieure à 0.",
+                "Veuillez indiquer le dénivelé positif pour une sortie trail.",
         };
     }
 
 
     // ------------------------------------------------
-    // ALLURE - ROUTE UNIQUEMENT
+    // DURÉE TOTALE ESTIMÉE
+    // Facultative pour Route et Trail
+    // ------------------------------------------------
+
+    let dureeEstimeeMinutes:
+        number | null = null;
+
+    const dureeRenseignee =
+        dureeHeures.trim() !== "" ||
+        dureeMinutes.trim() !== "";
+
+    if (dureeRenseignee) {
+
+        const heures =
+            Number(dureeHeures || 0);
+
+        const minutes =
+            Number(dureeMinutes || 0);
+
+        if (
+            !Number.isInteger(heures) ||
+            heures < 0 ||
+            !Number.isInteger(minutes) ||
+            minutes < 0 ||
+            minutes > 59
+        ) {
+            return {
+                ok: false,
+                message:
+                    "La durée indiquée n'est pas valide.",
+            };
+        }
+
+        const totalMinutes =
+            heures * 60 + minutes;
+
+        if (totalMinutes <= 0) {
+            return {
+                ok: false,
+                message:
+                    "La durée indiquée n'est pas valide.",
+            };
+        }
+
+        dureeEstimeeMinutes =
+            totalMinutes;
+    }
+
+
+    // ------------------------------------------------
+    // ALLURE
+    //
+    // Route : obligatoire
+    // Trail : facultative
     // ------------------------------------------------
 
     let allureSecondesKm:
         number | null = null;
 
+    const allureRenseignee =
+        allureMinutes.trim() !== "" ||
+        allureSecondes.trim() !== "";
+
+
     if (
         typeSortie === "route" &&
-        (
-            allureMinutes !== "" ||
-            allureSecondes !== ""
-        )
+        !allureRenseignee
     ) {
+        return {
+            ok: false,
+            message:
+                "Veuillez indiquer l'allure moyenne prévue pour une sortie route.",
+        };
+    }
+
+
+    if (allureRenseignee) {
+
         const allureMin =
             Number(allureMinutes || 0);
 
@@ -284,24 +324,27 @@ export function validerDonneesSportives({
             };
         }
 
-        allureSecondesKm =
+        const totalSecondes =
             allureMin * 60 + allureSec;
 
-        if (allureSecondesKm <= 0) {
+        if (totalSecondes <= 0) {
             return {
                 ok: false,
                 message:
                     "L'allure indiquée n'est pas valide.",
             };
         }
+
+        allureSecondesKm =
+            totalSecondes;
     }
 
-
-    return {
-        ok: true,
-        distance,
-        denivele,
-        dureeEstimeeMinutes,
-        allureSecondesKm,
-    };
+    // IMPORTANT : retour final de la fonction
+return {
+    ok: true,
+    distance,
+    denivele,
+    dureeEstimeeMinutes,
+    allureSecondesKm,
+};
 }

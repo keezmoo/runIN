@@ -565,12 +565,86 @@ export default function ParticiperButton({
 
   if (estOrganisateur) {
     return (
-      <p className="text-sm font-medium">
-        Vous organisez cette sortie
-      </p>
+      <span className="font-medium">
+        J&apos;organise
+      </span>
     );
   }
 
+  // ------------------------------------------------
+  // DÉJÀ PARTICIPANT
+  // ------------------------------------------------
+
+  if (dejaParticipant) {
+    return (
+      <div className="flex items-center gap-2">
+
+        <span className="text-sm font-medium">
+          Je participe
+        </span>
+
+        <button
+          type="button"
+          onClick={actionParticipation}
+          disabled={loading}
+          className="
+          rounded
+          border
+          border-white/50
+          px-3
+          py-2
+          text-sm
+          text-white
+          disabled:opacity-40
+        "
+        >
+          {loading
+            ? "..."
+            : "Quitter"}
+        </button>
+
+      </div>
+    );
+  }
+
+  // ------------------------------------------------
+  // DEMANDE EN ATTENTE
+  // ------------------------------------------------
+
+  if (
+    modeInscription === "validation" &&
+    demandeActive
+  ) {
+    return (
+      <div className="flex items-center gap-2">
+
+        <span className="text-sm font-medium">
+          Demande envoyée
+        </span>
+
+        <button
+          type="button"
+          onClick={actionParticipation}
+          disabled={loading}
+          className="
+          rounded
+          border
+          border-white/50
+          px-3
+          py-2
+          text-sm
+          text-white
+          disabled:opacity-40
+        "
+        >
+          {loading
+            ? "..."
+            : "Annuler"}
+        </button>
+
+      </div>
+    );
+  }
 
   // ------------------------------------------------
   // EST-CE UNE NOUVELLE INSCRIPTION ?
@@ -592,19 +666,6 @@ export default function ParticiperButton({
 
     texteBouton =
       "Chargement...";
-
-  } else if (dejaParticipant) {
-
-    texteBouton =
-      "Quitter";
-
-  } else if (
-    modeInscription === "validation" &&
-    demandeActive
-  ) {
-
-    texteBouton =
-      "Annuler ma demande";
 
   } else if (
     blocageAntiSpam &&
@@ -629,17 +690,17 @@ export default function ParticiperButton({
     texteBouton =
       `Participer dans ${secondesCooldown} s`;
 
+  } else if (complet) {
+
+    texteBouton =
+      "Complet";
+
   } else if (
     modeInscription === "validation"
   ) {
 
     texteBouton =
       "Demander à participer";
-
-  } else if (complet) {
-
-    texteBouton =
-      "Complet";
 
   }
 
@@ -674,7 +735,17 @@ export default function ParticiperButton({
         type="button"
         onClick={actionParticipation}
         disabled={boutonDesactive}
-        className="rounded border px-4 py-2 disabled:opacity-40"
+        className="
+  rounded
+  border
+  border-white/50
+  bg-black
+  px-3
+  py-2
+  text-sm
+  text-white
+  disabled:opacity-40
+"
       >
         {texteBouton}
       </button>

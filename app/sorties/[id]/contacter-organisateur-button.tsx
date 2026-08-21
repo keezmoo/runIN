@@ -71,7 +71,17 @@ export default function ContacterOrganisateurButton({
                     contacterOrganisateur
                 }
                 disabled={loading}
-                className="rounded border px-4 py-2 disabled:opacity-50"
+                className="
+  rounded
+  border
+  border-white/50
+  bg-black
+  px-3
+  py-2
+  text-sm
+  text-white
+  disabled:opacity-40
+"
             >
                 {loading
                     ? "Ouverture..."

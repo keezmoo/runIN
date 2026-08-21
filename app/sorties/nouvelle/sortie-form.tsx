@@ -185,9 +185,7 @@ export default function SortieForm() {
                     intensite,
 
                 p_allure_secondes_km:
-                    typeSortie === "route"
-                        ? allureSecondesKm
-                        : null,
+                    allureSecondesKm,
 
                 p_description:
                     description.trim() || null,
@@ -413,6 +411,15 @@ export default function SortieForm() {
                 <div>
                     <label className="mb-1 block font-medium">
                         Dénivelé positif
+                        {typeSortie === "route" ? (
+                            <span className="ml-1 text-sm font-normal text-gray-500">
+                                (facultatif)
+                            </span>
+                        ) : (
+                            <span className="ml-1 text-sm font-normal text-gray-500">
+                                *
+                            </span>
+                        )}
                     </label>
 
                     <div className="flex items-center gap-2">
@@ -427,7 +434,7 @@ export default function SortieForm() {
                                 )
                             }
                             className="w-full rounded border p-2"
-                            required
+
                         />
 
                         <span>m D+</span>
@@ -438,8 +445,15 @@ export default function SortieForm() {
 
             <div>
                 <label className="mb-1 block font-medium">
-                    Durée estimée
+                    Durée totale estimée
+                    <span className="ml-1 text-sm font-normal text-gray-500">
+                        (facultatif)
+                    </span>
                 </label>
+
+                <p className="mb-2 text-sm text-gray-500">
+                    Temps global prévu pour la sortie, pauses et arrêts compris.
+                </p>
 
                 <div className="flex items-center gap-2">
 
@@ -513,57 +527,59 @@ export default function SortieForm() {
                 </div>
             </div>
 
-            {typeSortie === "route" && (
-                <div>
-                    <label className="mb-1 block font-medium">
-                        Allure prévue
+
+            <div>
+                <label className="mb-1 block font-medium">
+                    Allure moyenne prévue
+
+                    {typeSortie === "trail" ? (
                         <span className="ml-1 text-sm font-normal text-gray-500">
                             (facultatif)
                         </span>
-                    </label>
+                    ) : (
+                        <span className="ml-1 text-sm font-normal text-gray-500">
+                            *
+                        </span>
+                    )}
+                </label>
 
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                    <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="5"
+                        value={allureMinutes}
+                        onChange={(e) =>
+                            setAllureMinutes(e.target.value)
+                        }
+                        className="w-20 rounded border p-2"
+                    />
 
-                        <input
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="5"
-                            value={allureMinutes}
-                            onChange={(e) =>
-                                setAllureMinutes(
-                                    e.target.value
-                                )
-                            }
-                            className="w-20 rounded border p-2"
-                        />
+                    <span>:</span>
 
-                        <span>:</span>
+                    <input
+                        type="number"
+                        min="0"
+                        max="59"
+                        step="1"
+                        placeholder="30"
+                        value={allureSecondes}
+                        onChange={(e) =>
+                            setAllureSecondes(e.target.value)
+                        }
+                        className="w-20 rounded border p-2"
+                    />
 
-                        <input
-                            type="number"
-                            min="0"
-                            max="59"
-                            step="1"
-                            placeholder="30"
-                            value={allureSecondes}
-                            onChange={(e) =>
-                                setAllureSecondes(
-                                    e.target.value
-                                )
-                            }
-                            className="w-20 rounded border p-2"
-                        />
-
-                        <span>/ km</span>
-
-                    </div>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                        Exemple : 5:30 / km
-                    </p>
+                    <span>/ km</span>
                 </div>
-            )}
+
+                <p className="mt-1 text-sm text-gray-500">
+                    Allure moyenne envisagée sur l&apos;ensemble de la sortie.
+                    Exemple : 5:30 / km
+                </p>
+            </div>
+
 
             <div>
                 <label className="mb-1 block font-medium">
