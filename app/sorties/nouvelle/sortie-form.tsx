@@ -10,7 +10,20 @@ import {
     validerDonneesSportives,
 } from "@/lib/sortie-utils";
 
-export default function SortieForm() {
+type Genre =
+    | "homme"
+    | "femme"
+    | "autre";
+
+
+type SortieFormProps = {
+    sexeOrganisateur: Genre;
+};
+
+
+export default function SortieForm({
+    sexeOrganisateur,
+}: SortieFormProps) {
     const router = useRouter();
     const [titre, setTitre] = useState("");
     const [nombreMax, setNombreMax] = useState("2");
@@ -31,9 +44,42 @@ export default function SortieForm() {
     const [allureMinutes, setAllureMinutes] = useState("");
     const [allureSecondes, setAllureSecondes] = useState("");
     const [description, setDescription] = useState("");
+    const [
+        genresAutorises, setGenresAutorises] = useState<Genre[]>([
+            "homme",
+            "femme",
+            "autre",
+        ]);
+    function basculerGenre(
+        genre: Genre
+    ) {
+        if (
+            genre === sexeOrganisateur
+        ) {
+            return;
+        }
 
+        setGenresAutorises(
+            (genresActuels) => {
 
+                if (
+                    genresActuels.includes(
+                        genre
+                    )
+                ) {
+                    return genresActuels.filter(
+                        (item) =>
+                            item !== genre
+                    );
+                }
 
+                return [
+                    ...genresActuels,
+                    genre,
+                ];
+            }
+        );
+    }
     async function creerSortie() {
         setMessage("");
 
@@ -113,6 +159,17 @@ export default function SortieForm() {
             dureeEstimeeMinutes,
             allureSecondesKm,
         } = validationSportive;
+
+        if (
+            genresAutorises.length === 0
+        ) {
+            setMessage(
+                "Sélectionnez au moins un genre autorisé à participer."
+            );
+
+            return;
+        }
+
         setLoading(true);
 
         // Recherche les coordonnées du lieu de départ
@@ -145,6 +202,9 @@ export default function SortieForm() {
             {
                 p_titre:
                     titre.trim(),
+
+                p_genres_autorises:
+                    genresAutorises,
 
                 p_nombre_max_participants:
                     nombre,
@@ -185,15 +245,45 @@ export default function SortieForm() {
                     intensite,
 
                 p_allure_secondes_km:
-                    allureSecondesKm,
+                    typeSortie === "route"
+                        ? allureSecondesKm
+                        : null,
 
                 p_description:
                     description.trim() || null,
             }
         );
-
-
         if (error) {
+
+            if (
+                error.message.includes(
+                    "GENRE_ORGANISATEUR_REQUIS"
+                )
+            ) {
+                setMessage(
+                    "Vous devez autoriser votre propre genre à participer à la sortie."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
+
+            if (
+                error.message.includes(
+                    "GENRES_AUTORISES_INVALIDES"
+                )
+            ) {
+                setMessage(
+                    "La sélection des participants autorisés n'est pas valide."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
 
             console.error(
                 "Erreur création sortie :",
@@ -216,6 +306,8 @@ export default function SortieForm() {
                 sortie_id?: string;
                 secondes_restantes?: number;
             } | null;
+
+
 
 
         // ------------------------------------------------
@@ -623,6 +715,105 @@ export default function SortieForm() {
                 <p className="mt-1 text-sm text-gray-500">
                     L'organisateur est compris dans ce nombre.
                 </p>
+            </div>
+            <div>
+
+                <label className="mb-2 block font-medium">
+                    Participants autorisés
+                </label>
+
+                <p className="mb-3 text-sm text-gray-500">
+                    Choisissez qui peut rejoindre cette sortie.
+                </p>
+
+
+                <div className="flex flex-wrap gap-4">
+
+                    <label
+                        className={
+                            sexeOrganisateur === "femme"
+                                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                                : "flex items-center gap-2"
+                        }
+                    >
+                        <input
+                            type="checkbox"
+                            checked={
+                                genresAutorises.includes(
+                                    "femme"
+                                )
+                            }
+                            disabled={
+                                sexeOrganisateur === "femme"
+                            }
+                            onChange={() =>
+                                basculerGenre(
+                                    "femme"
+                                )
+                            }
+                        />
+
+                        Femmes
+                    </label>
+
+
+                    <label
+                        className={
+                            sexeOrganisateur === "homme"
+                                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                                : "flex items-center gap-2"
+                        }
+                    >
+                        <input
+                            type="checkbox"
+                            checked={
+                                genresAutorises.includes(
+                                    "homme"
+                                )
+                            }
+                            disabled={
+                                sexeOrganisateur === "homme"
+                            }
+                            onChange={() =>
+                                basculerGenre(
+                                    "homme"
+                                )
+                            }
+                        />
+
+                        Hommes
+                    </label>
+
+
+                    <label
+                        className={
+                            sexeOrganisateur === "autre"
+                                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                                : "flex items-center gap-2"
+                        }
+                    >
+                        <input
+                            type="checkbox"
+                            checked={
+                                genresAutorises.includes(
+                                    "autre"
+                                )
+                            }
+                            disabled={
+                                sexeOrganisateur === "autre"
+                            }
+                            onChange={() =>
+                                basculerGenre(
+                                    "autre"
+                                )
+                            }
+                        />
+
+                        Autre
+                    </label>
+
+                </div>
+
             </div>
             <div>
                 <label className="mb-2 block font-medium">

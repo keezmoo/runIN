@@ -10,6 +10,11 @@ import {
     validerDonneesSportives,
 } from "@/lib/sortie-utils";
 
+type Genre =
+    | "homme"
+    | "femme"
+    | "autre";
+
 type Sortie = {
     id: string;
     titre: string;
@@ -18,7 +23,7 @@ type Sortie = {
     lieu_depart: string;
     type_sortie: string;
     mode_inscription: string;
-
+    genres_autorises: Genre[];
     type_entrainement: string | null;
     distance_km: number | null;
     denivele_positif_m: number | null;
@@ -31,6 +36,7 @@ type Sortie = {
 type ModifierSortieFormProps = {
     sortie: Sortie;
     nombreParticipants: number;
+    sexeOrganisateur: Genre;
 };
 
 
@@ -53,6 +59,7 @@ function versDatetimeLocal(
 export default function ModifierSortieForm({
     sortie,
     nombreParticipants,
+    sexeOrganisateur,
 }: ModifierSortieFormProps) {
     const supabase = createClient();
     const router = useRouter();
@@ -99,6 +106,12 @@ export default function ModifierSortieForm({
     const [modeInscription, setModeInscription] =
         useState(sortie.mode_inscription);
 
+    const [
+        genresAutorises,
+        setGenresAutorises,
+    ] = useState<Genre[]>(
+        sortie.genres_autorises
+    );
 
     // ------------------------------------------------
     // DONNÉES SPORTIVES
@@ -186,6 +199,37 @@ export default function ModifierSortieForm({
     const [message, setMessage] =
         useState("");
 
+    function basculerGenre(
+        genre: Genre
+    ) {
+
+        if (
+            genre === sexeOrganisateur
+        ) {
+            return;
+        }
+
+        setGenresAutorises(
+            (genresActuels) => {
+
+                if (
+                    genresActuels.includes(
+                        genre
+                    )
+                ) {
+                    return genresActuels.filter(
+                        (item) =>
+                            item !== genre
+                    );
+                }
+
+                return [
+                    ...genresActuels,
+                    genre,
+                ];
+            }
+        );
+    }
 
     async function modifierSortie() {
         setMessage("");
@@ -325,15 +369,56 @@ export default function ModifierSortieForm({
                 nombre_max_participants:
                     nombreMax,
 
+                genres_autorises:
+                    genresAutorises,
+
                 mode_inscription: modeInscription,
             })
             .eq("id", sortie.id);
 
         if (error) {
+
+            if (
+                error.message.includes(
+                    "GENRE_PARTICIPANT_DEJA_PRESENT"
+                )
+            ) {
+                setMessage(
+                    "Impossible de retirer ce genre : un participant déjà inscrit appartient à cette catégorie."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
+
+            if (
+                error.message.includes(
+                    "GENRE_ORGANISATEUR_REQUIS"
+                )
+            ) {
+                setMessage(
+                    "Votre propre genre doit rester autorisé."
+                );
+
+                setLoading(false);
+
+                return;
+            }
+
+
+            console.error(
+                "Erreur modification sortie :",
+                error
+            );
+
             setMessage(
                 "Impossible de modifier la sortie."
             );
+
             setLoading(false);
+
             return;
         }
 
@@ -690,7 +775,102 @@ export default function ModifierSortieForm({
                     actuellement.
                 </p>
             </div>
+            <div>
+                <label className="mb-2 block font-medium">
+                    Participants autorisés
+                </label>
 
+                <p className="mb-3 text-sm text-gray-500">
+                    Choisissez qui peut rejoindre cette sortie.
+                </p>
+
+                <div className="flex flex-wrap gap-4">
+
+                    <label
+                        className={
+                            sexeOrganisateur === "femme"
+                                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                                : "flex items-center gap-2"
+                        }
+                    >
+                        <input
+                            type="checkbox"
+                            checked={
+                                genresAutorises.includes(
+                                    "femme"
+                                )
+                            }
+                            disabled={
+                                sexeOrganisateur === "femme"
+                            }
+                            onChange={() =>
+                                basculerGenre(
+                                    "femme"
+                                )
+                            }
+                        />
+
+                        Femmes
+                    </label>
+
+
+                    <label
+                        className={
+                            sexeOrganisateur === "homme"
+                                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                                : "flex items-center gap-2"
+                        }
+                    >
+                        <input
+                            type="checkbox"
+                            checked={
+                                genresAutorises.includes(
+                                    "homme"
+                                )
+                            }
+                            disabled={
+                                sexeOrganisateur === "homme"
+                            }
+                            onChange={() =>
+                                basculerGenre(
+                                    "homme"
+                                )
+                            }
+                        />
+
+                        Hommes
+                    </label>
+
+
+                    <label
+                        className={
+                            sexeOrganisateur === "autre"
+                                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                                : "flex items-center gap-2"
+                        }
+                    >
+                        <input
+                            type="checkbox"
+                            checked={
+                                genresAutorises.includes(
+                                    "autre"
+                                )
+                            }
+                            disabled={
+                                sexeOrganisateur === "autre"
+                            }
+                            onChange={() =>
+                                basculerGenre(
+                                    "autre"
+                                )
+                            }
+                        />
+
+                        Autre
+                    </label>
+
+                </div>
+            </div>
             <div>
                 <label className="mb-2 block font-medium">
                     Inscription des participants

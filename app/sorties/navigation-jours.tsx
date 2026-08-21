@@ -209,6 +209,29 @@ export default function NavigationJours({
         }, [dateActive]);
 
 
+    const afficherRetourAujourdhui =
+        !jours.some(
+            (jour) =>
+                jour.date === aujourdHui
+        );
+
+    function revenirAujourdhui() {
+
+        const url =
+            new URL(
+                window.location.href
+            );
+
+        // On retire uniquement la date.
+        // Les autres filtres restent conservés.
+        url.searchParams.delete(
+            "date"
+        );
+
+        window.location.assign(
+            url.toString()
+        );
+    }
     // ------------------------------------------------
     // ALLER À UN JOUR
     // ------------------------------------------------
@@ -216,8 +239,6 @@ export default function NavigationJours({
     function allerAuJour(
         date: string
     ) {
-
-        changerJourActif(date);
 
         const conteneur =
             document.getElementById(
@@ -229,43 +250,51 @@ export default function NavigationJours({
         }
 
 
-        // Jour exact s'il existe.
+        // ------------------------------------------------
+        // JOUR À AFFICHER
+        // ------------------------------------------------
+        //
+        // Si le jour sélectionné contient une sortie :
+        // on utilise ce jour.
+        //
+        // Sinon :
+        // on cherche le prochain jour contenant
+        // une sortie parmi les 7 jours affichés.
+        // ------------------------------------------------
 
-        let section =
-            document.getElementById(
-                `jour-${date}`
+        const jourCible =
+            jours.find(
+                (jour) =>
+                    jour.date >= date &&
+                    jour.disponible
             );
 
-
-        // Sinon première journée
-        // contenant une sortie après cette date.
-
-        if (!section) {
-
-            const sections =
-                Array.from(
-                    conteneur.querySelectorAll<HTMLElement>(
-                        "[data-jour-sorties]"
-                    )
-                );
-
-            section =
-                sections.find(
-                    (element) =>
-                        (
-                            element.dataset
-                                .jourSorties ??
-                            ""
-                        ) >= date
-                ) ?? null;
-
+        if (!jourCible) {
+            return;
         }
 
+
+        const section =
+            document.getElementById(
+                `jour-${jourCible.date}`
+            );
 
         if (!section) {
             return;
         }
 
+
+        // Le trait et la navigation horaire
+        // utilisent maintenant le vrai jour affiché.
+
+        changerJourActif(
+            jourCible.date
+        );
+
+
+        // ------------------------------------------------
+        // SCROLL
+        // ------------------------------------------------
 
         const conteneurRect =
             conteneur.getBoundingClientRect();
@@ -282,7 +311,6 @@ export default function NavigationJours({
             behavior: "smooth",
         });
     }
-
 
     // ------------------------------------------------
     // AUTRE DATE
@@ -355,40 +383,62 @@ export default function NavigationJours({
                     {moisAffiche}
                 </p>
 
+                <div className="flex items-center gap-4">
 
-                <div className="relative">
+                    {afficherRetourAujourdhui && (
 
-                    <button
-                        type="button"
-                        onClick={
-                            ouvrirCalendrier
-                        }
-                        className="
-                            text-sm
-                            text-gray-500
-                            hover:underline
-                        "
-                    >
-                        Autre date
-                    </button>
+                        <button
+                            type="button"
+                            onClick={
+                                revenirAujourdhui
+                            }
+                            className="
+                text-sm
+                text-gray-500
+                hover:underline
+            "
+                        >
+                            Aujourd&apos;hui
+                        </button>
 
-                    <input
-                        ref={inputDateRef}
-                        type="date"
-                        min={aujourdHui}
-                        className="
-                            pointer-events-none
-                            absolute
-                            h-0
-                            w-0
-                            opacity-0
-                        "
-                        onChange={(event) =>
-                            choisirAutreDate(
-                                event.target.value
-                            )
-                        }
-                    />
+                    )}
+
+
+                    <div className="relative">
+
+                        <button
+                            type="button"
+                            onClick={
+                                ouvrirCalendrier
+                            }
+                            className="
+                text-sm
+                text-gray-500
+                hover:underline
+            "
+                        >
+                            Autre date
+                        </button>
+
+                        <input
+                            ref={inputDateRef}
+                            type="date"
+                            min={aujourdHui}
+                            className="
+                pointer-events-none
+                absolute
+                h-0
+                w-0
+                opacity-0
+            "
+                            onChange={(event) =>
+                                choisirAutreDate(
+                                    event.target.value
+                                )
+                            }
+                        />
+
+                    </div>
 
                 </div>
 

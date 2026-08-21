@@ -9,13 +9,12 @@ type ParticiperButtonProps = {
   sortieId: string;
   userId: string;
   nombreMax: number;
-
   dejaParticipant: boolean;
   estOrganisateur: boolean;
   complet: boolean;
-
   modeInscription: string;
   demandeEnAttente: boolean;
+  genreAutorise: boolean;
 };
 
 export default function ParticiperButton({
@@ -27,6 +26,7 @@ export default function ParticiperButton({
   complet,
   modeInscription,
   demandeEnAttente,
+  genreAutorise,
 }: ParticiperButtonProps) {
   const router = useRouter();
 
@@ -222,8 +222,7 @@ export default function ParticiperButton({
 
       return false;
     }
-
-
+   
     const { error } = await supabase.rpc(
       "rejoindre_sortie_automatique",
       {
@@ -315,6 +314,19 @@ export default function ParticiperButton({
         return false;
       }
 
+      if (
+        erreur.includes(
+          "GENRE_NON_AUTORISE"
+        )
+      ) {
+        setMessage(
+          "Vous ne faites plus partie des participants autorisés pour cette sortie."
+        );
+
+        router.refresh();
+
+        return false;
+      }
 
       console.error(
         "Erreur participation automatique :",
@@ -449,6 +461,19 @@ export default function ParticiperButton({
         return false;
       }
 
+      if (
+        erreur.includes(
+          "GENRE_NON_AUTORISE"
+        )
+      ) {
+        setMessage(
+          "Vous ne faites plus partie des participants autorisés pour cette sortie."
+        );
+
+        router.refresh();
+
+        return false;
+      }
 
       console.error(
         "Erreur demande de participation :",
@@ -568,6 +593,27 @@ export default function ParticiperButton({
       <span className="font-medium">
         J&apos;organise
       </span>
+    );
+  }
+
+  if (
+    !genreAutorise &&
+    !dejaParticipant &&
+    !demandeActive
+  ) {
+    return (
+      <div>
+        <p className="font-medium">
+          Cette sortie ne correspond pas
+          aux participants autorisés par
+          l&apos;organisateur.
+        </p>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Vous ne pouvez pas vous inscrire
+          à cette sortie.
+        </p>
+      </div>
     );
   }
 

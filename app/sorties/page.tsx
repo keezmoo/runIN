@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import NavigationHeures
     from "./navigation-heures";
+import {
+    afficherAllure,
+    afficherIntensite,
+} from "@/lib/sortie-utils";
 import FiltresSorties from "./filtres-sorties";
 import NavigationJours from "./navigation-jours";
 import {
@@ -23,6 +27,23 @@ type SortiesPageProps = {
     }>;
 };
 
+type SortieListe = {
+    id: string;
+    titre: string;
+    organisateur_id: string;
+    nombre_max_participants: number;
+    date_heure_depart: string;
+    lieu_depart: string;
+    type_sortie: string;
+    mode_inscription: string;
+    type_entrainement: string | null;
+    distance_km: number | null;
+    denivele_positif_m: number | null;
+    duree_estimee_minutes: number | null;
+    intensite: string | null;
+    allure_secondes_km: number | null;
+    distance_geo_km: number;
+};
 
 export default async function SortiesPage({
     searchParams,
@@ -163,16 +184,55 @@ export default async function SortiesPage({
         error: sortiesError,
     } = await sortiesQuery;
 
+const listeSorties =
+    (sorties ?? []) as SortieListe[];
+
+    const idsSorties =
+        listeSorties.map(
+            (sortie) => sortie.id
+        );
+
+    const idsOrganisateurs = [
+        ...new Set(
+            listeSorties.map(
+                (sortie) =>
+                    sortie.organisateur_id
+            )
+        ),
+    ];
     // ------------------------------------------------
     // PARTICIPATIONS
     // ------------------------------------------------
 
-    const {
-        data: participations,
-        error: participationsError,
-    } = await supabase
-        .from("participations")
-        .select("sortie_id, utilisateur_id");
+    let participations: {
+        sortie_id: string;
+        utilisateur_id: string;
+    }[] = [];
+
+    let participationsError = null;
+
+
+    if (idsSorties.length > 0) {
+
+        const {
+            data,
+            error,
+        } = await supabase
+            .from("participations")
+            .select(
+                "sortie_id, utilisateur_id"
+            )
+            .in(
+                "sortie_id",
+                idsSorties
+            );
+
+        participations =
+            data ?? [];
+
+        participationsError =
+            error;
+    }
     // ------------------------------------------------
     // DEMANDES DE PARTICIPATION DE L'UTILISATEUR
     // ------------------------------------------------
@@ -190,12 +250,35 @@ export default async function SortiesPage({
     // PROFILS
     // ------------------------------------------------
 
-    const {
-        data: profils,
-        error: profilsError,
-    } = await supabase
-        .from("profiles")
-        .select("id, nom");
+    let profils: {
+        id: string;
+        nom: string;
+    }[] = [];
+
+    let profilsError = null;
+
+
+    if (idsOrganisateurs.length > 0) {
+
+        const {
+            data,
+            error,
+        } = await supabase
+            .from("profiles")
+            .select(
+                "id, nom"
+            )
+            .in(
+                "id",
+                idsOrganisateurs
+            );
+
+        profils =
+            data ?? [];
+
+        profilsError =
+            error;
+    }
 
     if (
         sortiesError ||
@@ -212,7 +295,6 @@ export default async function SortiesPage({
         );
     }
 
-    const listeSorties = sorties ?? [];
     const listeParticipations = participations ?? [];
     const listeProfils = profils ?? [];
     const listeDemandes = demandesParticipation ?? [];
@@ -404,6 +486,13 @@ export default async function SortiesPage({
 
                                         {sortiesJour.map((sortie) => {
 
+                                            const organisateur =
+                                                listeProfils.find(
+                                                    (profil) =>
+                                                        profil.id ===
+                                                        sortie.organisateur_id
+                                                );
+
                                             const participationsSortie =
                                                 listeParticipations.filter(
                                                     (participation) =>
@@ -415,6 +504,58 @@ export default async function SortiesPage({
                                                 1 +
                                                 participationsSortie.length;
 
+                                            const distanceAffichee =
+                                                sortie.distance_km !== null
+                                                    ? `${Number(
+                                                        sortie.distance_km
+                                                    ).toLocaleString(
+                                                        "fr-FR",
+                                                        {
+                                                            maximumFractionDigits: 2,
+                                                        }
+                                                    )} km`
+                                                    : null;
+
+
+                                            const intensiteAffichee =
+                                                afficherIntensite(
+                                                    sortie.intensite
+                                                );
+
+
+                                            const allureAffichee =
+                                                sortie.allure_secondes_km !== null
+                                                    ? afficherAllure(
+                                                        sortie.allure_secondes_km
+                                                    )
+                                                    : null;
+
+
+                                            const infosSportives =
+                                                sortie.type_sortie === "trail"
+                                                    ? [
+                                                        distanceAffichee,
+                                                        sortie.denivele_positif_m !== null
+                                                            ? `${sortie.denivele_positif_m} m D+`
+                                                            : null,
+                                                        intensiteAffichee,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(" • ")
+                                                    : [
+                                                        distanceAffichee,
+                                                        allureAffichee,
+                                                        intensiteAffichee,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(" • ");
+
+
+                                            const modeInscriptionAffiche =
+                                                sortie.mode_inscription ===
+                                                    "validation"
+                                                    ? "Sur acceptation"
+                                                    : "Validation automatique";
 
                                             const heureAffichee =
                                                 formatHeure(
@@ -451,48 +592,71 @@ export default async function SortiesPage({
 
                                                     {/* HEURE */}
 
-                                                    <div className="w-14 shrink-0">
+                                                    <div className="w-14 shrink-0 self-start pt-1">
                                                         <p className="font-semibold leading-none">
                                                             {heureAffichee}
                                                         </p>
                                                     </div>
 
 
-                                                    {/* SORTIE */}
+                                                    {/* INFORMATIONS DE LA SORTIE */}
 
-                                                    <div className="min-w-0 flex-1 leading-tight">
+                                                    <div className="min-w-0 flex-1">
 
-                                                        <div className="flex items-center gap-2">
+                                                        {/* TITRE + ROUTE/TRAIL */}
+
+                                                        <div className="flex items-baseline gap-2">
 
                                                             <h3 className="truncate font-semibold">
                                                                 {sortie.titre}
                                                             </h3>
 
                                                             <span className="shrink-0 text-sm text-gray-500">
-                                                                {sortie.type_sortie ===
-                                                                    "trail"
+                                                                {sortie.type_sortie === "trail"
                                                                     ? "Trail"
                                                                     : "Route"}
                                                             </span>
 
                                                         </div>
 
-                                                        <p className="truncate text-sm text-gray-500">
-                                                            {sortie.lieu_depart}
+
+                                                        {/* DONNÉES SPORTIVES */}
+
+                                                        <p className="mt-1 truncate text-sm text-gray-500">
+                                                            {infosSportives}
+                                                        </p>
+
+
+                                                        {/* ORGANISATEUR */}
+
+                                                        <p className="mt-1 truncate text-xs text-gray-500">
+                                                            {organisateur?.nom ??
+                                                                "Organisateur"}
                                                         </p>
 
                                                     </div>
 
 
-                                                    {/* PARTICIPANTS */}
+                                                    {/* PARTICIPANTS + INSCRIPTION */}
 
-                                                    <div className="shrink-0 text-sm leading-none">
-                                                        {nombreActuel} /{" "}
-                                                        {
-                                                            sortie.nombre_max_participants
-                                                        }
+                                                    <div
+                                                        className="
+        shrink-0
+        self-start
+        text-right
+    "
+                                                    >
+
+                                                        <p className="font-medium leading-none">
+                                                            {nombreActuel} /{" "}
+                                                            {sortie.nombre_max_participants}
+                                                        </p>
+
+                                                        <p className="mt-2 text-xs text-gray-500">
+                                                            {modeInscriptionAffiche}
+                                                        </p>
+
                                                     </div>
-
                                                 </Link>
 
                                             );

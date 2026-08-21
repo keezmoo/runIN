@@ -60,19 +60,34 @@ export default async function ModifierSortiePage({
             duree_estimee_minutes,
             intensite,
             allure_secondes_km,
+            genres_autorises,
             description
         `)
         .eq("id", id)
         .eq("organisateur_id", user.id)
         .eq("statut", "planifiee")
         .maybeSingle();
-        
+
 
     if (error || !sortie) {
         notFound();
     }
 
+    const {
+        data: profilOrganisateur,
+        error: profilOrganisateurError,
+    } = await supabase
+        .from("profiles")
+        .select("sexe")
+        .eq("id", user.id)
+        .single();
 
+    if (
+        profilOrganisateurError ||
+        !profilOrganisateur
+    ) {
+        redirect("/profil");
+    }
     // ------------------------------------------------
     // NOMBRE DE PARTICIPANTS
     // ------------------------------------------------
@@ -105,6 +120,12 @@ export default async function ModifierSortiePage({
                 sortie={sortie}
                 nombreParticipants={
                     nombreParticipants
+                }
+                sexeOrganisateur={
+                    profilOrganisateur.sexe as
+                    | "homme"
+                    | "femme"
+                    | "autre"
                 }
             />
 

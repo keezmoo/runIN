@@ -7,8 +7,8 @@ import {
 
 
 const HEURES = Array.from(
-    { length: 18 },
-    (_, index) => index + 6
+    { length: 24 },
+    (_, index) => index
 );
 
 

@@ -50,6 +50,22 @@ export default async function DetailSortiePage({
         redirect("/auth/login");
     }
 
+    const {
+        data: profilUtilisateur,
+        error: profilUtilisateurError,
+    } = await supabase
+        .from("profiles")
+        .select("sexe")
+        .eq("id", user.id)
+        .single();
+
+    if (
+        profilUtilisateurError ||
+        !profilUtilisateur
+    ) {
+        redirect("/profil");
+    }
+
     // ------------------------------------------------
     // SORTIE
     // ------------------------------------------------
@@ -75,6 +91,7 @@ export default async function DetailSortiePage({
     intensite,
     allure_secondes_km,
     description,
+    genres_autorises,
     statut
 `)
         .eq("id", id)
@@ -93,7 +110,10 @@ export default async function DetailSortiePage({
     if (!sortie) {
         notFound();
     }
-
+    const genreUtilisateurAutorise =
+        sortie.genres_autorises.includes(
+            profilUtilisateur.sexe
+        );
     // ------------------------------------------------
     // PARTICIPATIONS
     // ------------------------------------------------
@@ -412,6 +432,29 @@ export default async function DetailSortiePage({
             sortie.intensite
         );
 
+    const genresAutorisesAffiches =
+        sortie.genres_autorises.length === 3
+            ? "Tout le monde"
+            : sortie.genres_autorises
+                .map(
+                    (
+                        genre:
+                            | "homme"
+                            | "femme"
+                            | "autre"
+                    ) => {
+                        if (genre === "femme") {
+                            return "Femmes";
+                        }
+
+                        if (genre === "homme") {
+                            return "Hommes";
+                        }
+
+                        return "Autre";
+                    })
+                .join(", ");
+
     const caracteristiques: {
         label: string;
         valeur: string;
@@ -632,6 +675,16 @@ export default async function DetailSortiePage({
 
             )}
 
+            {/* PARTICIPANTS AUTORISÉS */}
+            <div>
+                <p className="text-sm text-gray-500">
+                    Participants autorisés
+                </p>
+
+                <p>
+                    {genresAutorisesAffiches}
+                </p>
+            </div>
 
             {/* CARACTÉRISTIQUES */}
 
@@ -1022,6 +1075,9 @@ text-white
                                         Boolean(
                                             demandeParticipation
                                         )
+                                    }
+                                    genreAutorise={
+                                        genreUtilisateurAutorise
                                     }
                                 />
                             </>

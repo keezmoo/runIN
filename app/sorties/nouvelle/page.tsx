@@ -24,6 +24,22 @@ export default async function NouvelleSortiePage() {
     redirect("/profil");
   }
 
+  const {
+    data: profil,
+    error: profilError,
+  } = await supabase
+    .from("profiles")
+    .select("sexe")
+    .eq("id", user.id)
+    .single();
+
+  if (
+    profilError ||
+    !profil
+  ) {
+    redirect("/profil");
+  }
+
   return (
     <main className="mx-auto max-w-2xl p-6">
 
@@ -33,7 +49,14 @@ export default async function NouvelleSortiePage() {
       </h1>
 
       {/* Formulaire */}
-      <SortieForm  />
+      <SortieForm
+        sexeOrganisateur={
+          profil.sexe as
+          | "homme"
+          | "femme"
+          | "autre"
+        }
+      />
 
     </main>
   );
