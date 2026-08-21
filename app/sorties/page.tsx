@@ -1,17 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-
-import ParticiperButton from "./participer-button";
+import NavigationHeures
+    from "./navigation-heures";
 import FiltresSorties from "./filtres-sorties";
 import NavigationJours from "./navigation-jours";
 import {
-    afficherDuree,
-    afficherTypeEntrainement,
-} from "@/lib/sortie-utils";
-import {
     ajouterJours,
-    formatDateCourte,
     formatDateLongue,
     formatHeure,
     getDateKey,
@@ -93,6 +88,15 @@ export default async function SortiesPage({
             ? Number(params.lon)
             : filtreProfil.longitude;
 
+    const aujourdHui =
+        getDateKey(new Date());
+
+    const dateFiltreValide =
+        /^\d{4}-\d{2}-\d{2}$/.test(
+            filtreDate
+        ) &&
+        filtreDate >= aujourdHui;
+
     // ------------------------------------------------
     // RECHERCHE DES SORTIES
     // ------------------------------------------------
@@ -117,14 +121,31 @@ export default async function SortiesPage({
         );
     }
 
-    // Si une date est choisie dans le filtre
-    if (filtreDate) {
+    // Si une date valide est choisie
+    if (dateFiltreValide) {
+
+        // On charge aussi le jour précédent,
+        // pour qu'il puisse apparaître à gauche
+        // de la date sélectionnée.
+        const jourPrecedent =
+            ajouterJours(
+                filtreDate,
+                -1
+            );
+
+        const dateRechercheDebut =
+            jourPrecedent < aujourdHui
+                ? aujourdHui
+                : jourPrecedent;
+
         sortiesQuery = sortiesQuery.gte(
             "date_heure_depart",
-            filtreDate
+            dateRechercheDebut
         );
+
     } else {
-        // Sinon, on ne montre que les sorties futures
+
+        // Sinon, uniquement les sorties futures
         sortiesQuery = sortiesQuery.gte(
             "date_heure_depart",
             new Date().toISOString()
@@ -226,42 +247,62 @@ export default async function SortiesPage({
     // BARRE AUJOURD'HUI → J+7
     // ------------------------------------------------
 
-    const aujourdHui = getDateKey(new Date());
+    const dateDebutNavigation =
+        dateFiltreValide
+            ? (
+                ajouterJours(
+                    filtreDate,
+                    -1
+                ) < aujourdHui
+                    ? aujourdHui
+                    : ajouterJours(
+                        filtreDate,
+                        -1
+                    )
+            )
+            : aujourdHui;
 
-    const joursNavigation = Array.from(
-        { length: 8 },
-        (_, index) => {
-            const date = ajouterJours(
-                aujourdHui,
-                index
-            );
+    // ------------------------------------------------
+    // 7 JOURS AFFICHÉS
+    // ------------------------------------------------
 
-            let titre = `J+${index}`;
+    const joursNavigation =
+        Array.from(
+            { length: 7 },
+            (_, index) => {
 
-            if (index === 0) {
-                titre = "Aujourd'hui";
+                const date =
+                    ajouterJours(
+                        dateDebutNavigation,
+                        index
+                    );
+
+                return {
+                    date,
+                    disponible:
+                        sortiesParJour.has(
+                            date
+                        ),
+                };
             }
-
-            if (index === 1) {
-                titre = "Demain";
-            }
-
-            return {
-                date,
-                titre,
-                sousTitre: formatDateCourte(date),
-                disponible:
-                    sortiesParJour.has(date),
-            };
-        }
-    );
+        );
 
     // ------------------------------------------------
     // AFFICHAGE
     // ------------------------------------------------
 
     return (
-        <main className="mx-auto max-w-2xl p-6">
+        <main
+            className="
+        mx-auto
+        flex
+        h-[calc(100dvh-4rem)]
+        max-w-2xl
+        flex-col
+        overflow-hidden
+        p-6
+    "
+        >
 
             <div className="mb-8">
                 <h1 className="text-2xl font-bold">
@@ -270,247 +311,211 @@ export default async function SortiesPage({
             </div>
 
 
-            {/* Filtres */}
-            <FiltresSorties
-                lieuActuel={filtreLieu}
-                rayonActuel={filtreRayon}
-                typeActuel={filtreType}
-                dateActuelle={filtreDate}
-            />
+            {/* FILTRES REPLIABLES */}
+
+            <details open className="mb-4">
+
+                <summary
+                    className="
+            cursor-pointer
+            select-none
+            py-2
+            font-medium
+        "
+                >
+                    Filtres
+                </summary>
+
+                <div className="pt-2">
+                    <FiltresSorties
+                        lieuActuel={filtreLieu}
+                        rayonActuel={filtreRayon}
+                        typeActuel={filtreType}
+                        dateActuelle={filtreDate}
+                    />
+                </div>
+
+            </details>
 
 
-            {/* Navigation rapide sur 8 jours */}
+            {/* Navigation des jours */}
             <NavigationJours
                 jours={joursNavigation}
+                dateInitiale={
+                    dateFiltreValide
+                        ? filtreDate
+                        : aujourdHui
+                }
             />
 
 
-            {/* Liste */}
-            {listeSorties.length === 0 ? (
-                <p>
-                    Aucune sortie ne correspond à votre recherche.
-                </p>
-            ) : (
-                <div className="space-y-10">
+            <div className="flex min-h-0 flex-1">
 
-                    {Array.from(
-                        sortiesParJour.entries()
-                    ).map(([date, sortiesJour]) => (
+                {/* LISTE SCROLLABLE */}
 
-                        <section
-                            key={date}
-                            id={`jour-${date}`}
-                            className="scroll-mt-6"
-                        >
+                <div
+                    id="liste-sorties-scroll"
+                    className="
+            min-h-0
+            flex-1
+            overflow-y-auto
+            pr-2
+        "
+                >
 
-                            {/* Titre du jour */}
-                            <h2 className="mb-4 border-b pb-2 text-xl font-semibold">
-                                {date === aujourdHui
-                                    ? `Aujourd'hui — ${formatDateLongue(date)}`
-                                    : date ===
-                                        ajouterJours(aujourdHui, 1)
-                                        ? `Demain — ${formatDateLongue(date)}`
-                                        : formatDateLongue(date)}
-                            </h2>
+                    {listeSorties.length === 0 ? (
 
+                        <p>
+                            Aucune sortie ne correspond à votre recherche.
+                        </p>
 
-                            {/* Sorties du jour */}
-                            <div className="space-y-4">
+                    ) : (
 
-                                {sortiesJour.map((sortie) => {
+                        <div className="space-y-10">
 
-                                    const organisateur =
-                                        listeProfils.find(
-                                            (profil) =>
-                                                profil.id ===
-                                                sortie.organisateur_id
-                                        );
+                            {Array.from(
+                                sortiesParJour.entries()
+                            ).map(([date, sortiesJour]) => (
 
-                                    const participationsSortie =
-                                        listeParticipations.filter(
-                                            (participation) =>
-                                                participation.sortie_id ===
-                                                sortie.id
-                                        );
+                                <section
+                                    key={date}
+                                    id={`jour-${date}`}
+                                    data-jour-sorties={date}
+                                    className="scroll-mt-6"
+                                >
 
-                                    const nombreActuel =
-                                        1 +
-                                        participationsSortie.length;
+                                    {/* TITRE DU JOUR */}
 
-                                    const dejaParticipant =
-                                        participationsSortie.some(
-                                            (participation) =>
-                                                participation.utilisateur_id ===
-                                                user.id
-                                        );
-
-                                    const estOrganisateur =
-                                        sortie.organisateur_id ===
-                                        user.id;
-
-                                    const complet =
-                                        nombreActuel >=
-                                        sortie.nombre_max_participants;
-
-                                    const demandeEnAttente =
-                                        listeDemandes.some(
-                                            (demande) =>
-                                                demande.sortie_id === sortie.id
-                                        );
-
-                                    return (
-                                        <div
-                                            key={sortie.id}
-                                            className="rounded border p-4"
-                                        >
-                                            <Link
-                                                href={`/sorties/${sortie.id}`}
-                                                className="block rounded hover:bg-gray-500/5"
-                                            >
-                                                <h3 className="text-lg font-semibold">
-                                                    {sortie.titre}
-                                                </h3>
+                                    <h2 className="border-b pb-2 text-xl font-semibold">
+                                        {date === aujourdHui
+                                            ? `Aujourd'hui — ${formatDateLongue(date)}`
+                                            : date === ajouterJours(
+                                                aujourdHui,
+                                                1
+                                            )
+                                                ? `Demain — ${formatDateLongue(date)}`
+                                                : formatDateLongue(date)}
+                                    </h2>
 
 
-                                                {/* TYPE + ENTRAÎNEMENT */}
+                                    {/* SORTIES DU JOUR */}
 
-                                                <p className="mt-1 text-sm font-medium">
-                                                    {sortie.type_sortie === "trail"
-                                                        ? "Trail"
-                                                        : "Route"}
+                                    <div>
 
-                                                    {sortie.type_entrainement && (
-                                                        <>
-                                                            {" · "}
-                                                            {afficherTypeEntrainement(
-                                                                sortie.type_entrainement
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </p>
+                                        {sortiesJour.map((sortie) => {
 
+                                            const participationsSortie =
+                                                listeParticipations.filter(
+                                                    (participation) =>
+                                                        participation.sortie_id ===
+                                                        sortie.id
+                                                );
 
-                                                {/* CARACTÉRISTIQUES SPORTIVES */}
-
-                                                {(
-                                                    sortie.distance_km !== null ||
-                                                    sortie.denivele_positif_m !== null ||
-                                                    sortie.duree_estimee_minutes !== null
-                                                ) && (
-                                                        <p className="mt-2 text-sm">
-
-                                                            {sortie.distance_km !== null && (
-                                                                <>
-                                                                    {Number(
-                                                                        sortie.distance_km
-                                                                    ).toLocaleString(
-                                                                        "fr-FR",
-                                                                        {
-                                                                            maximumFractionDigits: 1,
-                                                                        }
-                                                                    )} km
-                                                                </>
-                                                            )}
+                                            const nombreActuel =
+                                                1 +
+                                                participationsSortie.length;
 
 
-                                                            {sortie.denivele_positif_m !== null && (
-                                                                <>
-                                                                    {sortie.distance_km !== null &&
-                                                                        " · "}
+                                            const heureAffichee =
+                                                formatHeure(
+                                                    sortie.date_heure_depart
+                                                );
 
-                                                                    {sortie.denivele_positif_m} m D+
-                                                                </>
-                                                            )}
+                                            const [
+                                                heureDepart,
+                                                minuteDepart,
+                                            ] = heureAffichee
+                                                .split(":")
+                                                .map(Number);
+
+                                            const minuteJour =
+                                                heureDepart * 60 +
+                                                minuteDepart;
 
 
-                                                            {sortie.duree_estimee_minutes !== null && (
-                                                                <>
-                                                                    {(sortie.distance_km !== null ||
-                                                                        sortie.denivele_positif_m !== null) &&
-                                                                        " · "}
+                                            return (
 
-                                                                    {afficherDuree(
-                                                                        sortie.duree_estimee_minutes
-                                                                    )}
-                                                                </>
-                                                            )}
-
-                                                        </p>
-                                                    )}
-
-                                                <p className="mt-2">
-                                                    Départ à{" "}
-                                                    <strong>
-                                                        {formatHeure(
-                                                            sortie.date_heure_depart
-                                                        )}
-                                                    </strong>
-                                                </p>
-
-                                                <p className="mt-1">
-                                                    {sortie.lieu_depart}
-                                                </p>
-
-                                                <p className="text-sm text-gray-500">
-                                                    À{" "}
-                                                    {sortie.distance_geo_km.toFixed(1)
-                                                        .replace(".", ",")}{" "}
-                                                    km de {filtreLieu}
-                                                </p>
-                                            </Link>
-                                            <p className="mt-1 text-sm">
-                                                Organisé par{" "}
                                                 <Link
-                                                    href={`/membres/${sortie.organisateur_id}`}
-                                                    className="font-medium underline"
+                                                    key={sortie.id}
+                                                    href={`/sorties/${sortie.id}`}
+                                                    data-minute-depart={minuteJour}
+                                                    className="
+                                            flex
+                                            items-center
+                                            gap-4
+                                            border-b
+                                            py-2
+                                            hover:opacity-70
+                                        "
                                                 >
-                                                    {organisateur?.nom ?? "Utilisateur"}
+
+                                                    {/* HEURE */}
+
+                                                    <div className="w-14 shrink-0">
+                                                        <p className="font-semibold leading-none">
+                                                            {heureAffichee}
+                                                        </p>
+                                                    </div>
+
+
+                                                    {/* SORTIE */}
+
+                                                    <div className="min-w-0 flex-1 leading-tight">
+
+                                                        <div className="flex items-center gap-2">
+
+                                                            <h3 className="truncate font-semibold">
+                                                                {sortie.titre}
+                                                            </h3>
+
+                                                            <span className="shrink-0 text-sm text-gray-500">
+                                                                {sortie.type_sortie ===
+                                                                    "trail"
+                                                                    ? "Trail"
+                                                                    : "Route"}
+                                                            </span>
+
+                                                        </div>
+
+                                                        <p className="truncate text-sm text-gray-500">
+                                                            {sortie.lieu_depart}
+                                                        </p>
+
+                                                    </div>
+
+
+                                                    {/* PARTICIPANTS */}
+
+                                                    <div className="shrink-0 text-sm leading-none">
+                                                        {nombreActuel} /{" "}
+                                                        {
+                                                            sortie.nombre_max_participants
+                                                        }
+                                                    </div>
+
                                                 </Link>
-                                            </p>
 
-                                            <p className="mt-2">
-                                                {nombreActuel} /{" "}
-                                                {
-                                                    sortie.nombre_max_participants
-                                                }{" "}
-                                                participants
-                                            </p>
+                                            );
+                                        })}
 
-                                            <div className="mt-4">
-                                                <ParticiperButton
-                                                    sortieId={sortie.id}
-                                                    userId={user.id}
-                                                    nombreMax={
-                                                        sortie.nombre_max_participants
-                                                    }
-                                                    dejaParticipant={
-                                                        dejaParticipant
-                                                    }
-                                                    estOrganisateur={
-                                                        estOrganisateur
-                                                    }
-                                                    complet={complet}
-                                                    modeInscription={
-                                                        sortie.mode_inscription
-                                                    }
-                                                    demandeEnAttente={
-                                                        demandeEnAttente
-                                                    }
-                                                />
-                                            </div>
+                                    </div>
 
-                                        </div>
-                                    );
-                                })}
+                                </section>
 
-                            </div>
+                            ))}
 
-                        </section>
-                    ))}
+                        </div>
+
+                    )}
 
                 </div>
-            )}
 
+
+                {/* NAVIGATION HORAIRE */}
+
+                <NavigationHeures />
+
+            </div>
         </main>
     );
 }
