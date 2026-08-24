@@ -71,9 +71,25 @@ export default function FiltresSorties({
   // NIVEAU D'AFFICHAGE
   // ------------------------------------------------
 
-  const [sportifOuvert, setSportifOuvert] = useState(false);
+  const niveauInitial: 1 | 2 | 3 =
+    searchParams.has("typeEntrainement") ||
+    searchParams.has("dureeMin") ||
+    searchParams.has("dureeMax") ||
+    searchParams.has("genres") ||
+    searchParams.has("modeInscription") ||
+    searchParams.has("masquerCompletes")
+      ? 3
+      : searchParams.has("distanceMin") ||
+          searchParams.has("distanceMax") ||
+          searchParams.has("deniveleMin") ||
+          searchParams.has("deniveleMax") ||
+          searchParams.has("allureMin") ||
+          searchParams.has("allureMax") ||
+          searchParams.has("intensite")
+        ? 2
+        : 1;
 
-  const [tousFiltresOuverts, setTousFiltresOuverts] = useState(false);
+  const [niveauFiltres, setNiveauFiltres] = useState<1 | 2 | 3>(niveauInitial);
 
   // ------------------------------------------------
   // FILTRES PRINCIPAUX
@@ -181,6 +197,35 @@ export default function FiltresSorties({
         : [...genresActuels, genre],
     );
   }
+
+  function reinitialiserFiltres() {
+    setTypeSortie("");
+
+    setDistanceMin("");
+    setDistanceMax("");
+
+    setDeniveleMin("");
+    setDeniveleMax("");
+
+    setAllureMin("");
+    setAllureMax("");
+
+    setIntensite("");
+
+    setTypeEntrainement("");
+
+    setDureeMin("");
+    setDureeMax("");
+
+    setGenres([]);
+
+    setModeInscription("");
+
+    setMasquerCompletes(false);
+
+    setMessage("");
+  }
+
   async function rechercher(event: FormEvent) {
     event.preventDefault();
 
@@ -458,14 +503,36 @@ export default function FiltresSorties({
       {/* LIEU */}
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Lieu</label>
+        <label className="mb-2 block text-sm font-medium">Lieu</label>
 
-        <input
-          type="text"
-          value={lieu}
-          onChange={(event) => setLieu(event.target.value)}
-          className="w-full rounded border p-2"
-        />
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={lieu}
+            onChange={(event) => setLieu(event.target.value)}
+            className="
+                min-w-0
+                flex-1
+                rounded
+                border
+                p-2
+            "
+            placeholder="Ville ou lieu"
+          />
+
+          <button
+            type="button"
+            onClick={() => setNiveauFiltres(niveauFiltres === 3 ? 1 : 3)}
+            className="
+                shrink-0
+                whitespace-nowrap
+                text-sm
+                font-medium
+            "
+          >
+            {niveauFiltres === 3 ? "< Fermer" : "Autres filtres >"}
+          </button>
+        </div>
       </div>
 
       {/* RAYON */}
@@ -495,8 +562,12 @@ export default function FiltresSorties({
 
       {/* NIVEAU SPORTIF */}
 
-      {(sportifOuvert || tousFiltresOuverts) && (
+      {niveauFiltres >= 2 && (
         <div className="space-y-4 border-t pt-4">
+          {niveauFiltres === 3 && (
+            <h3 className="font-semibold">Caractéristiques sportives</h3>
+          )}
+
           {/* DISTANCE */}
 
           <div>
@@ -523,16 +594,6 @@ export default function FiltresSorties({
                 className="rounded border p-2"
               />
             </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setTousFiltresOuverts(true)}
-              className="text-sm font-medium"
-            >
-              Tous les filtres &gt;
-            </button>
           </div>
 
           {/* ROUTE : ALLURE */}
@@ -630,67 +691,69 @@ export default function FiltresSorties({
         </div>
       )}
 
-      {tousFiltresOuverts && (
-        <div className="space-y-5 border-t pt-4">
-          <h3 className="font-semibold">Tous les filtres</h3>
+      {niveauFiltres === 3 && (
+        <div className="space-y-5">
+          <div className="border-t pt-4">
+            <h3 className="mb-4 font-semibold">Filtres complémentaires</h3>
 
-          {/* TYPE D'ENTRAÎNEMENT */}
+            {/* TYPE D'ENTRAÎNEMENT */}
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Type d&apos;entraînement
-            </label>
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Type d&apos;entraînement
+              </label>
 
-            <select
-              value={typeEntrainement}
-              onChange={(event) => setTypeEntrainement(event.target.value)}
-              className="w-full rounded border p-2"
-            >
-              <option value="">Tous</option>
+              <select
+                value={typeEntrainement}
+                onChange={(event) => setTypeEntrainement(event.target.value)}
+                className="w-full rounded border p-2"
+              >
+                <option value="">Tous</option>
 
-              <option value="endurance_fondamentale">
-                Endurance fondamentale
-              </option>
+                <option value="endurance_fondamentale">
+                  Endurance fondamentale
+                </option>
 
-              <option value="sortie_longue">Sortie longue</option>
+                <option value="sortie_longue">Sortie longue</option>
 
-              <option value="tempo_seuil">Tempo / seuil</option>
+                <option value="tempo_seuil">Tempo / seuil</option>
 
-              <option value="fractionne">Fractionné</option>
+                <option value="fractionne">Fractionné</option>
 
-              <option value="cotes">Côtes</option>
+                <option value="cotes">Côtes</option>
 
-              <option value="recuperation">Récupération</option>
+                <option value="recuperation">Récupération</option>
 
-              <option value="libre">Libre</option>
-            </select>
-          </div>
+                <option value="libre">Libre</option>
+              </select>
+            </div>
 
-          {/* DURÉE */}
+            {/* DURÉE */}
 
-          <div>
-            <label className="mb-2 block text-sm font-medium">
-              Durée estimée
-            </label>
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Durée estimée
+              </label>
 
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="number"
-                min="0"
-                placeholder="Min. minutes"
-                value={dureeMin}
-                onChange={(event) => setDureeMin(event.target.value)}
-                className="rounded border p-2"
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Min. minutes"
+                  value={dureeMin}
+                  onChange={(event) => setDureeMin(event.target.value)}
+                  className="rounded border p-2"
+                />
 
-              <input
-                type="number"
-                min="0"
-                placeholder="Max. minutes"
-                value={dureeMax}
-                onChange={(event) => setDureeMax(event.target.value)}
-                className="rounded border p-2"
-              />
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Max. minutes"
+                  value={dureeMax}
+                  onChange={(event) => setDureeMax(event.target.value)}
+                  className="rounded border p-2"
+                />
+              </div>
             </div>
           </div>
 
@@ -765,46 +828,75 @@ export default function FiltresSorties({
               Masquer les sorties complètes
             </label>
           </div>
-
-          <div className="text-right">
-            <button
-              type="button"
-              onClick={() => setTousFiltresOuverts(false)}
-              className="text-sm"
-            >
-              Fermer les filtres avancés
-            </button>
-          </div>
         </div>
       )}
 
       {/* RECHERCHER */}
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded border px-5 py-2 font-medium disabled:opacity-40"
-        >
-          {loading ? "Recherche..." : "Rechercher"}
-        </button>
-      </div>
-
-      {/* OUVRIR / FERMER NIVEAU 2 */}
-
-      <div className="text-center">
+      <div
+        className="
+        flex
+        flex-col
+        items-center
+        gap-2
+        pt-2
+    "
+      >
         <button
           type="button"
-          onClick={() => setSportifOuvert((ouvert) => !ouvert)}
-          className="px-4 py-1 text-lg"
+          onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
+          className="
+            flex
+            h-9
+            w-16
+            items-center
+            justify-center
+            rounded
+            text-2xl
+            font-bold
+            leading-none
+        "
           aria-label={
-            sportifOuvert
-              ? "Réduire les filtres"
-              : "Afficher les filtres sportifs"
+            niveauFiltres === 1
+              ? "Afficher les filtres sportifs"
+              : "Réduire les filtres"
           }
         >
-          {sportifOuvert ? "⌃" : "⌄"}
+          {niveauFiltres === 1 ? "▼" : "▲"}
         </button>
+
+        <div className="flex items-center gap-3">
+          {niveauFiltres === 3 && (
+            <button
+              type="button"
+              onClick={reinitialiserFiltres}
+              disabled={loading}
+              className="
+                rounded
+                border
+                px-4
+                py-2
+                text-sm
+            "
+            >
+              Réinitialiser
+            </button>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="
+            rounded
+            border
+            px-6
+            py-2
+            font-medium00
+        "
+          >
+            {loading ? "Recherche..." : "Rechercher"}
+          </button>
+        </div>
       </div>
 
       {message && <p className="text-sm">{message}</p>}

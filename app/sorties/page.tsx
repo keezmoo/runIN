@@ -170,8 +170,6 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     redirect("/profil");
   }
 
-  const filtreLieu = params.lieu ?? filtreProfil.lieu_recherche ?? "";
-
   // ------------------------------------------------
   // RAYON
   // ------------------------------------------------
@@ -193,17 +191,31 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
   const longitudeParam = params.lon !== undefined ? Number(params.lon) : NaN;
 
-  const latitude = Number.isFinite(latitudeParam)
+  const rechercheLieuUrlValide =
+    typeof params.lieu === "string" &&
+    params.lieu.trim().length >= 2 &&
+    Number.isFinite(latitudeParam) &&
+    Number.isFinite(longitudeParam);
+
+  const filtreLieu = rechercheLieuUrlValide
+    ? params.lieu!.trim()
+    : (filtreProfil.lieu_recherche ?? "");
+
+  const latitude = rechercheLieuUrlValide
     ? latitudeParam
     : Number(filtreProfil.latitude);
 
-  const longitude = Number.isFinite(longitudeParam)
+  const longitude = rechercheLieuUrlValide
     ? longitudeParam
     : Number(filtreProfil.longitude);
 
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     redirect("/profil");
   }
+
+  // ------------------------------------------------
+  // aujourd'hui
+  // ------------------------------------------------
 
   const aujourdHui = getDateKey(new Date());
 
@@ -545,6 +557,17 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                               )} km`
                             : null;
 
+                        const distanceGeoAffichee = Number.isFinite(
+                          Number(sortie.distance_geo_km),
+                        )
+                          ? Number(sortie.distance_geo_km).toLocaleString(
+                              "fr-FR",
+                              {
+                                maximumFractionDigits: 1,
+                              },
+                            )
+                          : null;
+
                         const intensiteAffichee = afficherIntensite(
                           sortie.intensite,
                         );
@@ -637,6 +660,9 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
                               <p className="mt-1 truncate text-xs text-gray-500">
                                 {organisateur?.nom ?? "Organisateur"}
+
+                                {distanceGeoAffichee !== null &&
+                                  ` • ${distanceGeoAffichee} km`}
                               </p>
                             </div>
 
