@@ -1,42 +1,103 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import ToutMarquerLuButton
-    from "./tout-marquer-lu-button";
-import NotificationLink
-    from "./notification-link";
+import ToutMarquerLuButton from "./tout-marquer-lu-button";
+import NotificationLink from "./notification-link";
+
+function afficherDateNotification(dateTexte: string) {
+  const date = new Date(dateTexte);
+  const maintenant = new Date();
+
+  const differenceMs = maintenant.getTime() - date.getTime();
+
+  const differenceMinutes = Math.floor(differenceMs / (1000 * 60));
+
+  if (differenceMinutes < 1) {
+    return "À l'instant";
+  }
+
+  if (differenceMinutes < 60) {
+    return `Il y a ${differenceMinutes} min`;
+  }
+
+  const differenceHeures = Math.floor(differenceMinutes / 60);
+
+  if (differenceHeures < 24) {
+    return `Il y a ${differenceHeures} h`;
+  }
+
+  const dateNotification = date.toLocaleDateString("fr-FR", {
+    timeZone: "Europe/Paris",
+  });
+
+  const hier = new Date(
+    maintenant.getTime() - 24 * 60 * 60 * 1000,
+  ).toLocaleDateString("fr-FR", {
+    timeZone: "Europe/Paris",
+  });
+
+  const heure = date.toLocaleTimeString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Paris",
+  });
+
+  if (dateNotification === hier) {
+    return `Hier à ${heure}`;
+  }
+
+  const memeAnnee =
+    date.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      timeZone: "Europe/Paris",
+    }) ===
+    maintenant.toLocaleDateString("fr-FR", {
+      year: "numeric",
+      timeZone: "Europe/Paris",
+    });
+
+  if (memeAnnee) {
+    const jour = date.toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      timeZone: "Europe/Paris",
+    });
+
+    return `${jour} à ${heure}`;
+  }
+
+  const dateLongue = date.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Paris",
+  });
+
+  return `${dateLongue} à ${heure}`;
+}
 
 export default async function NotificationsPage() {
+  const supabase = await createClient();
 
-    const supabase =
-        await createClient();
+  // ------------------------------------------------
+  // UTILISATEUR
+  // ------------------------------------------------
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    // ------------------------------------------------
-    // UTILISATEUR
-    // ------------------------------------------------
+  if (!user) {
+    redirect("/auth/login");
+  }
 
-    const {
-        data: {
-            user,
-        },
-    } = await supabase.auth.getUser();
+  // ------------------------------------------------
+  // NOTIFICATIONS
+  // ------------------------------------------------
 
-
-    if (!user) {
-        redirect("/auth/login");
-    }
-
-
-    // ------------------------------------------------
-    // NOTIFICATIONS
-    // ------------------------------------------------
-
-    const {
-        data: notifications,
-        error,
-    } = await supabase
-        .from("notifications")
-        .select(`
+  const { data: notifications, error } = await supabase
+    .from("notifications")
+    .select(
+      `
             id,
             type,
             titre,
@@ -44,192 +105,109 @@ export default async function NotificationsPage() {
             lien,
             created_at,
             lu_at
-        `)
-        .order(
-            "created_at",
-            {
-                ascending: false,
-            }
-        );
+        `,
+    )
+    .order("created_at", {
+      ascending: false,
+    });
 
-
-    if (error) {
-
-        console.error(
-            "Erreur chargement notifications :",
-            error
-        );
-
-
-        return (
-            <main className="mx-auto max-w-2xl p-6">
-
-                <h1 className="mb-6 text-2xl font-bold">
-                    Notifications
-                </h1>
-
-                <p>
-                    Impossible de charger les notifications.
-                </p>
-
-            </main>
-        );
-    }
-
-
-    const listeNotifications =
-        notifications ?? [];
-
-    const nombreNonLues =
-        listeNotifications.filter(
-            (notification) =>
-                notification.lu_at === null
-        ).length;
-
-    // ------------------------------------------------
-    // AFFICHAGE
-    // ------------------------------------------------
+  if (error) {
+    console.error("Erreur chargement notifications :", error);
 
     return (
-        <main className="mx-auto max-w-2xl p-6">
+      <main className="mx-auto max-w-2xl p-6">
+        <h1 className="mb-6 text-2xl font-bold">Notifications</h1>
 
-            <div
-                className="
+        <p>Impossible de charger les notifications.</p>
+      </main>
+    );
+  }
+
+  const listeNotifications = notifications ?? [];
+
+  const nombreNonLues = listeNotifications.filter(
+    (notification) => notification.lu_at === null,
+  ).length;
+
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
+  return (
+    <main className="mx-auto max-w-2xl p-6">
+      <div
+        className="
         mb-6
         flex
         items-start
         justify-between
         gap-4
     "
-            >
+      >
+        <div>
+          <h1 className="text-2xl font-bold">Notifications</h1>
 
-                <div>
+          {nombreNonLues > 0 ? (
+            <p className="mt-1 text-sm text-gray-500">
+              {nombreNonLues === 1
+                ? "1 notification non lue"
+                : `${nombreNonLues} notifications non lues`}
+            </p>
+          ) : listeNotifications.length > 0 ? (
+            <p className="mt-1 text-sm text-gray-500">
+              Aucune notification non lue
+            </p>
+          ) : null}
+        </div>
 
-                    <h1 className="text-2xl font-bold">
-                        Notifications
-                    </h1>
+        <ToutMarquerLuButton nombreNonLues={nombreNonLues} />
+      </div>
 
+      {listeNotifications.length === 0 ? (
+        <p className="text-gray-500">Vous n'avez aucune notification.</p>
+      ) : (
+        <div className="space-y-3">
+          {listeNotifications.map((notification) => {
+            const estNonLue = notification.lu_at === null;
 
-                    {nombreNonLues > 0 ? (
-
-                        <p className="mt-1 text-sm text-gray-500">
-                            {nombreNonLues === 1
-                                ? "1 notification non lue"
-                                : `${nombreNonLues} notifications non lues`}
-                        </p>
-
-                    ) : listeNotifications.length > 0 ? (
-
-                        <p className="mt-1 text-sm text-gray-500">
-                            Aucune notification non lue
-                        </p>
-
-                    ) : null}
-
-                </div>
-
-
-                <ToutMarquerLuButton
-                    nombreNonLues={
-                        nombreNonLues
-                    }
-                />
-
-            </div>
-
-
-            {listeNotifications.length === 0 ? (
-
-                <p className="text-gray-500">
-                    Vous n'avez aucune notification.
-                </p>
-
-            ) : (
-
-                <div className="space-y-3">
-
-                    {listeNotifications.map(
-                        (notification) => {
-
-                            const estNonLue =
-                                notification.lu_at === null;
-
-
-                            const contenu = (
-
-                                <div
-                                    className={`
+            const contenu = (
+              <div
+                className={`
                                         rounded
                                         border
                                         p-4
                                         transition
 
-                                        ${estNonLue
-                                            ? "bg-[#8ED8B6]/10"
-                                            : ""
-                                        }
+                                        ${estNonLue ? "bg-[#8ED8B6]/10" : ""}
                                     `}
-                                >
-
-                                    <div
-                                        className="
+              >
+                <div
+                  className="
                                             flex
                                             items-start
                                             justify-between
                                             gap-3
                                         "
-                                    >
+                >
+                  <div>
+                    <p className={estNonLue ? "font-semibold" : "font-medium"}>
+                      {notification.titre}
+                    </p>
 
-                                        <div>
+                    {notification.contenu && (
+                      <p className="mt-1 text-sm text-gray-600">
+                        {notification.contenu}
+                      </p>
+                    )}
 
-                                            <p
-                                                className={
-                                                    estNonLue
-                                                        ? "font-semibold"
-                                                        : "font-medium"
-                                                }
-                                            >
-                                                {notification.titre}
-                                            </p>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {afficherDateNotification(notification.created_at)}
+                    </p>
+                  </div>
 
-
-                                            {notification.contenu && (
-
-                                                <p className="mt-1 text-sm text-gray-600">
-
-                                                    {
-                                                        notification.contenu
-                                                    }
-
-                                                </p>
-
-                                            )}
-
-
-                                            <p className="mt-2 text-xs text-gray-500">
-
-                                                {new Date(
-                                                    notification.created_at
-                                                ).toLocaleString(
-                                                    "fr-FR",
-                                                    {
-                                                        dateStyle:
-                                                            "short",
-
-                                                        timeStyle:
-                                                            "short",
-                                                    }
-                                                )}
-
-                                            </p>
-
-                                        </div>
-
-
-                                        {estNonLue && (
-
-                                            <span
-                                                className="
+                  {estNonLue && (
+                    <span
+                      className="
                                                     mt-1
                                                     h-2.5
                                                     w-2.5
@@ -237,58 +215,32 @@ export default async function NotificationsPage() {
                                                     rounded-full
                                                     bg-[#8ED8B6]
                                                 "
-                                                title="Non lue"
-                                            />
-
-                                        )}
-
-                                    </div>
-
-                                </div>
-                            );
-
-
-                            // Notification avec destination
-                            if (notification.lien) {
-
-                                return (
-                                    <NotificationLink
-                                        key={
-                                            notification.id
-                                        }
-                                        notificationId={
-                                            notification.id
-                                        }
-                                        href={
-                                            notification.lien
-                                        }
-                                        estNonLue={
-                                            estNonLue
-                                        }
-                                    >
-                                        {contenu}
-                                    </NotificationLink>
-                                );
-                            }
-
-
-                            // Notification sans destination
-                            return (
-                                <div
-                                    key={
-                                        notification.id
-                                    }
-                                >
-                                    {contenu}
-                                </div>
-                            );
-                        }
-                    )}
-
+                      title="Non lue"
+                    />
+                  )}
                 </div>
+              </div>
+            );
 
-            )}
+            // Notification avec destination
+            if (notification.lien) {
+              return (
+                <NotificationLink
+                  key={notification.id}
+                  notificationId={notification.id}
+                  href={notification.lien}
+                  estNonLue={estNonLue}
+                >
+                  {contenu}
+                </NotificationLink>
+              );
+            }
 
-        </main>
-    );
+            // Notification sans destination
+            return <div key={notification.id}>{contenu}</div>;
+          })}
+        </div>
+      )}
+    </main>
+  );
 }
