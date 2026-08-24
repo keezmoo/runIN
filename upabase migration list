@@ -1,0 +1,29 @@
+[35mapp/sorties/[id]/modifier/modifier-sortie-form.tsx[m[36m:[m[32m26[m[36m:[m    [1;31mgenres_autorises[m: Genre[];
+[35mapp/sorties/[id]/modifier/modifier-sortie-form.tsx[m[36m:[m[32m113[m[36m:[m        sortie.[1;31mgenres_autorises[m
+[35mapp/sorties/[id]/modifier/modifier-sortie-form.tsx[m[36m:[m[32m372[m[36m:[m                [1;31mgenres_autorises[m:
+[35mapp/sorties/[id]/modifier/page.tsx[m[36m:[m[32m63[m[36m:[m            [1;31mgenres_autorises[m,
+[35mapp/sorties/[id]/page.tsx[m[36m:[m[32m94[m[36m:[m    [1;31mgenres_autorises[m,
+[35mapp/sorties/[id]/page.tsx[m[36m:[m[32m114[m[36m:[m        sortie.[1;31mgenres_autorises[m.includes(
+[35mapp/sorties/[id]/page.tsx[m[36m:[m[32m436[m[36m:[m        sortie.[1;31mgenres_autorises[m.length === 3
+[35mapp/sorties/[id]/page.tsx[m[36m:[m[32m438[m[36m:[m            : sortie.[1;31mgenres_autorises[m
+[35mapp/sorties/nouvelle/sortie-form.tsx[m[36m:[m[32m206[m[36m:[m                p_[1;31mgenres_autorises[m:
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m6[m[36m:[madd column [1;31mgenres_autorises[m text[]
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m16[m[36m:[madd constraint sorties_[1;31mgenres_autorises[m_check
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m18[m[36m:[m    cardinality([1;31mgenres_autorises[m) >= 1
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m20[m[36m:[m    [1;31mgenres_autorises[m <@
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m53[m[36m:[m        any(new.[1;31mgenres_autorises[m)
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m75[m[36m:[m              any(new.[1;31mgenres_autorises[m)
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m99[m[36m:[m    [1;31mgenres_autorises[m,
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m115[m[36m:[m    v_[1;31mgenres_autorises[m text[];
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m130[m[36m:[m    select s.[1;31mgenres_autorises[m
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m131[m[36m:[m    into v_[1;31mgenres_autorises[m
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m136[m[36m:[m    if v_[1;31mgenres_autorises[m is null then
+[35msupabase/migrations/20260821122438_genres_autorises_sorties.sql[m[36m:[m[32m144[m[36m:[m        any(v_[1;31mgenres_autorises[m)
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m17[m[36m:[m    p_[1;31mgenres_autorises[m text[]
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m34[m[36m:[m        p_[1;31mgenres_autorises[m is null
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m35[m[36m:[m        or cardinality(p_[1;31mgenres_autorises[m) = 0
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m36[m[36m:[m        or cardinality(p_[1;31mgenres_autorises[m) > 3
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m38[m[36m:[m            p_[1;31mgenres_autorises[m,
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m42[m[36m:[m            p_[1;31mgenres_autorises[m <@
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m99[m[36m:[m        set [1;31mgenres_autorises[m =
+[35msupabase/migrations/20260821122837_ajout_genres_creation_sortie.sql[m[36m:[m[32m100[m[36m:[m            p_[1;31mgenres_autorises[m
