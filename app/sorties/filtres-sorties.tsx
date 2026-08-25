@@ -833,29 +833,22 @@ export default function FiltresSorties({
 
       {/* RECHERCHER */}
 
-      <div
-        className="
-        flex
-        flex-col
-        items-center
-        gap-2
-        pt-2
-    "
-      >
+
+      <div className="flex items-center gap-2 pt-2">
         <button
           type="button"
           onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
           className="
-            flex
-            h-9
-            w-16
-            items-center
-            justify-center
-            rounded
-            text-2xl
-            font-bold
-            leading-none
-        "
+      h-10
+      w-12
+      shrink-0
+      items-center
+      justify-center
+      rounded
+      text-xl
+      font-bold
+      leading-none
+    "
           aria-label={
             niveauFiltres === 1
               ? "Afficher les filtres sportifs"
@@ -865,38 +858,38 @@ export default function FiltresSorties({
           {niveauFiltres === 1 ? "▼" : "▲"}
         </button>
 
-        <div className="flex items-center gap-3">
-          {niveauFiltres === 3 && (
-            <button
-              type="button"
-              onClick={reinitialiserFiltres}
-              disabled={loading}
-              className="
-                rounded
-                border
-                px-4
-                py-2
-                text-sm
-            "
-            >
-              Réinitialiser
-            </button>
-          )}
-
+        {niveauFiltres === 3 && (
           <button
-            type="submit"
+            type="button"
+            onClick={reinitialiserFiltres}
             disabled={loading}
             className="
-            rounded
-            border
-            px-6
-            py-2
-            font-medium00
-        "
+        shrink-0
+        rounded
+        border
+        px-3
+        py-2
+        text-sm
+      "
           >
-            {loading ? "Recherche..." : "Rechercher"}
+            Réinitialiser
           </button>
-        </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="
+      flex-1
+      rounded
+      border
+      px-4
+      py-2
+      font-medium
+    "
+        >
+          {loading ? "Recherche..." : "Rechercher"}
+        </button>
       </div>
 
       {message && <p className="text-sm">{message}</p>}
