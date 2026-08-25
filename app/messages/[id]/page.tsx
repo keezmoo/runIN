@@ -2,219 +2,157 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import MessageForm from "./message-form";
-import MarquerMessagesLus
-    from "./marquer-messages-lus";
-import RealtimeMessages
-    from "./realtime-messages";
-import ScrollVersDernierMessage
-    from "./scroll-vers-dernier-message";
-import StatutConversation
-    from "./statut-conversation";
-import ContacterParticipantButton
-    from "../../sorties/[id]/contacter-participant-button";
+import MarquerMessagesLus from "./marquer-messages-lus";
+import RealtimeMessages from "./realtime-messages";
+import ScrollVersDernierMessage from "./scroll-vers-dernier-message";
+import StatutConversation from "./statut-conversation";
+import ContacterParticipantButton from "../../sorties/[id]/contacter-participant-button";
 
 type PageProps = {
-    params: Promise<{
-        id: string;
-    }>;
+  params: Promise<{
+    id: string;
+  }>;
 };
 
+export default async function ConversationPage({ params }: PageProps) {
+  const { id } = await params;
 
-export default async function ConversationPage({
-    params,
-}: PageProps) {
+  const supabase = await createClient();
 
-    const { id } = await params;
+  // ------------------------------------------------
+  // UTILISATEUR CONNECTÉ
+  // ------------------------------------------------
 
-    const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect("/auth/login");
+  }
 
-    // ------------------------------------------------
-    // UTILISATEUR CONNECTÉ
-    // ------------------------------------------------
+  // ------------------------------------------------
+  // CONVERSATION
+  // ------------------------------------------------
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect("/auth/login");
-    }
-
-
-    // ------------------------------------------------
-    // CONVERSATION
-    // ------------------------------------------------
-
-    const {
-        data: conversation,
-        error: conversationError,
-    } = await supabase
-        .from("conversations_sortie")
-        .select(`
+  const { data: conversation, error: conversationError } = await supabase
+    .from("conversations_sortie")
+    .select(
+      `
             id,
             sortie_id,
             utilisateur_id,
             created_at
-        `)
-        .eq("id", id)
-        .maybeSingle();
+        `,
+    )
+    .eq("id", id)
+    .maybeSingle();
 
+  if (conversationError || !conversation) {
+    notFound();
+  }
 
-    if (
-        conversationError ||
-        !conversation
-    ) {
-        notFound();
-    }
+  // ------------------------------------------------
+  // SORTIE
+  // ------------------------------------------------
 
-
-    // ------------------------------------------------
-    // SORTIE
-    // ------------------------------------------------
-
-    const {
-        data: sortie,
-        error: sortieError,
-    } = await supabase
-        .from("sorties")
-        .select(`
+  const { data: sortie, error: sortieError } = await supabase
+    .from("sorties")
+    .select(
+      `
             id,
             titre,
             organisateur_id,
             date_heure_depart,
             duree_estimee_minutes,
             statut
-        `)
-        .eq(
-            "id",
-            conversation.sortie_id
-        )
-        .maybeSingle();
+        `,
+    )
+    .eq("id", conversation.sortie_id)
+    .maybeSingle();
 
+  if (sortieError || !sortie) {
+    notFound();
+  }
 
-    if (
-        sortieError ||
-        !sortie
-    ) {
-        notFound();
-    }
+  // ------------------------------------------------
+  // INTERLOCUTEUR
+  // ------------------------------------------------
 
+  const interlocuteurId =
+    user.id === conversation.utilisateur_id
+      ? sortie.organisateur_id
+      : conversation.utilisateur_id;
 
-    // ------------------------------------------------
-    // INTERLOCUTEUR
-    // ------------------------------------------------
-
-    const interlocuteurId =
-        user.id === conversation.utilisateur_id
-            ? sortie.organisateur_id
-            : conversation.utilisateur_id;
-
-
-    const {
-        data: interlocuteur,
-    } = await supabase
-        .from("profiles")
-        .select(`
+  const { data: interlocuteur } = await supabase
+    .from("profiles")
+    .select(
+      `
             id,
             nom
-        `)
-        .eq(
-            "id",
-            interlocuteurId
-        )
-        .maybeSingle();
+        `,
+    )
+    .eq("id", interlocuteurId)
+    .maybeSingle();
 
+  // ------------------------------------------------
+  // MESSAGES
+  // ------------------------------------------------
 
-    // ------------------------------------------------
-    // MESSAGES
-    // ------------------------------------------------
-
-    const {
-        data: messages,
-        error: messagesError,
-    } = await supabase
-        .from("messages")
-        .select(`
+  const { data: messages, error: messagesError } = await supabase
+    .from("messages")
+    .select(
+      `
             id,
             expediteur_id,
             contenu,
             created_at
-        `)
-        .eq(
-            "conversation_id",
-            conversation.id
-        )
-        .order(
-            "created_at",
-            {
-                ascending: true,
-            }
-        );
+        `,
+    )
+    .eq("conversation_id", conversation.id)
+    .order("created_at", {
+      ascending: true,
+    });
 
-
-    if (messagesError) {
-        return (
-            <main className="mx-auto max-w-2xl p-6">
-                <p>
-                    Impossible de charger les messages.
-                </p>
-            </main>
-        );
-    }
-
-    // ------------------------------------------------
-    // ÉTAT DE LA CONVERSATION
-    // ------------------------------------------------
-
-    const maintenant =
-        new Date();
-
-
-    const dateDepart =
-        new Date(
-            sortie.date_heure_depart
-        );
-
-
-    const dureeMinutes =
-        sortie.duree_estimee_minutes ?? 0;
-
-
-    const dateFinEstimee =
-        new Date(
-            dateDepart.getTime() +
-            dureeMinutes * 60 * 1000
-        );
-
-
-    const dateClotureConversation =
-        new Date(
-            dateFinEstimee.getTime() +
-            12 * 60 * 60 * 1000
-        );
-
-
-    const sortieAnnulee =
-        sortie.statut === "annulee";
-
-
-    const conversationExpiree =
-        maintenant >
-        dateClotureConversation;
-
-
-    const conversationOuverte =
-        !sortieAnnulee &&
-        !conversationExpiree;
-
-    // ------------------------------------------------
-    // AFFICHAGE
-    // ------------------------------------------------
-
+  if (messagesError) {
     return (
-        <main
-            className="
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Impossible de charger les messages.</p>
+      </main>
+    );
+  }
+
+  // ------------------------------------------------
+  // ÉTAT DE LA CONVERSATION
+  // ------------------------------------------------
+
+  const maintenant = new Date();
+
+  const dateDepart = new Date(sortie.date_heure_depart);
+
+  const dureeMinutes = sortie.duree_estimee_minutes ?? 0;
+
+  const dateFinEstimee = new Date(
+    dateDepart.getTime() + dureeMinutes * 60 * 1000,
+  );
+
+  const dateClotureConversation = new Date(
+    dateFinEstimee.getTime() + 12 * 60 * 60 * 1000,
+  );
+
+  const sortieAnnulee = sortie.statut === "annulee";
+
+  const conversationExpiree = maintenant > dateClotureConversation;
+
+  const conversationOuverte = !sortieAnnulee && !conversationExpiree;
+
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
+  return (
+    <main
+      className="
             mx-auto
             flex
             h-[calc(100dvh-8rem)]
@@ -225,212 +163,147 @@ export default async function ConversationPage({
             md:h-[calc(100dvh-5rem)]
             md:p-6
         "
-        >
+    >
+      <MarquerMessagesLus conversationId={conversation.id} />
 
-            <MarquerMessagesLus
-                conversationId={
-                    conversation.id
-                }
-            />
+      <RealtimeMessages conversationId={conversation.id} userId={user.id} />
 
-            <RealtimeMessages
-                conversationId={
-                    conversation.id
-                }
-                userId={
-                    user.id
-                }
-            />
+      {/* ------------------------------------------------ */}
+      {/* EN-TÊTE */}
+      {/* ------------------------------------------------ */}
 
+      <header className="shrink-0 border-b pb-4">
+        <Link href="/messages" className="text-sm underline">
+          ← Messages
+        </Link>
 
-            {/* ------------------------------------------------ */}
-            {/* EN-TÊTE */}
-            {/* ------------------------------------------------ */}
+        <h1 className="mt-3 text-2xl font-bold">
+          <Link href={`/sorties/${sortie.id}`} className="hover:underline">
+            {sortie.titre}
+          </Link>
+        </h1>
 
-            <header className="shrink-0 border-b pb-4">
+        <p className="mt-1 text-gray-500">
+          Conversation avec{" "}
+          <Link
+            href={`/membres/${interlocuteurId}`}
+            className="font-semibold hover:underline"
+          >
+            {interlocuteur?.nom ?? "Utilisateur"}
+          </Link>
+        </p>
+      </header>
 
-                <Link
-                    href={`/sorties/${sortie.id}`}
-                    className="text-sm underline"
-                >
-                    ← Voir la sortie
-                </Link>
+      {/* ------------------------------------------------ */}
+      {/* STATUT */}
+      {/* ------------------------------------------------ */}
 
-                <h1 className="mt-3 text-2xl font-bold">
-                    {sortie.titre}
-                </h1>
+      <div className="shrink-0 py-3">
+        <StatutConversation
+          statutSortie={sortie.statut}
+          dateFinEstimee={dateFinEstimee.toISOString()}
+          dateCloture={dateClotureConversation.toISOString()}
+        />
+      </div>
 
-                <p className="mt-1 text-gray-500">
-                    Conversation avec{" "}
-                    <strong>
-                        {interlocuteur?.nom ??
-                            "Utilisateur"}
-                    </strong>
-                </p>
+      {/* ------------------------------------------------ */}
+      {/* ZONE SCROLLABLE DES MESSAGES */}
+      {/* ------------------------------------------------ */}
 
-            </header>
-
-
-            {/* ------------------------------------------------ */}
-            {/* STATUT */}
-            {/* ------------------------------------------------ */}
-
-            <div className="shrink-0 py-3">
-
-                <StatutConversation
-                    statutSortie={
-                        sortie.statut
-                    }
-                    dateFinEstimee={
-                        dateFinEstimee.toISOString()
-                    }
-                    dateCloture={
-                        dateClotureConversation.toISOString()
-                    }
-                />
-
-            </div>
-
-
-            {/* ------------------------------------------------ */}
-            {/* ZONE SCROLLABLE DES MESSAGES */}
-            {/* ------------------------------------------------ */}
-
-            <section
-                data-messages-scroll
-                className="
+      <section
+        data-messages-scroll
+        className="
                 min-h-0
                 flex-1
                 overflow-y-auto
                 pr-1
             "
-            >
+      >
+        <div className="pb-3">
+          {(messages ?? []).length === 0 ? (
+            <p className="text-gray-500">Aucun message pour le moment.</p>
+          ) : (
+            (messages ?? []).map((message, index) => {
+              const estMoi = message.expediteur_id === user.id;
 
-                <div className="space-y-3 pb-3">
+              const messagePrecedent =
+                index > 0 ? (messages ?? [])[index - 1] : null;
 
-                    {(messages ?? []).length === 0 ? (
+              const memeExpediteurQuePrecedent =
+                messagePrecedent?.expediteur_id === message.expediteur_id;
 
-                        <p className="text-gray-500">
-                            Aucun message pour le moment.
-                        </p>
+              return (
+                <div
+                    key={message.id}
+                    className={`
+                    flex
+                    ${estMoi ? "justify-end" : "justify-start"}
+                    ${memeExpediteurQuePrecedent ? "mt-1" : "mt-3"}
+`}
+                >
+                  <div
+                    className={`
+        min-w-0
+        max-w-[80%]
+        rounded-lg
+        border
+        px-4
+        py-3
 
-                    ) : (
+        ${estMoi ? "border-[#8ED8B6]/30 bg-[#8ED8B6]/10" : "bg-gray-500/10"}
+      `}
+                  >
+                    <p
+                      className="
+          whitespace-pre-wrap
+          break-words
+        "
+                    >
+                      {message.contenu}
+                    </p>
 
-                        (messages ?? []).map(
-                            (message) => {
-
-                                const estMoi =
-                                    message.expediteur_id ===
-                                    user.id;
-
-                                return (
-                                    <div
-                                        key={message.id}
-                                        className={
-                                            estMoi
-                                                ? "flex justify-end"
-                                                : "flex justify-start"
-                                        }
-                                    >
-
-                                        <div
-                                            className="
-                                            max-w-[80%]
-                                            rounded
-                                            border
-                                            px-4
-                                            py-3
-                                        "
-                                        >
-
-                                            <p className="text-sm font-semibold">
-                                                {estMoi
-                                                    ? "Vous"
-                                                    : interlocuteur?.nom ??
-                                                    "Utilisateur"}
-                                            </p>
-
-                                            <p className="mt-1 whitespace-pre-wrap">
-                                                {message.contenu}
-                                            </p>
-
-                                            <p className="mt-2 text-xs text-gray-500">
-
-                                                {new Date(
-                                                    message.created_at
-                                                ).toLocaleString(
-                                                    "fr-FR",
-                                                    {
-                                                        dateStyle:
-                                                            "short",
-
-                                                        timeStyle:
-                                                            "short",
-                                                    }
-                                                )}
-
-                                            </p>
-
-                                        </div>
-
-                                    </div>
-                                );
-                            }
-                        )
-
-                    )}
-
-
-                    <ScrollVersDernierMessage
-                        dernierMessageId={
-                            messages &&
-                                messages.length > 0
-                                ? messages[
-                                    messages.length - 1
-                                ].id
-                                : undefined
-                        }
-
-                        dernierMessageEstMoi={
-                            messages &&
-                                messages.length > 0
-                                ? messages[
-                                    messages.length - 1
-                                ].expediteur_id ===
-                                user.id
-                                : false
-                        }
-                    />
-
+                    <p className="mt-2 text-xs text-gray-500">
+                      {new Date(message.created_at).toLocaleString("fr-FR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
                 </div>
+              );
+            })
+          )}
 
-            </section>
+          <ScrollVersDernierMessage
+            dernierMessageId={
+              messages && messages.length > 0
+                ? messages[messages.length - 1].id
+                : undefined
+            }
+            dernierMessageEstMoi={
+              messages && messages.length > 0
+                ? messages[messages.length - 1].expediteur_id === user.id
+                : false
+            }
+          />
+        </div>
+      </section>
 
+      {/* ------------------------------------------------ */}
+      {/* ZONE D'ÉCRITURE */}
+      {/* ------------------------------------------------ */}
 
-            {/* ------------------------------------------------ */}
-            {/* ZONE D'ÉCRITURE */}
-            {/* ------------------------------------------------ */}
-
-            {conversationOuverte && (
-
-                <section
-                    className="
+      {conversationOuverte && (
+        <section
+          className="
                     shrink-0
                     border-t
                     pt-4
                 "
-                >
-
-                    <MessageForm
-                        conversationId={
-                            conversation.id
-                        }
-                    />
-
-                </section>
-
-            )}
-
-        </main>
-    );
+        >
+          <MessageForm conversationId={conversation.id} />
+        </section>
+      )}
+    </main>
+  );
 }
