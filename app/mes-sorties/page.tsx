@@ -1,45 +1,33 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import SupprimerSortieButton from "./supprimer-sortie-button";
-import {
-    afficherDuree,
-    afficherTypeEntrainement,
-} from "@/lib/sortie-utils";
-import AnnulerSortieButton from "./annuler-sortie-button";
-import {
-    formatDateLongue,
-    formatHeure,
-    getDateKey,
-} from "@/lib/date-utils";
-
+import { afficherDuree, afficherTypeEntrainement } from "@/lib/sortie-utils";
+import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
 
 export default async function MesSortiesPage() {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    // ------------------------------------------------
-    // UTILISATEUR CONNECTÉ
-    // ------------------------------------------------
+  // ------------------------------------------------
+  // UTILISATEUR CONNECTÉ
+  // ------------------------------------------------
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-        redirect("/auth/login");
-    }
+  if (!user) {
+    redirect("/auth/login");
+  }
 
-    // ------------------------------------------------
-    // SORTIES QUE J'ORGANISE
-    // ------------------------------------------------
+  // ------------------------------------------------
+  // SORTIES QUE J'ORGANISE
+  // ------------------------------------------------
 
-    const {
-        data: sortiesOrganisees,
-        error: sortiesOrganiseesError,
-    } = await supabase
-        .from("sorties")
-        .select(
-            `
+  const { data: sortiesOrganisees, error: sortiesOrganiseesError } =
+    await supabase
+      .from("sorties")
+      .select(
+        `
         id,
         titre,
         date_heure_depart,
@@ -51,27 +39,25 @@ export default async function MesSortiesPage() {
         denivele_positif_m,
         duree_estimee_minutes,
         statut
+      `,
+      )
+      .eq("organisateur_id", user.id)
+      .gte("date_heure_depart", new Date().toISOString())
+      .order("date_heure_depart", {
+        ascending: true,
+      });
+
+  // ------------------------------------------------
+  // SORTIES PASSÉES QUE J'AI ORGANISÉES
+  // ------------------------------------------------
+
+  const {
+    data: sortiesOrganiseesPassees,
+    error: sortiesOrganiseesPasseesError,
+  } = await supabase
+    .from("sorties")
+    .select(
       `
-        )
-        .eq("organisateur_id", user.id)
-        .gte(
-            "date_heure_depart",
-            new Date().toISOString()
-        )
-        .order("date_heure_depart", {
-            ascending: true,
-        });
-
-    // ------------------------------------------------
-    // SORTIES PASSÉES QUE J'AI ORGANISÉES
-    // ------------------------------------------------
-
-    const {
-        data: sortiesOrganiseesPassees,
-        error: sortiesOrganiseesPasseesError,
-    } = await supabase
-        .from("sorties")
-        .select(`
         id,
         titre,
         date_heure_depart,
@@ -83,225 +69,112 @@ export default async function MesSortiesPage() {
         denivele_positif_m,
         duree_estimee_minutes,
         statut
-    `)
-        .eq("organisateur_id", user.id)
-        .lt(
-            "date_heure_depart",
-            new Date().toISOString()
-        )
-        .order("date_heure_depart", {
-            ascending: false,
-        });
+    `,
+    )
+    .eq("organisateur_id", user.id)
+    .lt("date_heure_depart", new Date().toISOString())
+    .order("date_heure_depart", {
+      ascending: false,
+    });
 
-    // ------------------------------------------------
-    // DEMANDES EN ATTENTE SUR MES SORTIES
-    // ------------------------------------------------
+  // ------------------------------------------------
+  // DEMANDES EN ATTENTE SUR MES SORTIES
+  // ------------------------------------------------
 
-    const idsSortiesOrganisees =
-        sortiesOrganisees?.map(
-            (sortie) => sortie.id
-        ) ?? [];
+  const idsSortiesOrganisees =
+    sortiesOrganisees?.map((sortie) => sortie.id) ?? [];
 
-    // ------------------------------------------------
-    // INTERACTIONS SUR MES SORTIES
-    // ------------------------------------------------
+  // ------------------------------------------------
+  // DEMANDES SUR MES SORTIES
+  // ------------------------------------------------
 
-    let demandesSurMesSorties: {
-        sortie_id: string;
-        statut: string;
-    }[] = [];
+  let demandesSurMesSorties: {
+    sortie_id: string;
+    statut: string;
+  }[] = [];
 
-    let participationsSurMesSorties: {
-        sortie_id: string;
-    }[] = [];
+  if (idsSortiesOrganisees.length > 0) {
+    const { data: demandesData, error: demandesError } = await supabase
+      .from("demandes_participation")
+      .select("sortie_id, statut")
+      .in("sortie_id", idsSortiesOrganisees);
 
-    let conversationsSurMesSorties: {
-        sortie_id: string;
-    }[] = [];
-
-    if (idsSortiesOrganisees.length > 0) {
-
-        // Toutes les demandes, quel que soit leur statut
-        const {
-            data: demandesData,
-            error: demandesError,
-        } = await supabase
-            .from("demandes_participation")
-            .select("sortie_id, statut")
-            .in(
-                "sortie_id",
-                idsSortiesOrganisees
-            );
-
-        if (demandesError) {
-            return (
-                <main className="mx-auto max-w-2xl p-6">
-                    <p>
-                        Erreur lors du chargement des demandes.
-                    </p>
-                </main>
-            );
-        }
-
-        demandesSurMesSorties =
-            demandesData ?? [];
-
-
-        // Participants inscrits
-        const {
-            data: participationsData,
-            error: participationsMesSortiesError,
-        } = await supabase
-            .from("participations")
-            .select("sortie_id")
-            .in(
-                "sortie_id",
-                idsSortiesOrganisees
-            );
-
-        if (participationsMesSortiesError) {
-            return (
-                <main className="mx-auto max-w-2xl p-6">
-                    <p>
-                        Erreur lors du chargement des participants.
-                    </p>
-                </main>
-            );
-        }
-
-        participationsSurMesSorties =
-            participationsData ?? [];
-
-        // Toutes les conversations créées
-        const {
-            data: conversationsData,
-            error: conversationsError,
-        } = await supabase
-            .from("conversations_sortie")
-            .select("sortie_id")
-            .in(
-                "sortie_id",
-                idsSortiesOrganisees
-            );
-
-        if (conversationsError) {
-            return (
-                <main className="mx-auto max-w-2xl p-6">
-                    <p>
-                        Erreur lors du chargement des conversations.
-                    </p>
-                </main>
-            );
-        }
-
-        conversationsSurMesSorties =
-            conversationsData ?? [];
-
-    }
-    
-    // ------------------------------------------------
-    // DEMANDES EN ATTENTE UNIQUEMENT
-    // ------------------------------------------------
-
-    const demandesEnAttente =
-        demandesSurMesSorties.filter(
-            (demande) =>
-                demande.statut === "en_attente"
-        );
-
-
-    // ------------------------------------------------
-    // NOMBRE DE DEMANDES EN ATTENTE PAR SORTIE
-    // ------------------------------------------------
-
-    const nombreDemandesParSortie =
-        demandesEnAttente.reduce<
-            Record<string, number>
-        >((compteur, demande) => {
-
-            compteur[demande.sortie_id] =
-                (compteur[demande.sortie_id] ?? 0) + 1;
-
-            return compteur;
-        }, {});
-
-    const sortiesAvecDemandes =
-        new Set(
-            demandesSurMesSorties.map(
-                (demande) =>
-                    demande.sortie_id
-            )
-        );
-
-    const sortiesAvecParticipants =
-        new Set(
-            participationsSurMesSorties.map(
-                (participation) =>
-                    participation.sortie_id
-            )
-        );
-
-    const sortiesAvecConversations =
-        new Set(
-            conversationsSurMesSorties.map(
-                (conversation) =>
-                    conversation.sortie_id
-            )
-        );
-
-    // ------------------------------------------------
-    // MES PROPRES DEMANDES DE PARTICIPATION EN ATTENTE
-    // ------------------------------------------------
-
-    const {
-        data: mesDemandesEnAttenteData,
-        error: mesDemandesEnAttenteError,
-    } = await supabase
-        .from("demandes_participation")
-        .select("sortie_id")
-        .eq("utilisateur_id", user.id)
-        .eq("statut", "en_attente");
-
-    if (mesDemandesEnAttenteError) {
-        return (
-            <main className="mx-auto max-w-2xl p-6">
-                <p>
-                    Erreur lors du chargement de vos demandes.
-                </p>
-            </main>
-        );
+    if (demandesError) {
+      return (
+        <main className="mx-auto max-w-2xl p-6">
+          <p>Erreur lors du chargement des demandes.</p>
+        </main>
+      );
     }
 
-    const idsMesDemandesEnAttente = [
-        ...new Set(
-            (mesDemandesEnAttenteData ?? []).map(
-                (demande) => demande.sortie_id
-            )
-        ),
-    ];
+    demandesSurMesSorties = demandesData ?? [];
+  }
 
-    let sortiesEnAttente: {
-        id: string;
-        titre: string;
-        date_heure_depart: string;
-        lieu_depart: string;
-        type_sortie: string;
-        nombre_max_participants: number;
+  // ------------------------------------------------
+  // DEMANDES EN ATTENTE UNIQUEMENT
+  // ------------------------------------------------
 
-        type_entrainement: string | null;
-        distance_km: number | null;
-        denivele_positif_m: number | null;
-        duree_estimee_minutes: number | null;
-        statut: string;
-    }[] = [];
+  const demandesEnAttente = demandesSurMesSorties.filter(
+    (demande) => demande.statut === "en_attente",
+  );
 
-    if (idsMesDemandesEnAttente.length > 0) {
-        const {
-            data,
-            error: sortiesEnAttenteError,
-        } = await supabase
-            .from("sorties")
-            .select(`
+  // ------------------------------------------------
+  // NOMBRE DE DEMANDES EN ATTENTE PAR SORTIE
+  // ------------------------------------------------
+
+  const nombreDemandesParSortie = demandesEnAttente.reduce<
+    Record<string, number>
+  >((compteur, demande) => {
+    compteur[demande.sortie_id] = (compteur[demande.sortie_id] ?? 0) + 1;
+
+    return compteur;
+  }, {});
+
+  // ------------------------------------------------
+  // MES PROPRES DEMANDES DE PARTICIPATION EN ATTENTE
+  // ------------------------------------------------
+
+  const { data: mesDemandesEnAttenteData, error: mesDemandesEnAttenteError } =
+    await supabase
+      .from("demandes_participation")
+      .select("sortie_id")
+      .eq("utilisateur_id", user.id)
+      .eq("statut", "en_attente");
+
+  if (mesDemandesEnAttenteError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement de vos demandes.</p>
+      </main>
+    );
+  }
+
+  const idsMesDemandesEnAttente = [
+    ...new Set(
+      (mesDemandesEnAttenteData ?? []).map((demande) => demande.sortie_id),
+    ),
+  ];
+
+  let sortiesEnAttente: {
+    id: string;
+    titre: string;
+    date_heure_depart: string;
+    lieu_depart: string;
+    type_sortie: string;
+    nombre_max_participants: number;
+
+    type_entrainement: string | null;
+    distance_km: number | null;
+    denivele_positif_m: number | null;
+    duree_estimee_minutes: number | null;
+    statut: string;
+  }[] = [];
+
+  if (idsMesDemandesEnAttente.length > 0) {
+    const { data, error: sortiesEnAttenteError } = await supabase
+      .from("sorties")
+      .select(
+        `
         id,
         titre,
         date_heure_depart,
@@ -313,77 +186,59 @@ export default async function MesSortiesPage() {
         denivele_positif_m,
         duree_estimee_minutes,
         statut
-    `)
-            .in(
-                "id",
-                idsMesDemandesEnAttente
-            )
-            .gte(
-                "date_heure_depart",
-                new Date().toISOString()
-            )
-            .order(
-                "date_heure_depart",
-                { ascending: true }
-            );
+    `,
+      )
+      .in("id", idsMesDemandesEnAttente)
+      .gte("date_heure_depart", new Date().toISOString())
+      .order("date_heure_depart", { ascending: true });
 
-        if (sortiesEnAttenteError) {
-            return (
-                <main className="mx-auto max-w-2xl p-6">
-                    <p>
-                        Erreur lors du chargement des sorties en attente.
-                    </p>
-                </main>
-            );
-        }
-
-        sortiesEnAttente = data ?? [];
+    if (sortiesEnAttenteError) {
+      return (
+        <main className="mx-auto max-w-2xl p-6">
+          <p>Erreur lors du chargement des sorties en attente.</p>
+        </main>
+      );
     }
 
-    // ------------------------------------------------
-    // PARTICIPATIONS DE L'UTILISATEUR
-    // ------------------------------------------------
+    sortiesEnAttente = data ?? [];
+  }
 
-    const {
-        data: mesParticipations,
-        error: participationsError,
-    } = await supabase
-        .from("participations")
-        .select("sortie_id")
-        .eq("utilisateur_id", user.id);
+  // ------------------------------------------------
+  // PARTICIPATIONS DE L'UTILISATEUR
+  // ------------------------------------------------
 
-    const idsSortiesParticipees =
-        mesParticipations?.map(
-            (participation) => participation.sortie_id
-        ) ?? [];
+  const { data: mesParticipations, error: participationsError } = await supabase
+    .from("participations")
+    .select("sortie_id")
+    .eq("utilisateur_id", user.id);
 
-    // ------------------------------------------------
-    // SORTIES AUXQUELLES JE PARTICIPE
-    // ------------------------------------------------
+  const idsSortiesParticipees =
+    mesParticipations?.map((participation) => participation.sortie_id) ?? [];
 
-    let sortiesParticipees: {
-        id: string;
-        titre: string;
-        date_heure_depart: string;
-        lieu_depart: string;
-        type_sortie: string;
-        nombre_max_participants: number;
+  // ------------------------------------------------
+  // SORTIES AUXQUELLES JE PARTICIPE
+  // ------------------------------------------------
 
-        type_entrainement: string | null;
-        distance_km: number | null;
-        denivele_positif_m: number | null;
-        duree_estimee_minutes: number | null;
-        statut: string;
-    }[] = [];
+  let sortiesParticipees: {
+    id: string;
+    titre: string;
+    date_heure_depart: string;
+    lieu_depart: string;
+    type_sortie: string;
+    nombre_max_participants: number;
 
-    if (idsSortiesParticipees.length > 0) {
-        const {
-            data,
-            error: sortiesParticipeesError,
-        } = await supabase
-            .from("sorties")
-            .select(
-                `
+    type_entrainement: string | null;
+    distance_km: number | null;
+    denivele_positif_m: number | null;
+    duree_estimee_minutes: number | null;
+    statut: string;
+  }[] = [];
+
+  if (idsSortiesParticipees.length > 0) {
+    const { data, error: sortiesParticipeesError } = await supabase
+      .from("sorties")
+      .select(
+        `
           id,
           titre,
           date_heure_depart,
@@ -395,55 +250,48 @@ export default async function MesSortiesPage() {
         denivele_positif_m,
         duree_estimee_minutes,
         statut
-        `
-            )
-            .in("id", idsSortiesParticipees)
-            .gte(
-                "date_heure_depart",
-                new Date().toISOString()
-            )
-            .order("date_heure_depart", {
-                ascending: true,
-            });
+        `,
+      )
+      .in("id", idsSortiesParticipees)
+      .gte("date_heure_depart", new Date().toISOString())
+      .order("date_heure_depart", {
+        ascending: true,
+      });
 
-        if (sortiesParticipeesError) {
-            return (
-                <main className="mx-auto max-w-2xl p-6">
-                    <p>
-                        Erreur lors du chargement des sorties.
-                    </p>
-                </main>
-            );
-        }
-
-        sortiesParticipees = data ?? [];
+    if (sortiesParticipeesError) {
+      return (
+        <main className="mx-auto max-w-2xl p-6">
+          <p>Erreur lors du chargement des sorties.</p>
+        </main>
+      );
     }
 
-    // ------------------------------------------------
-    // SORTIES PASSÉES AUXQUELLES J'AI PARTICIPÉ
-    // ------------------------------------------------
+    sortiesParticipees = data ?? [];
+  }
 
-    let sortiesParticipeesPassees: {
-        id: string;
-        titre: string;
-        date_heure_depart: string;
-        lieu_depart: string;
-        type_sortie: string;
-        nombre_max_participants: number;
-        type_entrainement: string | null;
-        distance_km: number | null;
-        denivele_positif_m: number | null;
-        duree_estimee_minutes: number | null;
-        statut: string;
-    }[] = [];
+  // ------------------------------------------------
+  // SORTIES PASSÉES AUXQUELLES J'AI PARTICIPÉ
+  // ------------------------------------------------
 
-    if (idsSortiesParticipees.length > 0) {
-        const {
-            data,
-            error: sortiesParticipeesPasseesError,
-        } = await supabase
-            .from("sorties")
-            .select(`
+  let sortiesParticipeesPassees: {
+    id: string;
+    titre: string;
+    date_heure_depart: string;
+    lieu_depart: string;
+    type_sortie: string;
+    nombre_max_participants: number;
+    type_entrainement: string | null;
+    distance_km: number | null;
+    denivele_positif_m: number | null;
+    duree_estimee_minutes: number | null;
+    statut: string;
+  }[] = [];
+
+  if (idsSortiesParticipees.length > 0) {
+    const { data, error: sortiesParticipeesPasseesError } = await supabase
+      .from("sorties")
+      .select(
+        `
             id,
             titre,
             date_heure_depart,
@@ -455,498 +303,469 @@ export default async function MesSortiesPage() {
             denivele_positif_m,
             duree_estimee_minutes,
             statut
-        `)
-            .in(
-                "id",
-                idsSortiesParticipees
-            )
-            .lt(
-                "date_heure_depart",
-                new Date().toISOString()
-            )
-            .order("date_heure_depart", {
-                ascending: false,
-            });
+        `,
+      )
+      .in("id", idsSortiesParticipees)
+      .lt("date_heure_depart", new Date().toISOString())
+      .order("date_heure_depart", {
+        ascending: false,
+      });
 
-        if (sortiesParticipeesPasseesError) {
-            return (
-                <main className="mx-auto max-w-2xl p-6">
-                    <p>
-                        Erreur lors du chargement de l&apos;historique.
-                    </p>
-                </main>
-            );
-        }
-
-        sortiesParticipeesPassees =
-            data ?? [];
+    if (sortiesParticipeesPasseesError) {
+      return (
+        <main className="mx-auto max-w-2xl p-6">
+          <p>Erreur lors du chargement de l&apos;historique.</p>
+        </main>
+      );
     }
 
-    // ------------------------------------------------
-    // ERREURS
-    // ------------------------------------------------
+    sortiesParticipeesPassees = data ?? [];
+  }
 
-    if (
-        sortiesOrganiseesError ||
-        sortiesOrganiseesPasseesError ||
-        participationsError
-    ) {
-        return (
-            <main className="mx-auto max-w-2xl p-6">
-                <p>
-                    Erreur lors du chargement des sorties.
-                </p>
-            </main>
-        );
-    }
+  // ------------------------------------------------
+  // ERREURS
+  // ------------------------------------------------
 
-    const listeSortiesOrganisees =
-        (sortiesOrganisees ?? []).filter(
-            (sortie) =>
-                sortie.statut === "planifiee"
-        );
+  if (
+    sortiesOrganiseesError ||
+    sortiesOrganiseesPasseesError ||
+    participationsError
+  ) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des sorties.</p>
+      </main>
+    );
+  }
 
-    const sortiesOrganiseesAnnulees =
-        (sortiesOrganisees ?? []).filter(
-            (sortie) =>
-                sortie.statut === "annulee"
-        );
+  const listeSortiesOrganisees = (sortiesOrganisees ?? []).filter(
+    (sortie) => sortie.statut === "planifiee",
+  );
 
-    const listeSortiesParticipees =
-        sortiesParticipees.filter(
-            (sortie) =>
-                sortie.statut === "planifiee"
-        );
+  const listeSortiesParticipees = sortiesParticipees.filter(
+    (sortie) => sortie.statut === "planifiee",
+  );
 
-    const sortiesParticipeesAnnulees =
-        sortiesParticipees.filter(
-            (sortie) =>
-                sortie.statut === "annulee"
-        );
+  const listeSortiesEnAttente = sortiesEnAttente.filter(
+    (sortie) => sortie.statut === "planifiee",
+  );
 
-    // ------------------------------------------------
-    // PETIT COMPOSANT D'AFFICHAGE
-    // ------------------------------------------------
+  // ------------------------------------------------
+  // SORTIES ANNULÉES
+  // ------------------------------------------------
 
-    function afficherSortie(
-        sortie: {
-            id: string;
-            titre: string;
-            date_heure_depart: string;
-            lieu_depart: string;
-            type_sortie: string;
-            nombre_max_participants: number;
-            type_entrainement: string | null;
-            distance_km: number | null;
-            denivele_positif_m: number | null;
-            duree_estimee_minutes: number | null;
-            statut: string;
-        },
-        estOrganisateur: boolean,
-        demandeEnAttente: boolean = false
-    ) {
+  const sortiesOrganiseesAnnulees = [
+    ...(sortiesOrganisees ?? []).filter(
+      (sortie) => sortie.statut === "annulee",
+    ),
 
-        const dateKey = getDateKey(
-            new Date(sortie.date_heure_depart)
-        );
-        const nombreDemandes =
-            nombreDemandesParSortie[sortie.id] ?? 0;
+    ...(sortiesOrganiseesPassees ?? []).filter(
+      (sortie) => sortie.statut === "annulee",
+    ),
+  ];
 
-        const peutSupprimer =
-            estOrganisateur &&
-            sortie.statut === "planifiee" &&
-            new Date(
-                sortie.date_heure_depart
-            ).getTime() > Date.now() &&
-            !sortiesAvecDemandes.has(
-                sortie.id
-            ) &&
-            !sortiesAvecParticipants.has(
-                sortie.id
-            ) &&
-            !sortiesAvecConversations.has(
-                sortie.id
-            );
+  const sortiesParticipeesAnnulees = [
+    ...sortiesParticipees.filter((sortie) => sortie.statut === "annulee"),
 
-        return (
-            <div
-                key={sortie.id}
-                className="rounded border p-4"
-            >
+    ...sortiesParticipeesPassees.filter(
+      (sortie) => sortie.statut === "annulee",
+    ),
+  ];
 
-                {/* Partie cliquable vers la fiche */}
-                <Link
-                    href={`/sorties/${sortie.id}`}
-                    className="block rounded hover:bg-gray-500/5"
-                >
+  // ------------------------------------------------
+  // HISTORIQUE
+  // On exclut les sorties annulées,
+  // puisqu'elles ont leur propre section.
+  // ------------------------------------------------
 
-                    <h3 className="text-lg font-semibold">
-                        {sortie.titre}
-                    </h3>
+  const historiqueSortiesOrganisees = (sortiesOrganiseesPassees ?? []).filter(
+    (sortie) => sortie.statut !== "annulee",
+  );
 
-                    {sortie.statut === "annulee" && (
-                        <div className="mt-2">
-                            <span className="inline-block rounded-full border px-3 py-1 text-sm font-semibold">
-                                Sortie annulée
-                            </span>
-                        </div>
-                    )}
+  const historiqueSortiesParticipees = sortiesParticipeesPassees.filter(
+    (sortie) => sortie.statut !== "annulee",
+  );
 
-                    {/* TYPE DE SORTIE + ENTRAÎNEMENT */}
+  const nombreSortiesAnnulees =
+    sortiesOrganiseesAnnulees.length + sortiesParticipeesAnnulees.length;
 
-                    <p className="mt-1 text-sm font-medium">
+  const nombreSortiesHistorique =
+    historiqueSortiesOrganisees.length + historiqueSortiesParticipees.length;
 
-                        {sortie.type_sortie === "trail"
-                            ? "Trail"
-                            : "Route"}
+  const aDesSortiesAVenir =
+    listeSortiesOrganisees.length > 0 ||
+    listeSortiesParticipees.length > 0 ||
+    listeSortiesEnAttente.length > 0;
 
-                        {sortie.type_entrainement && (
-                            <>
-                                {" · "}
-                                {afficherTypeEntrainement(
-                                    sortie.type_entrainement
-                                )}
-                            </>
-                        )}
+  // ------------------------------------------------
+  // PETIT COMPOSANT D'AFFICHAGE
+  // ------------------------------------------------
 
-                    </p>
+  function afficherSortie(
+    sortie: {
+      id: string;
+      titre: string;
+      date_heure_depart: string;
+      lieu_depart: string;
+      type_sortie: string;
+      nombre_max_participants: number;
+      type_entrainement: string | null;
+      distance_km: number | null;
+      denivele_positif_m: number | null;
+      duree_estimee_minutes: number | null;
+      statut: string;
+    },
+    estOrganisateur: boolean,
+    demandeEnAttente: boolean = false,
+  ) {
+    const dateKey = getDateKey(new Date(sortie.date_heure_depart));
 
-
-                    {/* DISTANCE + D+ + DURÉE */}
-
-                    {(
-                        sortie.distance_km !== null ||
-                        sortie.denivele_positif_m !== null ||
-                        sortie.duree_estimee_minutes !== null
-                    ) && (
-
-                            <p className="mt-2 text-sm text-gray-600">
-
-                                {sortie.distance_km !== null && (
-                                    <>
-                                        {Number(
-                                            sortie.distance_km
-                                        ).toLocaleString(
-                                            "fr-FR",
-                                            {
-                                                maximumFractionDigits: 1,
-                                            }
-                                        )} km
-                                    </>
-                                )}
-
-
-                                {sortie.denivele_positif_m !== null && (
-                                    <>
-                                        {sortie.distance_km !== null &&
-                                            " · "}
-
-                                        {sortie.denivele_positif_m} m D+
-                                    </>
-                                )}
-
-
-                                {sortie.duree_estimee_minutes !== null && (
-                                    <>
-                                        {(
-                                            sortie.distance_km !== null ||
-                                            sortie.denivele_positif_m !== null
-                                        ) && " · "}
-
-                                        {afficherDuree(
-                                            sortie.duree_estimee_minutes
-                                        )}
-                                    </>
-                                )}
-
-                            </p>
-                        )}
-
-
-                    {/* DATE */}
-
-                    <p className="mt-2">
-                        {formatDateLongue(dateKey)}
-                        {" — "}
-                        <strong>
-                            {formatHeure(
-                                sortie.date_heure_depart
-                            )}
-                        </strong>
-                    </p>
-
-                    <p className="mt-1">
-                        {sortie.lieu_depart}
-                    </p>
-
-                    {demandeEnAttente && (
-                        <div className="mt-3">
-                            <span className="inline-block rounded-full border px-3 py-1 text-sm font-medium">
-                                En attente de validation
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Demandes en attente */}
-                    {estOrganisateur &&
-                        nombreDemandes > 0 && (
-
-                            <div className="mt-3">
-                                <span className="inline-block rounded-full bg-[#8ED8B6] px-3 py-1 text-sm font-medium text-black">
-                                    {nombreDemandes}{" "}
-                                    {nombreDemandes === 1
-                                        ? "demande en attente"
-                                        : "demandes en attente"}
-                                </span>
-                            </div>
-
-                        )}
-
-                </Link>
-
-
-                {/* Actions de l'organisateur */}
-                {estOrganisateur &&
-                    sortie.statut === "planifiee" && (
-
-                        <div className="mt-4 flex flex-wrap gap-3">
-
-                            <Link
-                                href={`/sorties/${sortie.id}/modifier`}
-                                className="rounded border px-4 py-2"
-                            >
-                                Modifier
-                            </Link>
-
-                            <AnnulerSortieButton
-                                sortieId={sortie.id}
-                                titre={sortie.titre}
-                            />
-
-                            {peutSupprimer && (
-                                <SupprimerSortieButton
-                                    sortieId={sortie.id}
-                                    titre={sortie.titre}
-                                />
-                            )}
-
-                        </div>
-                    )}
-
-            </div>
-        );
-    }
-
-    // ------------------------------------------------
-    // AFFICHAGE
-    // ------------------------------------------------
+    const nombreDemandes = nombreDemandesParSortie[sortie.id] ?? 0;
 
     return (
-        <main className="mx-auto max-w-2xl p-6">
+      <Link
+        key={sortie.id}
+        href={`/sorties/${sortie.id}`}
+        className="
+    relative
+    block
+    overflow-hidden
+    rounded
+    border
+    px-4
+    py-3
+    transition
+    hover:bg-gray-500/5
 
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold">
-                    Mes sorties
-                </h1>
-            </div>
+    after:absolute
+    after:bottom-0
+    after:left-0
+    after:h-[3px]
+    after:w-full
+    after:origin-left
+    after:scale-x-0
+    after:bg-[#8ED8B6]
+    after:transition-transform
+    after:duration-200
 
+    hover:after:scale-x-100
+  "
+      >
+        <div
+          className="
+          flex
+          items-start
+          justify-between
+          gap-4
+        "
+        >
+          <div className="min-w-0">
+            {/* TITRE */}
 
-            {/* SORTIES ORGANISÉES */}
+            <h3 className="font-semibold">{sortie.titre}</h3>
 
-            <section className="mb-10">
+            {/* TYPE + ENTRAÎNEMENT */}
 
-                <h2 className="mb-4 text-xl font-semibold">
-                    J&apos;organise
-                </h2>
+            <p className="mt-0.5 text-sm font-medium">
+              {sortie.type_sortie === "trail" ? "Trail" : "Route"}
 
-                {listeSortiesOrganisees.length === 0 ? (
-                    <p className="text-gray-500">
-                        Vous n&apos;organisez aucune sortie à venir.
-                    </p>
-                ) : (
-                    <div className="space-y-4">
-                        {listeSortiesOrganisees.map(
-                            (sortie) =>
-                                afficherSortie(sortie, true)
-                        )}
-                    </div>
+              {sortie.type_entrainement && (
+                <>
+                  {" · "}
+                  {afficherTypeEntrainement(sortie.type_entrainement)}
+                </>
+              )}
+            </p>
+
+            {/* DISTANCE + D+ + DURÉE */}
+
+            {(sortie.distance_km !== null ||
+              sortie.denivele_positif_m !== null ||
+              sortie.duree_estimee_minutes !== null) && (
+              <p className="mt-0.5 text-sm text-gray-500">
+                {sortie.distance_km !== null && (
+                  <>
+                    {Number(sortie.distance_km).toLocaleString("fr-FR", {
+                      maximumFractionDigits: 1,
+                    })}{" "}
+                    km
+                  </>
                 )}
 
-            </section>
+                {sortie.denivele_positif_m !== null && (
+                  <>
+                    {sortie.distance_km !== null && " · "}
+                    {sortie.denivele_positif_m} m D+
+                  </>
+                )}
 
-            {/* ------------------------------------------------
-    MES DEMANDES EN ATTENTE
------------------------------------------------- */}
+                {sortie.duree_estimee_minutes !== null && (
+                  <>
+                    {(sortie.distance_km !== null ||
+                      sortie.denivele_positif_m !== null) &&
+                      " · "}
 
-            {sortiesEnAttente.length > 0 && (
-                <section className="mb-10">
-
-                    <h2 className="mb-4 text-xl font-semibold">
-                        Mes demandes en attente
-                    </h2>
-
-                    <div className="space-y-4">
-                        {sortiesEnAttente.map(
-                            (sortie) =>
-                                afficherSortie(
-                                    sortie,
-                                    false,
-                                    true
-                                )
-                        )}
-                    </div>
-
-                </section>
+                    {afficherDuree(sortie.duree_estimee_minutes)}
+                  </>
+                )}
+              </p>
             )}
 
-            {/* SORTIES AUXQUELLES JE PARTICIPE */}
+            {/* DATE + LIEU */}
 
-            <section>
+            <p className="mt-1 text-sm">
+              {formatDateLongue(dateKey)}
+              {" · "}
+              <strong>{formatHeure(sortie.date_heure_depart)}</strong>
 
-                <h2 className="mb-4 text-xl font-semibold">
-                    Je participe
-                </h2>
+              {sortie.lieu_depart && (
+                <>
+                  {" · "}
+                  {sortie.lieu_depart}
+                </>
+              )}
+            </p>
+          </div>
 
-                {sortiesParticipees.length === 0 ? (
-                    <p className="text-gray-500">
-                        Vous ne participez à aucune sortie à venir.
-                    </p>
-                ) : (
-                    <div className="space-y-4">
-                        {listeSortiesParticipees.map(
-                            (sortie) =>
-                                afficherSortie(
-                                    sortie,
-                                    false
-                                )
-                        )}
-                    </div>
-                )}
+          {/* ÉTAT / INFORMATIONS */}
 
-            </section>
+          <div
+            className="
+            flex
+            shrink-0
+            flex-col
+            items-end
+            gap-1
+          "
+          >
+            {sortie.statut === "annulee" && (
+              <span
+                className="
+                rounded-full
+                border
+                px-2
+                py-0.5
+                text-xs
+                font-medium
+              "
+              >
+                Annulée
+              </span>
+            )}
 
-            {(
-                sortiesOrganiseesAnnulees.length > 0 ||
-                sortiesParticipeesAnnulees.length > 0
-            ) && (
-                    <section className="space-y-4">
+            {demandeEnAttente && (
+              <span
+                className="
+                rounded-full
+                border
+                px-2
+                py-0.5
+                text-xs
+                font-medium
+              "
+              >
+                En attente
+              </span>
+            )}
 
-                        <h2 className="text-2xl font-semibold">
-                            Sorties annulées
-                        </h2>
-
-
-                        {sortiesOrganiseesAnnulees.length > 0 && (
-                            <div className="space-y-3">
-
-                                <h3 className="font-semibold">
-                                    J&apos;organisais
-                                </h3>
-
-                                {sortiesOrganiseesAnnulees.map(
-                                    (sortie) =>
-                                        afficherSortie(
-                                            sortie,
-                                            false
-                                        )
-                                )}
-
-                            </div>
-                        )}
-
-
-                        {sortiesParticipeesAnnulees.length > 0 && (
-                            <div className="space-y-3">
-
-                                <h3 className="font-semibold">
-                                    Je participais
-                                </h3>
-
-                                {sortiesParticipeesAnnulees.map(
-                                    (sortie) =>
-                                        afficherSortie(
-                                            sortie,
-                                            false
-                                        )
-                                )}
-
-                            </div>
-                        )}
-
-                    </section>
-                )}
-
-
-            {/* ------------------------------------------------
-    HISTORIQUE
------------------------------------------------- */}
-
-            <section className="mt-12 border-t pt-8">
-
-                <h2 className="mb-6 text-2xl font-bold">
-                    Historique
-                </h2>
-
-
-                {/* J'AI ORGANISÉ */}
-
-                <div className="mb-10">
-
-                    <h3 className="mb-4 text-xl font-semibold">
-                        J&apos;ai organisé
-                    </h3>
-
-                    {(sortiesOrganiseesPassees ?? []).length === 0 ? (
-                        <p className="text-gray-500">
-                            Aucune sortie organisée dans l&apos;historique.
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-
-                            {(sortiesOrganiseesPassees ?? []).map(
-                                (sortie) =>
-                                    afficherSortie(
-                                        sortie,
-                                        false
-                                    )
-                            )}
-
-                        </div>
-                    )}
-
-                </div>
-
-
-                {/* J'AI PARTICIPÉ */}
-
-                <div>
-
-                    <h3 className="mb-4 text-xl font-semibold">
-                        J&apos;ai participé
-                    </h3>
-
-                    {sortiesParticipeesPassees.length === 0 ? (
-                        <p className="text-gray-500">
-                            Aucune participation dans l&apos;historique.
-                        </p>
-                    ) : (
-                        <div className="space-y-4">
-
-                            {sortiesParticipeesPassees.map(
-                                (sortie) =>
-                                    afficherSortie(
-                                        sortie,
-                                        false
-                                    )
-                            )}
-
-                        </div>
-                    )}
-
-                </div>
-
-            </section>
-
-        </main>
+            {estOrganisateur && nombreDemandes > 0 && (
+              <span
+                className="
+                  rounded-full
+                  bg-[#8ED8B6]
+                  px-2
+                  py-0.5
+                  text-xs
+                  font-medium
+                  text-black
+                "
+              >
+                {nombreDemandes === 1
+                  ? "1 demande"
+                  : `${nombreDemandes} demandes`}
+              </span>
+            )}
+          </div>
+        </div>
+      </Link>
     );
+  }
+
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
+  return (
+    <main className="mx-auto max-w-2xl p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">Mes sorties</h1>
+      </div>
+
+      {/* ==================================================
+        SORTIES À VENIR
+    ================================================== */}
+
+      <section className="mb-10">
+        <h2 className="mb-6 text-xl font-semibold">À venir</h2>
+
+        {!aDesSortiesAVenir ? (
+          <p className="text-sm text-gray-500">
+            Vous n&apos;avez aucune sortie à venir.
+          </p>
+        ) : (
+          <div className="space-y-8">
+            {/* J'ORGANISE */}
+
+            {listeSortiesOrganisees.length > 0 && (
+              <div>
+                <h3 className="mb-3 font-semibold">J&apos;organise</h3>
+
+                <div className="space-y-2">
+                  {listeSortiesOrganisees.map((sortie) =>
+                    afficherSortie(sortie, true),
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* JE PARTICIPE */}
+
+            {listeSortiesParticipees.length > 0 && (
+              <div>
+                <h3 className="mb-3 font-semibold">Je participe</h3>
+
+                <div className="space-y-2">
+                  {listeSortiesParticipees.map((sortie) =>
+                    afficherSortie(sortie, false),
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* MES DEMANDES */}
+
+            {listeSortiesEnAttente.length > 0 && (
+              <div>
+                <h3 className="mb-3 font-semibold">En attente de validation</h3>
+
+                <div className="space-y-2">
+                  {listeSortiesEnAttente.map((sortie) =>
+                    afficherSortie(sortie, false, true),
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ==================================================
+        AUTRES SORTIES
+    ================================================== */}
+
+      {(nombreSortiesAnnulees > 0 || nombreSortiesHistorique > 0) && (
+        <section className="border-t pt-5">
+          <h2 className="mb-2 text-sm font-semibold text-gray-500">
+            Autres sorties
+          </h2>
+
+          {/* SORTIES ANNULÉES */}
+
+          {nombreSortiesAnnulees > 0 && (
+            <details className="border-b py-4">
+              <summary
+                className="
+                cursor-pointer
+                font-medium
+              "
+              >
+                Sorties annulées{" "}
+                <span className="text-sm text-gray-500">
+                  ({nombreSortiesAnnulees})
+                </span>
+              </summary>
+
+              <div className="mt-5 space-y-6">
+                {sortiesOrganiseesAnnulees.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      J&apos;organisais
+                    </h3>
+
+                    <div className="space-y-2">
+                      {sortiesOrganiseesAnnulees.map((sortie) =>
+                        afficherSortie(sortie, false),
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {sortiesParticipeesAnnulees.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      Je participais
+                    </h3>
+
+                    <div className="space-y-2">
+                      {sortiesParticipeesAnnulees.map((sortie) =>
+                        afficherSortie(sortie, false),
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
+
+          {/* HISTORIQUE */}
+
+          {nombreSortiesHistorique > 0 && (
+            <details className="py-4">
+              <summary
+                className="
+                cursor-pointer
+                font-medium
+              "
+              >
+                Historique{" "}
+                <span className="text-sm text-gray-500">
+                  ({nombreSortiesHistorique})
+                </span>
+              </summary>
+
+              <div className="mt-5 space-y-6">
+                {historiqueSortiesOrganisees.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      J&apos;ai organisé
+                    </h3>
+
+                    <div className="space-y-2">
+                      {historiqueSortiesOrganisees.map((sortie) =>
+                        afficherSortie(sortie, false),
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {historiqueSortiesParticipees.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      J&apos;ai participé
+                    </h3>
+
+                    <div className="space-y-2">
+                      {historiqueSortiesParticipees.map((sortie) =>
+                        afficherSortie(sortie, false),
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </details>
+          )}
+        </section>
+      )}
+    </main>
+  );
 }
