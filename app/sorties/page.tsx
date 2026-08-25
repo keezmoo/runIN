@@ -138,7 +138,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
       ? params.modeInscription
       : "";
 
-  const masquerCompletes = params.masquerCompletes === "1";
+  const masquerCompletes = params.masquerCompletes !== "0";
 
   const filtreSuivis = params.suivis === "1";
 

@@ -162,7 +162,7 @@ export default function FiltresSorties({
   );
 
   const [masquerCompletes, setMasquerCompletes] = useState(
-    searchParams.get("masquerCompletes") === "1",
+    searchParams.get("masquerCompletes") !== "0",
   );
   const [avecSuivis, setAvecSuivis] = useState(
     searchParams.get("suivis") === "1",
@@ -223,7 +223,7 @@ export default function FiltresSorties({
 
     setModeInscription("");
 
-    setMasquerCompletes(false);
+    setMasquerCompletes(true);
     setAvecSuivis(false);
     setMessage("");
   }
@@ -443,9 +443,7 @@ export default function FiltresSorties({
         params.set("modeInscription", modeInscription);
       }
 
-      if (masquerCompletes) {
-        params.set("masquerCompletes", "1");
-      }
+      params.set("masquerCompletes", masquerCompletes ? "1" : "0");
       if (avecSuivis) {
         params.set("suivis", "1");
       }
@@ -474,7 +472,7 @@ export default function FiltresSorties({
           onClick={() => choisirType("")}
           className={
             typeSortie === ""
-              ? "rounded border-2 px-3 py-2 font-semibold"
+              ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
               : "rounded border px-3 py-2"
           }
         >
@@ -486,7 +484,7 @@ export default function FiltresSorties({
           onClick={() => choisirType("route")}
           className={
             typeSortie === "route"
-              ? "rounded border-2 px-3 py-2 font-semibold"
+              ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
               : "rounded border px-3 py-2"
           }
         >
@@ -498,7 +496,7 @@ export default function FiltresSorties({
           onClick={() => choisirType("trail")}
           className={
             typeSortie === "trail"
-              ? "rounded border-2 px-3 py-2 font-semibold"
+              ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
               : "rounded border px-3 py-2"
           }
         >
@@ -508,37 +506,41 @@ export default function FiltresSorties({
 
       {/* LIEU */}
 
-      <div>
-        <label className="mb-2 block text-sm font-medium">Lieu</label>
+      <div className="flex items-center gap-3">
+        <label
+          htmlFor="lieu-recherche"
+          className="shrink-0 text-sm font-medium"
+        >
+          Lieu
+        </label>
 
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={lieu}
-            onChange={(event) => setLieu(event.target.value)}
-            className="
-                min-w-0
-                flex-1
-                rounded
-                border
-                p-2
-            "
-            placeholder="Ville ou lieu"
-          />
+        <input
+          id="lieu-recherche"
+          type="text"
+          value={lieu}
+          onChange={(event) => setLieu(event.target.value)}
+          className="
+      min-w-0
+      flex-1
+      rounded
+      border
+      p-2
+    "
+          placeholder="Lieu de départ"
+        />
 
-          <button
-            type="button"
-            onClick={() => setNiveauFiltres(niveauFiltres === 3 ? 1 : 3)}
-            className="
-                shrink-0
-                whitespace-nowrap
-                text-sm
-                font-medium
-            "
-          >
-            {niveauFiltres === 3 ? "< Fermer" : "Autres filtres >"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setNiveauFiltres(niveauFiltres === 3 ? 1 : 3)}
+          className="
+      shrink-0
+      whitespace-nowrap
+      text-sm
+      font-medium
+    "
+        >
+          {niveauFiltres === 3 ? "< Fermer" : "Autres filtres >"}
+        </button>
       </div>
 
       {/* RAYON */}
@@ -563,38 +565,6 @@ export default function FiltresSorties({
         <div className="flex justify-between text-xs text-gray-500">
           <span>1 km</span>
           <span>20 km</span>
-        </div>
-      </div>
-      
-      {/* CONTACTS SUIVIS */}
-
-      <div>
-        <p className="mb-2 text-sm font-medium">Contacts suivis</p>
-
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setAvecSuivis(false)}
-            className={
-              !avecSuivis
-                ? "rounded border-2 px-3 py-2 font-semibold"
-                : "rounded border px-3 py-2"
-            }
-          >
-            Toutes
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAvecSuivis(true)}
-            className={
-              avecSuivis
-                ? "rounded border-2 px-3 py-2 font-semibold"
-                : "rounded border px-3 py-2"
-            }
-          >
-            Avec mes suivis
-          </button>
         </div>
       </div>
 
@@ -717,7 +687,7 @@ export default function FiltresSorties({
                   }
                   className={
                     intensite === valeur
-                      ? "rounded border-2 px-2 py-2 text-sm font-semibold"
+                      ? "rounded border-2 border-[#8ED8B6] px-2 py-2 text-sm font-semibold"
                       : "rounded border px-2 py-2 text-sm"
                   }
                 >
@@ -869,17 +839,61 @@ export default function FiltresSorties({
         </div>
       )}
 
-      {/* RECHERCHER */}
+      {/* COMMANDES */}
 
-      <div className="flex items-center gap-2 pt-2">
+      <div
+        className="
+    grid
+    grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]
+    items-center
+    gap-2
+    pt-2
+  "
+      >
+        {/* MES CONTACTS */}
+
+        <div className="flex justify-start">
+          <button
+            type="button"
+            onClick={() => setAvecSuivis((valeur) => !valeur)}
+            aria-pressed={avecSuivis}
+            className={
+              avecSuivis
+                ? `
+            w-28
+            rounded
+            border-2
+            border-[#8ED8B6]
+            px-2
+            py-1.5
+            text-xs
+            font-semibold
+            leading-tight
+          `
+                : `
+            w-28
+            rounded
+            border
+            px-2
+            py-1.5
+            text-xs
+            leading-tight
+          `
+            }
+          >
+            Mes contacts
+            <span className="block">uniquement</span>
+          </button>
+        </div>
+        {/* CHEVRON */}
+
         <button
           type="button"
           onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
           className="
       flex
       h-10
-      w-12
-      shrink-0
+      w-10
       items-center
       justify-center
       rounded
@@ -896,38 +910,42 @@ export default function FiltresSorties({
           {niveauFiltres === 1 ? "▼" : "▲"}
         </button>
 
-        {niveauFiltres === 3 && (
+        {/* BOUTONS DE DROITE */}
+
+        <div className="flex justify-end gap-2">
+          {niveauFiltres !== 1 && (
+            <button
+              type="button"
+              onClick={reinitialiserFiltres}
+              disabled={loading}
+              className="
+          rounded
+          border
+          px-3
+          py-2
+          text-sm
+        "
+            >
+              Réinitialiser
+            </button>
+          )}
+
           <button
-            type="button"
-            onClick={reinitialiserFiltres}
+            type="submit"
             disabled={loading}
             className="
-        shrink-0
+        w-28
         rounded
         border
         px-3
         py-2
         text-sm
+        font-medium
       "
           >
-            Réinitialiser
+            {loading ? "Recherche..." : "Rechercher"}
           </button>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="
-      flex-1
-      rounded
-      border
-      px-4
-      py-2
-      font-medium
-    "
-        >
-          {loading ? "Recherche..." : "Rechercher"}
-        </button>
+        </div>
       </div>
 
       {message && <p className="text-sm">{message}</p>}
