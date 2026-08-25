@@ -459,7 +459,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
             <p className="text-sm text-gray-600">
               Organisée par{" "}
               <Link
-                href={`/profil/${organisateur.id}`}
+                href={`/membres/${organisateur.id}`}
                 className="font-medium text-gray-300 hover:underline"
               >
                 {organisateur.nom}
@@ -580,7 +580,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
                 return (
                   <div key={demande.id} className="rounded border p-4">
-                    <Link href={`/profil/${profil.id}`} className="font-medium">
+                    <Link href={`/membres/${profil.id}`} className="font-medium">
                       {profil.nom}
                     </Link>
 
@@ -631,7 +631,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
                 {/* PROFIL DU PARTICIPANT */}
 
                 <Link
-                  href={`/profil/${profil.id}`}
+                  href={`/membres/${profil.id}`}
                   className="
                                 flex-1
                                 hover:opacity-70

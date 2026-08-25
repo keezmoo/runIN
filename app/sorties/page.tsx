@@ -42,6 +42,7 @@ type SortiesPageProps = {
     modeInscription?: string;
 
     masquerCompletes?: string;
+    suivis?: string;
   }>;
 };
 
@@ -139,6 +140,8 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
   const masquerCompletes = params.masquerCompletes === "1";
 
+  const filtreSuivis = params.suivis === "1";
+
   const supabase = await createClient();
 
   // Utilisateur connecté
@@ -160,6 +163,28 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   if (!profile) {
     redirect("/profil");
   }
+
+  // ------------------------------------------------
+  // PROFILS SUIVIS
+  // ------------------------------------------------
+
+  const { data: suivisData, error: suivisError } = await supabase
+    .from("suivis")
+    .select("profil_suivi_id")
+    .eq("utilisateur_id", user.id);
+
+  if (suivisError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des profils suivis.</p>
+      </main>
+    );
+  }
+
+  const idsSuivis = suivisData?.map((suivi) => suivi.profil_suivi_id) ?? [];
+
+  const idsSuivisSet = new Set(idsSuivis);
+
   // Localisation enregistrée dans le profil
   const { data: filtreProfilData, error: filtreProfilError } =
     await supabase.rpc("mon_filtre_geographique");
@@ -373,9 +398,23 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     participationsError = error;
   }
 
+  const idsParticipantsSuivis = [
+    ...new Set(
+      participations
+        .filter((participation) =>
+          idsSuivisSet.has(participation.utilisateur_id),
+        )
+        .map((participation) => participation.utilisateur_id),
+    ),
+  ];
+
   // ------------------------------------------------
   // PROFILS
   // ------------------------------------------------
+
+  const idsProfilsACharger = [
+    ...new Set([...idsOrganisateurs, ...idsParticipantsSuivis]),
+  ];
 
   let profils: {
     id: string;
@@ -384,14 +423,13 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
   let profilsError = null;
 
-  if (idsOrganisateurs.length > 0) {
+  if (idsProfilsACharger.length > 0) {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, nom")
-      .in("id", idsOrganisateurs);
+      .in("id", idsProfilsACharger);
 
     profils = data ?? [];
-
     profilsError = error;
   }
 
@@ -406,7 +444,23 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   const listeParticipations = participations;
 
   const listeProfils = profils;
+  const participantsSuivisParSortie = new Map<string, string[]>();
 
+  for (const participation of listeParticipations) {
+    if (!idsSuivisSet.has(participation.utilisateur_id)) {
+      continue;
+    }
+
+    const participantsActuels =
+      participantsSuivisParSortie.get(participation.sortie_id) ?? [];
+
+    participantsActuels.push(participation.utilisateur_id);
+
+    participantsSuivisParSortie.set(
+      participation.sortie_id,
+      participantsActuels,
+    );
+  }
   const nombreParticipantsParSortie = new Map<string, number>();
 
   for (const participation of listeParticipations) {
@@ -416,7 +470,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     nombreParticipantsParSortie.set(participation.sortie_id, nombreActuel + 1);
   }
 
-  const listeSorties = masquerCompletes
+  let listeSorties = masquerCompletes
     ? listeSortiesBrutes.filter((sortie) => {
         const nombreActuel =
           1 + (nombreParticipantsParSortie.get(sortie.id) ?? 0);
@@ -424,6 +478,17 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
         return nombreActuel < sortie.nombre_max_participants;
       })
     : listeSortiesBrutes;
+
+  if (filtreSuivis) {
+    listeSorties = listeSorties.filter((sortie) => {
+      const organisateurEstSuivi = idsSuivisSet.has(sortie.organisateur_id);
+
+      const aParticipantSuivi =
+        (participantsSuivisParSortie.get(sortie.id) ?? []).length > 0;
+
+      return organisateurEstSuivi || aParticipantSuivi;
+    });
+  }
 
   const profilsParId = new Map(
     listeProfils.map((profil) => [profil.id, profil]),
@@ -543,6 +608,44 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                         const organisateur = profilsParId.get(
                           sortie.organisateur_id,
                         );
+
+                        const organisateurEstSuivi = idsSuivisSet.has(
+                          sortie.organisateur_id,
+                        );
+
+                        const participantsSuivisIds =
+                          participantsSuivisParSortie.get(sortie.id) ?? [];
+
+                        const nomsParticipantsSuivis = participantsSuivisIds
+                          .map(
+                            (idParticipant) =>
+                              profilsParId.get(idParticipant)?.nom,
+                          )
+                          .filter((nom): nom is string => Boolean(nom));
+
+                        let texteParticipantsSuivis: string | null = null;
+
+                        if (nomsParticipantsSuivis.length === 1) {
+                          texteParticipantsSuivis = `${nomsParticipantsSuivis[0]} participe`;
+                        } else if (nomsParticipantsSuivis.length === 2) {
+                          texteParticipantsSuivis = `${nomsParticipantsSuivis[0]} et ${nomsParticipantsSuivis[1]} participent`;
+                        } else if (nomsParticipantsSuivis.length > 2) {
+                          texteParticipantsSuivis = `${nomsParticipantsSuivis[0]}, ${nomsParticipantsSuivis[1]} et ${
+                            nomsParticipantsSuivis.length - 2
+                          } autres participent`;
+                        }
+
+                        const infosSuivis = [
+                          organisateurEstSuivi
+                            ? `${
+                                organisateur?.nom ?? "Un profil suivi"
+                              } organise`
+                            : null,
+
+                          texteParticipantsSuivis,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ");
 
                         const nombreActuel =
                           1 + (nombreParticipantsParSortie.get(sortie.id) ?? 0);
@@ -664,6 +767,12 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                                 {distanceGeoAffichee !== null &&
                                   ` • ${distanceGeoAffichee} km`}
                               </p>
+
+                              {infosSuivis && (
+                                <p className="mt-1 truncate text-xs font-medium">
+                                  {infosSuivis}
+                                </p>
+                              )}
                             </div>
 
                             {/* PARTICIPANTS + INSCRIPTION */}

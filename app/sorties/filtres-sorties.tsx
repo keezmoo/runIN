@@ -164,7 +164,9 @@ export default function FiltresSorties({
   const [masquerCompletes, setMasquerCompletes] = useState(
     searchParams.get("masquerCompletes") === "1",
   );
-
+  const [avecSuivis, setAvecSuivis] = useState(
+    searchParams.get("suivis") === "1",
+  );
   const [message, setMessage] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -222,7 +224,7 @@ export default function FiltresSorties({
     setModeInscription("");
 
     setMasquerCompletes(false);
-
+    setAvecSuivis(false);
     setMessage("");
   }
 
@@ -370,6 +372,7 @@ export default function FiltresSorties({
         "genres",
         "modeInscription",
         "masquerCompletes",
+        "suivis",
       ];
 
       for (const filtre of filtresAGerer) {
@@ -442,6 +445,9 @@ export default function FiltresSorties({
 
       if (masquerCompletes) {
         params.set("masquerCompletes", "1");
+      }
+      if (avecSuivis) {
+        params.set("suivis", "1");
       }
 
       router.push(`/sorties?${params.toString()}`);
@@ -557,6 +563,38 @@ export default function FiltresSorties({
         <div className="flex justify-between text-xs text-gray-500">
           <span>1 km</span>
           <span>20 km</span>
+        </div>
+      </div>
+      
+      {/* CONTACTS SUIVIS */}
+
+      <div>
+        <p className="mb-2 text-sm font-medium">Contacts suivis</p>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setAvecSuivis(false)}
+            className={
+              !avecSuivis
+                ? "rounded border-2 px-3 py-2 font-semibold"
+                : "rounded border px-3 py-2"
+            }
+          >
+            Toutes
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAvecSuivis(true)}
+            className={
+              avecSuivis
+                ? "rounded border-2 px-3 py-2 font-semibold"
+                : "rounded border px-3 py-2"
+            }
+          >
+            Avec mes suivis
+          </button>
         </div>
       </div>
 
@@ -833,12 +871,12 @@ export default function FiltresSorties({
 
       {/* RECHERCHER */}
 
-
       <div className="flex items-center gap-2 pt-2">
         <button
           type="button"
           onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
           className="
+      flex
       h-10
       w-12
       shrink-0
