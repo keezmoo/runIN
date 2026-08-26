@@ -1,113 +1,81 @@
 "use client";
 
-import {
-    useState,
-} from "react";
+import { useState } from "react";
 
-import {
-    useRouter,
-} from "next/navigation";
+import { useRouter } from "next/navigation";
 
-import {
-    createClient,
-} from "@/lib/supabase/client";
-
+import { createClient } from "@/lib/supabase/client";
 
 type ContacterParticipantButtonProps = {
-    sortieId: string;
-    utilisateurId: string;
+  sortieId: string;
+  utilisateurId: string;
 };
 
-
 export default function ContacterParticipantButton({
-    sortieId,
-    utilisateurId,
+  sortieId,
+  utilisateurId,
 }: ContacterParticipantButtonProps) {
+  const router = useRouter();
 
-    const router =
-        useRouter();
+  const [chargement, setChargement] = useState(false);
 
+  const [erreur, setErreur] = useState("");
 
-    const [
-        chargement,
-        setChargement,
-    ] = useState(false);
+  async function contacter() {
+    setChargement(true);
+    setErreur("");
 
+    const supabase = createClient();
 
-    const [
-        erreur,
-        setErreur,
-    ] = useState("");
+    const { data, error } = await supabase.rpc(
+      "ouvrir_conversation_participant",
+      {
+        p_sortie_id: sortieId,
 
+        p_utilisateur_id: utilisateurId,
+      },
+    );
 
-    async function contacter() {
+    if (error) {
+      const messageErreur = error.message ?? "";
 
-        setChargement(true);
-        setErreur("");
+      if (messageErreur.includes("RELATION_BLOQUEE")) {
+        setErreur("Ce profil n'est pas disponible.");
 
+        setChargement(false);
 
-        const supabase =
-            createClient();
+        router.refresh();
 
+        return;
+      }
 
-        const {
-            data,
-            error,
-        } = await supabase.rpc(
-            "ouvrir_conversation_participant",
-            {
-                p_sortie_id:
-                    sortieId,
+      console.error("Erreur ouverture conversation participant :", error);
 
-                p_utilisateur_id:
-                    utilisateurId,
-            }
-        );
+      setErreur("Impossible d'ouvrir la conversation.");
 
+      setChargement(false);
 
-        if (error) {
-
-            console.error(
-                "Erreur ouverture conversation participant :",
-                error
-            );
-
-            setErreur(
-                error.message
-            );
-
-            setChargement(false);
-
-            return;
-        }
-
-
-        if (!data) {
-
-            setErreur(
-                "Impossible d'ouvrir la conversation."
-            );
-
-            setChargement(false);
-
-            return;
-        }
-
-
-        router.push(
-            `/messages/${data}`
-        );
+      return;
     }
 
+    if (!data) {
+      setErreur("Impossible d'ouvrir la conversation.");
 
-    return (
-        <div>
+      setChargement(false);
 
-            <button
-                type="button"
-                onClick={contacter}
-                disabled={chargement}
-                className="
+      return;
+    }
+
+    router.push(`/messages/${data}`);
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={contacter}
+        disabled={chargement}
+        className="
                     rounded
                     border
                     px-3
@@ -115,19 +83,11 @@ export default function ContacterParticipantButton({
                     text-sm
                     disabled:opacity-50
                 "
-            >
-                {chargement
-                    ? "Ouverture..."
-                    : "Contacter"}
-            </button>
+      >
+        {chargement ? "Ouverture..." : "Contacter"}
+      </button>
 
-
-            {erreur && (
-                <p className="mt-2 text-sm">
-                    {erreur}
-                </p>
-            )}
-
-        </div>
-    );
+      {erreur && <p className="mt-2 text-sm">{erreur}</p>}
+    </div>
+  );
 }

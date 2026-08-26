@@ -19,28 +19,34 @@ export default function GererDemandeButtons({
   const supabase = createClient();
   const router = useRouter();
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] = useState("");
 
   async function accepter() {
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.rpc(
-      "accepter_demande_participation",
-      {
-        p_demande_id: demandeId,
-      }
-    );
+    const { error } = await supabase.rpc("accepter_demande_participation", {
+      p_demande_id: demandeId,
+    });
 
     if (error) {
+      const erreur = error.message ?? "";
+
+      if (erreur.includes("RELATION_BLOQUEE")) {
+        setMessage("Cette demande n'est plus disponible.");
+
+        router.refresh();
+
+        setLoading(false);
+        return;
+      }
+
       setMessage(
-        error.message.includes("complete")
+        erreur.toLowerCase().includes("complete")
           ? "La sortie est complète."
-          : "Impossible d'accepter la demande."
+          : "Impossible d'accepter la demande.",
       );
 
       setLoading(false);
@@ -54,17 +60,12 @@ export default function GererDemandeButtons({
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.rpc(
-      "refuser_demande_participation",
-      {
-        p_demande_id: demandeId,
-      }
-    );
+    const { error } = await supabase.rpc("refuser_demande_participation", {
+      p_demande_id: demandeId,
+    });
 
     if (error) {
-      setMessage(
-        "Impossible de refuser la demande."
-      );
+      setMessage("Impossible de refuser la demande.");
 
       setLoading(false);
       return;
@@ -76,7 +77,6 @@ export default function GererDemandeButtons({
   return (
     <div>
       <div className="flex gap-2">
-
         <ContacterParticipantButton
           sortieId={sortieId}
           utilisateurId={utilisateurId}
@@ -99,14 +99,9 @@ export default function GererDemandeButtons({
         >
           Refuser
         </button>
-
       </div>
 
-      {message && (
-        <p className="mt-2 text-sm">
-          {message}
-        </p>
-      )}
+      {message && <p className="mt-2 text-sm">{message}</p>}
     </div>
   );
 }

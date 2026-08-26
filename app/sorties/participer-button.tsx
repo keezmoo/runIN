@@ -30,45 +30,29 @@ export default function ParticiperButton({
 }: ParticiperButtonProps) {
   const router = useRouter();
 
-  const [supabase] = useState(() =>
-    createClient()
-  );
+  const [supabase] = useState(() => createClient());
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [message, setMessage] =
-    useState("");
+  const [message, setMessage] = useState("");
 
-  const [
-    demandeActive,
-    setDemandeActive,
-  ] = useState(demandeEnAttente);
+  const [demandeActive, setDemandeActive] = useState(demandeEnAttente);
 
-  const [
-    secondesCooldown,
-    setSecondesCooldown,
-  ] = useState(0);
+  const [secondesCooldown, setSecondesCooldown] = useState(0);
 
   // ------------------------------------------------
   // Format du cooldown
   // ------------------------------------------------
 
-  function formaterDureeCooldown(
-    secondes: number
-  ) {
+  function formaterDureeCooldown(secondes: number) {
     if (secondes >= 3600) {
-      const heures =
-        Math.ceil(secondes / 3600);
+      const heures = Math.ceil(secondes / 3600);
 
-      return heures === 1
-        ? "environ 1 heure"
-        : `environ ${heures} heures`;
+      return heures === 1 ? "environ 1 heure" : `environ ${heures} heures`;
     }
 
     if (secondes >= 60) {
-      const minutes =
-        Math.ceil(secondes / 60);
+      const minutes = Math.ceil(secondes / 60);
 
       return `${minutes} min`;
     }
@@ -76,43 +60,32 @@ export default function ParticiperButton({
     return `${secondes} s`;
   }
 
-  const blocageAntiSpam =
-    secondesCooldown > 30;
+  const blocageAntiSpam = secondesCooldown > 30;
 
   // ------------------------------------------------
   // CHARGER LE COOLDOWN
   // ------------------------------------------------
 
   async function chargerCooldown() {
-    const {
-      data,
-      error,
-    } = await supabase.rpc(
+    const { data, error } = await supabase.rpc(
       "secondes_avant_reinscription_sortie",
       {
         p_sortie_id: sortieId,
-      }
+      },
     );
 
     if (error) {
-      console.error(
-        "Erreur chargement cooldown :",
-        error
-      );
+      console.error("Erreur chargement cooldown :", error);
 
       return 0;
     }
 
-    const secondes =
-      typeof data === "number"
-        ? data
-        : 0;
+    const secondes = typeof data === "number" ? data : 0;
 
     setSecondesCooldown(secondes);
 
     return secondes;
   }
-
 
   // ------------------------------------------------
   // CHARGEMENT INITIAL DU COOLDOWN
@@ -122,25 +95,15 @@ export default function ParticiperButton({
     let actif = true;
 
     async function charger() {
-      const {
-        data,
-        error,
-      } = await supabase.rpc(
+      const { data, error } = await supabase.rpc(
         "secondes_avant_reinscription_sortie",
         {
           p_sortie_id: sortieId,
-        }
+        },
       );
 
-      if (
-        actif &&
-        !error
-      ) {
-        setSecondesCooldown(
-          typeof data === "number"
-            ? data
-            : 0
-        );
+      if (actif && !error) {
+        setSecondesCooldown(typeof data === "number" ? data : 0);
       }
     }
 
@@ -149,11 +112,7 @@ export default function ParticiperButton({
     return () => {
       actif = false;
     };
-  }, [
-    sortieId,
-    supabase,
-  ]);
-
+  }, [sortieId, supabase]);
 
   // ------------------------------------------------
   // COMPTE À REBOURS
@@ -164,25 +123,14 @@ export default function ParticiperButton({
       return;
     }
 
-    const timer =
-      window.setTimeout(() => {
-
-        setSecondesCooldown(
-          (secondes) =>
-            Math.max(
-              0,
-              secondes - 1
-            )
-        );
-
-      }, 1000);
-
+    const timer = window.setTimeout(() => {
+      setSecondesCooldown((secondes) => Math.max(0, secondes - 1));
+    }, 1000);
 
     return () => {
       window.clearTimeout(timer);
     };
   }, [secondesCooldown]);
-
 
   // ------------------------------------------------
   // QUITTER UNE SORTIE
@@ -196,9 +144,7 @@ export default function ParticiperButton({
       .eq("utilisateur_id", userId);
 
     if (error) {
-      setMessage(
-        "Impossible de quitter la sortie."
-      );
+      setMessage("Impossible de quitter la sortie.");
 
       return false;
     }
@@ -208,44 +154,29 @@ export default function ParticiperButton({
     return true;
   }
 
-
   // ------------------------------------------------
   // PARTICIPATION AUTOMATIQUE
   // ------------------------------------------------
 
   async function participerAutomatiquement() {
-
     if (secondesCooldown > 0) {
-      setMessage(
-        `Réinscription possible dans ${secondesCooldown} s.`
-      );
+      setMessage(`Réinscription possible dans ${secondesCooldown} s.`);
 
       return false;
     }
-   
-    const { error } = await supabase.rpc(
-      "rejoindre_sortie_automatique",
-      {
-        p_sortie_id: sortieId,
-      }
-    );
 
+    const { error } = await supabase.rpc("rejoindre_sortie_automatique", {
+      p_sortie_id: sortieId,
+    });
 
     if (error) {
-
-      const erreur =
-        error.message ?? "";
-
+      const erreur = error.message ?? "";
 
       // La page de B indique encore "automatique",
       // mais A vient de passer la sortie en validation.
-      if (
-        erreur.includes(
-          "SORTIE_MODE_VALIDATION"
-        )
-      ) {
+      if (erreur.includes("SORTIE_MODE_VALIDATION")) {
         setMessage(
-          "Le mode d'inscription de cette sortie vient d'être modifié."
+          "Le mode d'inscription de cette sortie vient d'être modifié.",
         );
 
         router.refresh();
@@ -253,14 +184,41 @@ export default function ParticiperButton({
         return false;
       }
 
+      if (erreur.includes("SORTIE_COMPLETE")) {
+        setMessage("Cette sortie est complète.");
 
-      if (
-        erreur.includes(
-          "SORTIE_COMPLETE"
-        )
-      ) {
+        router.refresh();
+
+        return false;
+      }
+
+      if (erreur.includes("COOLDOWN_REINSCRIPTION")) {
+        const secondes = await chargerCooldown();
+
+        setMessage(`Réinscription possible dans ${secondes} s.`);
+
+        return false;
+      }
+
+      if (erreur.includes("UTILISATEUR_EXCLU")) {
+        setMessage("L'organisateur vous a retiré de cette sortie.");
+
+        router.refresh();
+
+        return false;
+      }
+
+      if (erreur.includes("SORTIE_INDISPONIBLE")) {
+        setMessage("Cette sortie n'est plus disponible.");
+
+        router.refresh();
+
+        return false;
+      }
+
+      if (erreur.includes("GENRE_NON_AUTORISE")) {
         setMessage(
-          "Cette sortie est complète."
+          "Vous ne faites plus partie des participants autorisés pour cette sortie.",
         );
 
         router.refresh();
@@ -268,131 +226,54 @@ export default function ParticiperButton({
         return false;
       }
 
-
-      if (
-        erreur.includes(
-          "COOLDOWN_REINSCRIPTION"
-        )
-      ) {
-        const secondes =
-          await chargerCooldown();
-
-        setMessage(
-          `Réinscription possible dans ${secondes} s.`
-        );
-
-        return false;
-      }
-
-
-      if (
-        erreur.includes(
-          "UTILISATEUR_EXCLU"
-        )
-      ) {
-        setMessage(
-          "L'organisateur vous a retiré de cette sortie."
-        );
+      if (erreur.includes("RELATION_BLOQUEE")) {
+        setMessage("Cette sortie n'est plus disponible.");
 
         router.refresh();
 
         return false;
       }
 
+      console.error("Erreur participation automatique :", error);
 
-      if (
-        erreur.includes(
-          "SORTIE_INDISPONIBLE"
-        )
-      ) {
-        setMessage(
-          "Cette sortie n'est plus disponible."
-        );
-
-        router.refresh();
-
-        return false;
-      }
-
-      if (
-        erreur.includes(
-          "GENRE_NON_AUTORISE"
-        )
-      ) {
-        setMessage(
-          "Vous ne faites plus partie des participants autorisés pour cette sortie."
-        );
-
-        router.refresh();
-
-        return false;
-      }
-
-      console.error(
-        "Erreur participation automatique :",
-        error
-      );
-
-      setMessage(
-        "Impossible de rejoindre la sortie."
-      );
+      setMessage("Impossible de rejoindre la sortie.");
 
       return false;
     }
 
-
     return true;
   }
-
 
   // ------------------------------------------------
   // DEMANDER À PARTICIPER
   // ------------------------------------------------
 
   async function demanderParticipation() {
-
     if (secondesCooldown > 0) {
-      setMessage(
-        `Nouvelle demande possible dans ${secondesCooldown} s.`
-      );
+      setMessage(`Nouvelle demande possible dans ${secondesCooldown} s.`);
 
       return false;
     }
-
 
     if (complet) {
-      setMessage(
-        "Cette sortie est complète."
-      );
+      setMessage("Cette sortie est complète.");
 
       return false;
     }
 
-
-    const { error } = await supabase.rpc(
-      "demander_participation_sortie",
-      {
-        p_sortie_id: sortieId,
-      }
-    );
-
+    const { error } = await supabase.rpc("demander_participation_sortie", {
+      p_sortie_id: sortieId,
+    });
 
     if (error) {
-
-      const erreur =
-        error.message ?? "";
-
+      const erreur = error.message ?? "";
 
       // La page affiche encore le mode validation,
       // mais l'organisateur vient de passer
       // la sortie en inscription automatique.
-      if (
-        erreur.includes(
-          "SORTIE_MODE_AUTOMATIQUE"
-        )
-      ) {
+      if (erreur.includes("SORTIE_MODE_AUTOMATIQUE")) {
         setMessage(
-          "Le mode d'inscription de cette sortie vient d'être modifié."
+          "Le mode d'inscription de cette sortie vient d'être modifié.",
         );
 
         router.refresh();
@@ -400,14 +281,41 @@ export default function ParticiperButton({
         return false;
       }
 
+      if (erreur.includes("SORTIE_COMPLETE")) {
+        setMessage("Cette sortie est complète.");
 
-      if (
-        erreur.includes(
-          "SORTIE_COMPLETE"
-        )
-      ) {
+        router.refresh();
+
+        return false;
+      }
+
+      if (erreur.includes("COOLDOWN_REINSCRIPTION")) {
+        const secondes = await chargerCooldown();
+
+        setMessage(`Nouvelle demande possible dans ${secondes} s.`);
+
+        return false;
+      }
+
+      if (erreur.includes("UTILISATEUR_EXCLU")) {
+        setMessage("L'organisateur vous a retiré de cette sortie.");
+
+        router.refresh();
+
+        return false;
+      }
+
+      if (erreur.includes("SORTIE_INDISPONIBLE")) {
+        setMessage("Cette sortie n'est plus disponible.");
+
+        router.refresh();
+
+        return false;
+      }
+
+      if (erreur.includes("GENRE_NON_AUTORISE")) {
         setMessage(
-          "Cette sortie est complète."
+          "Vous ne faites plus partie des participants autorisés pour cette sortie.",
         );
 
         router.refresh();
@@ -415,91 +323,31 @@ export default function ParticiperButton({
         return false;
       }
 
-
-      if (
-        erreur.includes(
-          "COOLDOWN_REINSCRIPTION"
-        )
-      ) {
-        const secondes =
-          await chargerCooldown();
-
-        setMessage(
-          `Nouvelle demande possible dans ${secondes} s.`
-        );
-
-        return false;
-      }
-
-
-      if (
-        erreur.includes(
-          "UTILISATEUR_EXCLU"
-        )
-      ) {
-        setMessage(
-          "L'organisateur vous a retiré de cette sortie."
-        );
+      if (erreur.includes("RELATION_BLOQUEE")) {
+        setMessage("Cette sortie n'est plus disponible.");
 
         router.refresh();
 
         return false;
       }
 
+      console.error("Erreur demande de participation :", error);
 
-      if (
-        erreur.includes(
-          "SORTIE_INDISPONIBLE"
-        )
-      ) {
-        setMessage(
-          "Cette sortie n'est plus disponible."
-        );
-
-        router.refresh();
-
-        return false;
-      }
-
-      if (
-        erreur.includes(
-          "GENRE_NON_AUTORISE"
-        )
-      ) {
-        setMessage(
-          "Vous ne faites plus partie des participants autorisés pour cette sortie."
-        );
-
-        router.refresh();
-
-        return false;
-      }
-
-      console.error(
-        "Erreur demande de participation :",
-        error
-      );
-
-      setMessage(
-        "Impossible d'envoyer la demande."
-      );
+      setMessage("Impossible d'envoyer la demande.");
 
       return false;
     }
-
 
     setDemandeActive(true);
 
     return true;
   }
 
-
   // ------------------------------------------------
   // ANNULER UNE DEMANDE
   // ------------------------------------------------
 
   async function annulerDemande() {
-
     const { error } = await supabase
       .from("demandes_participation")
       .delete()
@@ -507,15 +355,11 @@ export default function ParticiperButton({
       .eq("utilisateur_id", userId)
       .eq("statut", "en_attente");
 
-
     if (error) {
-      setMessage(
-        "Impossible d'annuler la demande."
-      );
+      setMessage("Impossible d'annuler la demande.");
 
       return false;
     }
-
 
     setDemandeActive(false);
 
@@ -524,94 +368,57 @@ export default function ParticiperButton({
     return true;
   }
 
-
   // ------------------------------------------------
   // ACTION DU BOUTON
   // ------------------------------------------------
 
   async function actionParticipation() {
-
     if (loading) {
       return;
     }
-
 
     setLoading(true);
     setMessage("");
 
     let succes = false;
 
-
     if (dejaParticipant) {
-
-      succes =
-        await quitterSortie();
-
-    }
-
-    else if (
-      modeInscription === "validation"
-    ) {
-
+      succes = await quitterSortie();
+    } else if (modeInscription === "validation") {
       if (demandeActive) {
-
-        succes =
-          await annulerDemande();
-
+        succes = await annulerDemande();
       } else {
-
-        succes =
-          await demanderParticipation();
-
+        succes = await demanderParticipation();
       }
-
+    } else {
+      succes = await participerAutomatiquement();
     }
-
-    else {
-
-      succes =
-        await participerAutomatiquement();
-
-    }
-
 
     setLoading(false);
-
 
     if (succes) {
       router.refresh();
     }
   }
 
-
   // ------------------------------------------------
   // ORGANISATEUR
   // ------------------------------------------------
 
   if (estOrganisateur) {
-    return (
-      <span className="font-medium">
-        J&apos;organise
-      </span>
-    );
+    return <span className="font-medium">J&apos;organise</span>;
   }
 
-  if (
-    !genreAutorise &&
-    !dejaParticipant &&
-    !demandeActive
-  ) {
+  if (!genreAutorise && !dejaParticipant && !demandeActive) {
     return (
       <div>
         <p className="font-medium">
-          Cette sortie ne correspond pas
-          aux participants autorisés par
+          Cette sortie ne correspond pas aux participants autorisés par
           l&apos;organisateur.
         </p>
 
         <p className="mt-1 text-sm text-gray-500">
-          Vous ne pouvez pas vous inscrire
-          à cette sortie.
+          Vous ne pouvez pas vous inscrire à cette sortie.
         </p>
       </div>
     );
@@ -624,10 +431,7 @@ export default function ParticiperButton({
   if (dejaParticipant) {
     return (
       <div className="flex items-center gap-2">
-
-        <span className="text-sm font-medium">
-          Je participe
-        </span>
+        <span className="text-sm font-medium">Je participe</span>
 
         <button
           type="button"
@@ -644,11 +448,8 @@ export default function ParticiperButton({
           disabled:opacity-40
         "
         >
-          {loading
-            ? "..."
-            : "Quitter"}
+          {loading ? "..." : "Quitter"}
         </button>
-
       </div>
     );
   }
@@ -657,16 +458,10 @@ export default function ParticiperButton({
   // DEMANDE EN ATTENTE
   // ------------------------------------------------
 
-  if (
-    modeInscription === "validation" &&
-    demandeActive
-  ) {
+  if (modeInscription === "validation" && demandeActive) {
     return (
       <div className="flex items-center gap-2">
-
-        <span className="text-sm font-medium">
-          Demande envoyée
-        </span>
+        <span className="text-sm font-medium">Demande envoyée</span>
 
         <button
           type="button"
@@ -683,11 +478,8 @@ export default function ParticiperButton({
           disabled:opacity-40
         "
         >
-          {loading
-            ? "..."
-            : "Annuler"}
+          {loading ? "..." : "Annuler"}
         </button>
-
       </div>
     );
   }
@@ -696,10 +488,7 @@ export default function ParticiperButton({
   // EST-CE UNE NOUVELLE INSCRIPTION ?
   // ------------------------------------------------
 
-  const tenteNouvelleInscription =
-    !dejaParticipant &&
-    !demandeActive;
-
+  const tenteNouvelleInscription = !dejaParticipant && !demandeActive;
 
   // ------------------------------------------------
   // TEXTE DU BOUTON
@@ -707,49 +496,19 @@ export default function ParticiperButton({
 
   let texteBouton = "Participer";
 
-
   if (loading) {
-
-    texteBouton =
-      "Chargement...";
-
-  } else if (
-    blocageAntiSpam &&
-    tenteNouvelleInscription
-  ) {
-
-    texteBouton =
-      "Participation temporairement bloquée";
-
-  } else if (
-    secondesCooldown > 0 &&
-    modeInscription === "validation"
-  ) {
-
-    texteBouton =
-      `Nouvelle demande dans ${secondesCooldown} s`;
-
-  } else if (
-    secondesCooldown > 0
-  ) {
-
-    texteBouton =
-      `Participer dans ${secondesCooldown} s`;
-
+    texteBouton = "Chargement...";
+  } else if (blocageAntiSpam && tenteNouvelleInscription) {
+    texteBouton = "Participation temporairement bloquée";
+  } else if (secondesCooldown > 0 && modeInscription === "validation") {
+    texteBouton = `Nouvelle demande dans ${secondesCooldown} s`;
+  } else if (secondesCooldown > 0) {
+    texteBouton = `Participer dans ${secondesCooldown} s`;
   } else if (complet) {
-
-    texteBouton =
-      "Complet";
-
-  } else if (
-    modeInscription === "validation"
-  ) {
-
-    texteBouton =
-      "Demander à participer";
-
+    texteBouton = "Complet";
+  } else if (modeInscription === "validation") {
+    texteBouton = "Demander à participer";
   }
-
 
   // ------------------------------------------------
   // BOUTON DÉSACTIVÉ ?
@@ -757,18 +516,8 @@ export default function ParticiperButton({
 
   const boutonDesactive =
     loading ||
-
-    (
-      secondesCooldown > 0 &&
-      tenteNouvelleInscription
-    ) ||
-
-    (
-      complet &&
-      !dejaParticipant &&
-      !demandeActive
-    );
-
+    (secondesCooldown > 0 && tenteNouvelleInscription) ||
+    (complet && !dejaParticipant && !demandeActive);
 
   // ------------------------------------------------
   // AFFICHAGE
@@ -776,7 +525,6 @@ export default function ParticiperButton({
 
   return (
     <div>
-
       <button
         type="button"
         onClick={actionParticipation}
@@ -796,61 +544,35 @@ export default function ParticiperButton({
         {texteBouton}
       </button>
 
-
-      {demandeActive &&
-        !dejaParticipant && (
-
-          <p className="mt-2 text-sm text-gray-500">
-            En attente de validation par
-            l&apos;organisateur.
-          </p>
-
-        )}
-
-
-      {secondesCooldown > 0 &&
-        tenteNouvelleInscription && (
-
-          <div className="mt-2 text-sm">
-
-            {blocageAntiSpam ? (
-
-              <p className="text-red-500">
-                Trop d&apos;actions rapprochées.
-                Vous pourrez de nouveau participer à
-                cette sortie dans{" "}
-                {formaterDureeCooldown(
-                  secondesCooldown
-                )}.
-              </p>
-
-            ) : (
-
-              <p className="text-gray-500">
-
-                {modeInscription === "validation"
-                  ? "Vous venez d'annuler votre demande. "
-                  : "Vous venez de quitter cette sortie. "}
-
-                {modeInscription === "validation"
-                  ? `Nouvelle demande possible dans ${secondesCooldown} s.`
-                  : `Réinscription possible dans ${secondesCooldown} s.`}
-
-              </p>
-
-            )}
-
-          </div>
-
-        )}
-
-
-      {message && (
-        <p className="mt-2 text-sm">
-          {message}
+      {demandeActive && !dejaParticipant && (
+        <p className="mt-2 text-sm text-gray-500">
+          En attente de validation par l&apos;organisateur.
         </p>
       )}
 
+      {secondesCooldown > 0 && tenteNouvelleInscription && (
+        <div className="mt-2 text-sm">
+          {blocageAntiSpam ? (
+            <p className="text-red-500">
+              Trop d&apos;actions rapprochées. Vous pourrez de nouveau
+              participer à cette sortie dans{" "}
+              {formaterDureeCooldown(secondesCooldown)}.
+            </p>
+          ) : (
+            <p className="text-gray-500">
+              {modeInscription === "validation"
+                ? "Vous venez d'annuler votre demande. "
+                : "Vous venez de quitter cette sortie. "}
+
+              {modeInscription === "validation"
+                ? `Nouvelle demande possible dans ${secondesCooldown} s.`
+                : `Réinscription possible dans ${secondesCooldown} s.`}
+            </p>
+          )}
+        </div>
+      )}
+
+      {message && <p className="mt-2 text-sm">{message}</p>}
     </div>
   );
 }

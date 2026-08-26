@@ -81,6 +81,18 @@ export default function MessageForm({ conversationId }: MessageFormProps) {
     }
 
     if (error) {
+      const erreur = error.message ?? "";
+
+      if (erreur.includes("RELATION_BLOQUEE")) {
+        setMessageErreur("Cette conversation n'est plus disponible.");
+
+        setLoading(false);
+
+        router.push("/messages");
+
+        return;
+      }
+
       console.error("Erreur envoi message :", error);
 
       setMessageErreur("Impossible d'envoyer le message.");

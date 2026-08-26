@@ -21,6 +21,40 @@ export default async function AbonnementsPage({ params }: PageProps) {
     redirect("/auth/login");
   }
 
+  // ------------------------------------------------
+  // BLOCAGES
+  // ------------------------------------------------
+
+  if (user.id !== id) {
+    const { data: relationBloquee, error: relationBloqueeError } =
+      await supabase.rpc("est_relation_bloquee", {
+        p_autre_utilisateur_id: id,
+      });
+
+    if (relationBloqueeError) {
+      notFound();
+    }
+
+    if (relationBloquee) {
+      notFound();
+    }
+  }
+
+  const {
+    data: utilisateursIndisponiblesData,
+    error: utilisateursIndisponiblesError,
+  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+
+  if (utilisateursIndisponiblesError) {
+    notFound();
+  }
+
+  const idsIndisponibles = new Set(
+    (utilisateursIndisponiblesData ?? []).map(
+      (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
+    ),
+  );
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, nom")
@@ -41,6 +75,10 @@ export default async function AbonnementsPage({ params }: PageProps) {
 
   const idsProfils = suivis?.map((suivi) => suivi.profil_suivi_id) ?? [];
 
+  const idsProfilsVisibles = idsProfils.filter(
+    (profilId) => !idsIndisponibles.has(profilId),
+  );
+
   let profils: {
     id: string;
     nom: string;
@@ -50,10 +88,12 @@ export default async function AbonnementsPage({ params }: PageProps) {
     const { data } = await supabase
       .from("profiles")
       .select("id, nom")
-      .in("id", idsProfils);
+      .in("id", idsProfilsVisibles);
 
     profils = data ?? [];
   }
+
+  const profilsParId = new Map(profils.map((profil) => [profil.id, profil]));
 
   return (
     <main className="mx-auto max-w-xl p-6">
@@ -67,23 +107,48 @@ export default async function AbonnementsPage({ params }: PageProps) {
         <p className="text-gray-500">Aucun abonnement pour le moment.</p>
       ) : (
         <div className="space-y-2">
-          {profils.map((profil) => (
-            <Link
-              key={profil.id}
-              href={`/membres/${profil.id}`}
-              className="
-                  block
-                  rounded
-                  border
-                  px-4
-                  py-3
-                  transition
-                  hover:bg-gray-500/5
-                "
-            >
-              <span className="font-medium">{profil.nom}</span>
-            </Link>
-          ))}
+          {idsProfils.map((profilId) => {
+            if (idsIndisponibles.has(profilId)) {
+              return (
+                <div
+                  key={profilId}
+                  className="
+          rounded
+          border
+          px-4
+          py-3
+          text-gray-500
+        "
+                >
+                  <span className="font-medium">Profil indisponible</span>
+                </div>
+              );
+            }
+
+            const profil = profilsParId.get(profilId);
+
+            if (!profil) {
+              return null;
+            }
+
+            return (
+              <Link
+                key={profil.id}
+                href={`/membres/${profil.id}`}
+                className="
+        block
+        rounded
+        border
+        px-4
+        py-3
+        transition
+        hover:bg-gray-500/5
+      "
+              >
+                <span className="font-medium">{profil.nom}</span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </main>

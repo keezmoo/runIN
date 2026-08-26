@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import SuivreButton from "./suivre-button";
 import { notFound, redirect } from "next/navigation";
-
+import BlocageUtilisateurButton from "@/components/blocage-utilisateur-button";
 import Link from "next/link";
 
 import { afficherAllure, afficherIntensite } from "@/lib/sortie-utils";
@@ -46,6 +46,65 @@ export default async function ProfilPublicPage({
   }
 
   // ------------------------------------------------
+  // BLOCAGE
+  // ------------------------------------------------
+
+  const estMonProfil = user.id === id;
+
+  let relationBloquee = false;
+  let jeLaiBloque = false;
+
+  if (!estMonProfil) {
+    const [
+      { data: relationBloqueeData, error: relationBloqueeError },
+      { data: monBlocage, error: monBlocageError },
+    ] = await Promise.all([
+      supabase.rpc("est_relation_bloquee", {
+        p_autre_utilisateur_id: id,
+      }),
+
+      supabase
+        .from("blocages")
+        .select("bloque_id")
+        .eq("bloqueur_id", user.id)
+        .eq("bloque_id", id)
+        .maybeSingle(),
+    ]);
+
+    if (relationBloqueeError) {
+      console.error(
+        "Erreur vérification relation bloquée :",
+        relationBloqueeError,
+      );
+    }
+
+    if (monBlocageError) {
+      console.error("Erreur vérification de mon blocage :", monBlocageError);
+    }
+
+    relationBloquee = relationBloqueeData === true;
+    jeLaiBloque = monBlocage !== null;
+  }
+
+  if (relationBloquee) {
+    return (
+      <main className="mx-auto max-w-xl p-6">
+        <h1 className="text-2xl font-bold">Profil indisponible</h1>
+
+        <p className="mt-3 text-sm text-gray-500">
+          Ce profil n&apos;est pas accessible.
+        </p>
+
+        {jeLaiBloque && (
+          <div className="mt-6">
+            <BlocageUtilisateurButton utilisateurId={id} mode="debloquer" />
+          </div>
+        )}
+      </main>
+    );
+  }
+
+  // ------------------------------------------------
   // PROFIL PUBLIC
   // ------------------------------------------------
 
@@ -74,8 +133,6 @@ export default async function ProfilPublicPage({
   // ------------------------------------------------
   // SUIVI
   // ------------------------------------------------
-
-  const estMonProfil = user.id === profil.id;
 
   const [{ count: nombreAbonnes }, { count: nombreAbonnements }] =
     await Promise.all([
@@ -368,6 +425,14 @@ export default async function ProfilPublicPage({
           </div>
         )}
       </section>
+
+      {/* BLOCAGE */}
+
+      {!estMonProfil && (
+        <section className="mt-8 border-t pt-6">
+          <BlocageUtilisateurButton utilisateurId={profil.id} mode="bloquer" />
+        </section>
+      )}
 
       {/* PROPRE PROFIL */}
 

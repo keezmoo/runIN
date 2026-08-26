@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-
+import Link from "next/link";
 import { redirect } from "next/navigation";
-
+import BlocageUtilisateurButton from "@/components/blocage-utilisateur-button";
 import ProfileForm from "./profile-form";
 
 import NotificationsEmailButton from "./notifications-email-button";
@@ -42,6 +42,74 @@ export default async function ProfilPage() {
     .maybeSingle();
 
   // ------------------------------------------------
+  // RÉSEAU
+  // ------------------------------------------------
+
+  let nombreAbonnes = 0;
+  let nombreAbonnements = 0;
+
+  if (profile) {
+    const [{ count: abonnesCount }, { count: abonnementsCount }] =
+      await Promise.all([
+        supabase
+          .from("suivis")
+          .select("*", {
+            count: "exact",
+            head: true,
+          })
+          .eq("profil_suivi_id", user.id),
+
+        supabase
+          .from("suivis")
+          .select("*", {
+            count: "exact",
+            head: true,
+          })
+          .eq("utilisateur_id", user.id),
+      ]);
+
+    nombreAbonnes = abonnesCount ?? 0;
+    nombreAbonnements = abonnementsCount ?? 0;
+  }
+
+  // ------------------------------------------------
+  // UTILISATEURS BLOQUÉS
+  // ------------------------------------------------
+
+  const { data: blocagesData, error: blocagesError } = await supabase
+    .from("blocages")
+    .select("bloque_id, created_at")
+    .eq("bloqueur_id", user.id)
+    .order("created_at", {
+      ascending: false,
+    });
+
+  if (blocagesError) {
+    console.error("Erreur chargement utilisateurs bloqués :", blocagesError);
+  }
+
+  const idsUtilisateursBloques =
+    blocagesData?.map((blocage) => blocage.bloque_id) ?? [];
+
+  let utilisateursBloques: {
+    id: string;
+    nom: string;
+  }[] = [];
+
+  if (idsUtilisateursBloques.length > 0) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, nom")
+      .in("id", idsUtilisateursBloques);
+
+    if (error) {
+      console.error("Erreur chargement profils bloqués :", error);
+    } else {
+      utilisateursBloques = data ?? [];
+    }
+  }
+
+  // ------------------------------------------------
   // AFFICHAGE
   // ------------------------------------------------
 
@@ -66,6 +134,98 @@ export default async function ProfilPage() {
       {/* PROFIL */}
 
       <ProfileForm userId={user.id} initialProfile={profile} />
+
+      {/* RÉSEAU */}
+
+      {profile && (
+        <section
+          className="
+      mt-8
+      border-t
+      pt-6
+    "
+        >
+          <h2 className="text-lg font-semibold">Réseau</h2>
+
+          <div className="mt-4 divide-y border-y">
+            <Link
+              href={`/membres/${user.id}/abonnes`}
+              className="
+          flex
+          items-center
+          justify-between
+          py-3
+          hover:opacity-70
+        "
+            >
+              <span>Abonnés</span>
+
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{nombreAbonnes}</span>
+
+                <span className="text-gray-400">›</span>
+              </div>
+            </Link>
+
+            <Link
+              href={`/membres/${user.id}/abonnements`}
+              className="
+          flex
+          items-center
+          justify-between
+          py-3
+          hover:opacity-70
+        "
+            >
+              <span>Abonnements</span>
+
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{nombreAbonnements}</span>
+
+                <span className="text-gray-400">›</span>
+              </div>
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {utilisateursBloques.length > 0 && (
+        <div className="mt-6">
+          <h3 className="font-medium">Utilisateurs bloqués</h3>
+
+          <div
+            className="
+        mt-3
+        max-h-56
+        divide-y
+        overflow-y-auto
+        border-y
+      "
+          >
+            {utilisateursBloques.map((utilisateurBloque) => (
+              <div
+                key={utilisateurBloque.id}
+                className="
+              flex
+              items-center
+              justify-between
+              gap-4
+              py-3
+            "
+              >
+                <span className="min-w-0 truncate text-sm">
+                  {utilisateurBloque.nom}
+                </span>
+
+                <BlocageUtilisateurButton
+                  utilisateurId={utilisateurBloque.id}
+                  mode="debloquer"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* NOTIFICATIONS */}
 

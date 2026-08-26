@@ -84,6 +84,27 @@ export default async function ConversationPage({ params }: PageProps) {
       ? sortie.organisateur_id
       : conversation.utilisateur_id;
 
+  // ------------------------------------------------
+  // BLOCAGE
+  // ------------------------------------------------
+
+  const { data: relationBloquee, error: relationBloqueeError } =
+    await supabase.rpc("est_relation_bloquee", {
+      p_autre_utilisateur_id: interlocuteurId,
+    });
+
+  if (relationBloqueeError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Impossible de charger la conversation.</p>
+      </main>
+    );
+  }
+
+  if (relationBloquee) {
+    notFound();
+  }
+
   const { data: interlocuteur } = await supabase
     .from("profiles")
     .select(
@@ -234,8 +255,8 @@ export default async function ConversationPage({ params }: PageProps) {
 
               return (
                 <div
-                    key={message.id}
-                    className={`
+                  key={message.id}
+                  className={`
                     flex
                     ${estMoi ? "justify-end" : "justify-start"}
                     ${memeExpediteurQuePrecedent ? "mt-1" : "mt-3"}

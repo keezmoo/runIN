@@ -5,73 +5,63 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 
-
 type ContacterOrganisateurButtonProps = {
-    sortieId: string;
+  sortieId: string;
 };
 
-
 export default function ContacterOrganisateurButton({
-    sortieId,
+  sortieId,
 }: ContacterOrganisateurButtonProps) {
+  const supabase = createClient();
+  const router = useRouter();
 
-    const supabase = createClient();
-    const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-    const [loading, setLoading] =
-        useState(false);
+  const [message, setMessage] = useState("");
 
-    const [message, setMessage] =
-        useState("");
+  async function contacterOrganisateur() {
+    setLoading(true);
+    setMessage("");
 
+    const { data: conversationId, error } = await supabase.rpc(
+      "ouvrir_conversation_sortie",
+      {
+        p_sortie_id: sortieId,
+      },
+    );
 
-    async function contacterOrganisateur() {
+    if (error || !conversationId) {
+      const erreur = error?.message ?? "";
 
-        setLoading(true);
-        setMessage("");
+      if (erreur.includes("RELATION_BLOQUEE")) {
+        setMessage("Cette conversation n'est pas disponible.");
 
-        const {
-            data: conversationId,
-            error,
-        } = await supabase.rpc(
-            "ouvrir_conversation_sortie",
-            {
-                p_sortie_id: sortieId,
-            }
-        );
+        setLoading(false);
 
+        router.refresh();
 
-        if (error || !conversationId) {
+        return;
+      }
 
-            console.error(
-                "Erreur ouverture conversation :",
-                error
-            );
+      console.error("Erreur ouverture conversation :", error);
 
-            setMessage(
-                "Impossible d'ouvrir la conversation."
-            );
+      setMessage("Impossible d'ouvrir la conversation.");
 
-            setLoading(false);
-            return;
-        }
+      setLoading(false);
 
-
-        router.push(
-            `/messages/${conversationId}`
-        );
+      return;
     }
 
+    router.push(`/messages/${conversationId}`);
+  }
 
-    return (
-        <div>
-            <button
-                type="button"
-                onClick={
-                    contacterOrganisateur
-                }
-                disabled={loading}
-                className="
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={contacterOrganisateur}
+        disabled={loading}
+        className="
   rounded
   border
   border-white/50
@@ -82,17 +72,11 @@ export default function ContacterOrganisateurButton({
   text-white
   disabled:opacity-40
 "
-            >
-                {loading
-                    ? "Ouverture..."
-                    : "Contacter l'organisateur"}
-            </button>
+      >
+        {loading ? "Ouverture..." : "Contacter l'organisateur"}
+      </button>
 
-            {message && (
-                <p className="mt-2 text-sm">
-                    {message}
-                </p>
-            )}
-        </div>
-    );
+      {message && <p className="mt-2 text-sm">{message}</p>}
+    </div>
+  );
 }

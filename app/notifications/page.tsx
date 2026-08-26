@@ -91,6 +91,31 @@ export default async function NotificationsPage() {
   }
 
   // ------------------------------------------------
+  // UTILISATEURS INDISPONIBLES
+  // ------------------------------------------------
+
+  const {
+    data: utilisateursIndisponiblesData,
+    error: utilisateursIndisponiblesError,
+  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+
+  if (utilisateursIndisponiblesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <h1 className="mb-6 text-2xl font-bold">Notifications</h1>
+
+        <p>Impossible de charger les notifications.</p>
+      </main>
+    );
+  }
+
+  const idsIndisponibles = new Set(
+    (utilisateursIndisponiblesData ?? []).map(
+      (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
+    ),
+  );
+
+  // ------------------------------------------------
   // NOTIFICATIONS
   // ------------------------------------------------
 
@@ -100,6 +125,7 @@ export default async function NotificationsPage() {
       `
             id,
             type,
+            acteur_id,
             titre,
             contenu,
             lien,
@@ -123,7 +149,10 @@ export default async function NotificationsPage() {
     );
   }
 
-  const listeNotifications = notifications ?? [];
+  const listeNotifications = (notifications ?? []).filter(
+    (notification) =>
+      !notification.acteur_id || !idsIndisponibles.has(notification.acteur_id),
+  );
 
   const nombreNonLues = listeNotifications.filter(
     (notification) => notification.lu_at === null,

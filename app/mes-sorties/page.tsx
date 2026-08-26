@@ -20,6 +20,29 @@ export default async function MesSortiesPage() {
   }
 
   // ------------------------------------------------
+  // UTILISATEURS INDISPONIBLES
+  // ------------------------------------------------
+
+  const {
+    data: utilisateursIndisponiblesData,
+    error: utilisateursIndisponiblesError,
+  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+
+  if (utilisateursIndisponiblesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des sorties.</p>
+      </main>
+    );
+  }
+
+  const idsIndisponibles = new Set(
+    (utilisateursIndisponiblesData ?? []).map(
+      (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
+    ),
+  );
+
+  // ------------------------------------------------
   // SORTIES QUE J'ORGANISE
   // ------------------------------------------------
 
@@ -168,6 +191,7 @@ export default async function MesSortiesPage() {
     denivele_positif_m: number | null;
     duree_estimee_minutes: number | null;
     statut: string;
+    organisateur_id: string;
   }[] = [];
 
   if (idsMesDemandesEnAttente.length > 0) {
@@ -177,6 +201,7 @@ export default async function MesSortiesPage() {
         `
         id,
         titre,
+        organisateur_id,
         date_heure_depart,
         lieu_depart,
         type_sortie,
@@ -226,7 +251,7 @@ export default async function MesSortiesPage() {
     lieu_depart: string;
     type_sortie: string;
     nombre_max_participants: number;
-
+    organisateur_id: string;
     type_entrainement: string | null;
     distance_km: number | null;
     denivele_positif_m: number | null;
@@ -241,6 +266,7 @@ export default async function MesSortiesPage() {
         `
           id,
           titre,
+          organisateur_id,
           date_heure_depart,
           lieu_depart,
           type_sortie,
@@ -276,6 +302,7 @@ export default async function MesSortiesPage() {
   let sortiesParticipeesPassees: {
     id: string;
     titre: string;
+    organisateur_id: string;
     date_heure_depart: string;
     lieu_depart: string;
     type_sortie: string;
@@ -294,6 +321,7 @@ export default async function MesSortiesPage() {
         `
             id,
             titre,
+            organisateur_id,
             date_heure_depart,
             lieu_depart,
             type_sortie,
@@ -343,11 +371,15 @@ export default async function MesSortiesPage() {
   );
 
   const listeSortiesParticipees = sortiesParticipees.filter(
-    (sortie) => sortie.statut === "planifiee",
+    (sortie) =>
+      sortie.statut === "planifiee" &&
+      !idsIndisponibles.has(sortie.organisateur_id),
   );
 
   const listeSortiesEnAttente = sortiesEnAttente.filter(
-    (sortie) => sortie.statut === "planifiee",
+    (sortie) =>
+      sortie.statut === "planifiee" &&
+      !idsIndisponibles.has(sortie.organisateur_id),
   );
 
   // ------------------------------------------------
@@ -365,13 +397,18 @@ export default async function MesSortiesPage() {
   ];
 
   const sortiesParticipeesAnnulees = [
-    ...sortiesParticipees.filter((sortie) => sortie.statut === "annulee"),
+    ...sortiesParticipees.filter(
+      (sortie) =>
+        sortie.statut === "annulee" &&
+        !idsIndisponibles.has(sortie.organisateur_id),
+    ),
 
     ...sortiesParticipeesPassees.filter(
-      (sortie) => sortie.statut === "annulee",
+      (sortie) =>
+        sortie.statut === "annulee" &&
+        !idsIndisponibles.has(sortie.organisateur_id),
     ),
   ];
-
   // ------------------------------------------------
   // HISTORIQUE
   // On exclut les sorties annulées,
@@ -383,7 +420,9 @@ export default async function MesSortiesPage() {
   );
 
   const historiqueSortiesParticipees = sortiesParticipeesPassees.filter(
-    (sortie) => sortie.statut !== "annulee",
+    (sortie) =>
+      sortie.statut !== "annulee" &&
+      !idsIndisponibles.has(sortie.organisateur_id),
   );
 
   const nombreSortiesAnnulees =

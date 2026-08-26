@@ -165,6 +165,29 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
+  // UTILISATEURS INDISPONIBLES
+  // ------------------------------------------------
+
+  const {
+    data: utilisateursIndisponiblesData,
+    error: utilisateursIndisponiblesError,
+  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+
+  if (utilisateursIndisponiblesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des sorties.</p>
+      </main>
+    );
+  }
+
+  const idsIndisponibles = new Set(
+    (utilisateursIndisponiblesData ?? []).map(
+      (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
+    ),
+  );
+
+  // ------------------------------------------------
   // PROFILS SUIVIS
   // ------------------------------------------------
 
@@ -370,11 +393,13 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   const { data: sorties, error: sortiesError } = await sortiesQuery;
 
   const listeSortiesBrutes = (sorties ?? []) as SortieListe[];
-
-  const idsSorties = listeSortiesBrutes.map((sortie) => sortie.id);
+  const listeSortiesVisibles = listeSortiesBrutes.filter(
+    (sortie) => !idsIndisponibles.has(sortie.organisateur_id),
+  );
+  const idsSorties = listeSortiesVisibles.map((sortie) => sortie.id);
 
   const idsOrganisateurs = [
-    ...new Set(listeSortiesBrutes.map((sortie) => sortie.organisateur_id)),
+    ...new Set(listeSortiesVisibles.map((sortie) => sortie.organisateur_id)),
   ];
   // ------------------------------------------------
   // PARTICIPATIONS
@@ -471,13 +496,13 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   let listeSorties = masquerCompletes
-    ? listeSortiesBrutes.filter((sortie) => {
+    ? listeSortiesVisibles.filter((sortie) => {
         const nombreActuel =
           1 + (nombreParticipantsParSortie.get(sortie.id) ?? 0);
 
         return nombreActuel < sortie.nombre_max_participants;
       })
-    : listeSortiesBrutes;
+    : listeSortiesVisibles;
 
   if (filtreSuivis) {
     listeSorties = listeSorties.filter((sortie) => {

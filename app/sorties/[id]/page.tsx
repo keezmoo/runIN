@@ -87,6 +87,40 @@ export default async function DetailSortiePage({ params }: PageProps) {
   if (!sortie) {
     notFound();
   }
+
+  // ------------------------------------------------
+  // UTILISATEURS INDISPONIBLES
+  // ------------------------------------------------
+
+  const {
+    data: utilisateursIndisponiblesData,
+    error: utilisateursIndisponiblesError,
+  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+
+  if (utilisateursIndisponiblesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement de la sortie.</p>
+      </main>
+    );
+  }
+
+  const idsIndisponibles = new Set(
+    (utilisateursIndisponiblesData ?? []).map(
+      (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
+    ),
+  );
+
+  // Une sortie organisée par une personne
+  // indisponible ne doit pas être accessible.
+
+  if (
+    sortie.organisateur_id !== user.id &&
+    idsIndisponibles.has(sortie.organisateur_id)
+  ) {
+    notFound();
+  }
+
   const genreUtilisateurAutorise = sortie.genres_autorises.includes(
     profilUtilisateur.sexe,
   );
@@ -215,10 +249,14 @@ export default async function DetailSortiePage({ params }: PageProps) {
   // Évite les doublons éventuels.
   const idsProfilsUniques = [...new Set(idsProfils)];
 
+  const idsProfilsACharger = idsProfilsUniques.filter(
+    (profilId) => profilId === user.id || !idsIndisponibles.has(profilId),
+  );
+
   const { data: profils, error: profilsError } = await supabase
     .from("profiles")
     .select("id, nom, age, sexe")
-    .in("id", idsProfilsUniques);
+    .in("id", idsProfilsACharger);
 
   if (profilsError) {
     return (
@@ -286,7 +324,9 @@ export default async function DetailSortiePage({ params }: PageProps) {
   }[] = [];
 
   if (demandesRecues.length > 0) {
-    const idsDemandes = demandesRecues.map((demande) => demande.utilisateur_id);
+    const idsDemandes = demandesRecues
+      .map((demande) => demande.utilisateur_id)
+      .filter((utilisateurId) => !idsIndisponibles.has(utilisateurId));
 
     const { data, error: profilsDemandesError } = await supabase
       .from("profiles")
@@ -570,6 +610,16 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
             <div className="space-y-3">
               {demandesRecues.map((demande) => {
+                if (idsIndisponibles.has(demande.utilisateur_id)) {
+                  return (
+                    <div key={demande.id} className="rounded border p-4">
+                      <p className="font-medium text-gray-500">
+                        Profil indisponible
+                      </p>
+                    </div>
+                  );
+                }
+
                 const profil = profilsDemandes.find(
                   (profil) => profil.id === demande.utilisateur_id,
                 );
@@ -580,7 +630,10 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
                 return (
                   <div key={demande.id} className="rounded border p-4">
-                    <Link href={`/membres/${profil.id}`} className="font-medium">
+                    <Link
+                      href={`/membres/${profil.id}`}
+                      className="font-medium"
+                    >
                       {profil.nom}
                     </Link>
 
@@ -607,6 +660,32 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
         <div className="space-y-2">
           {idsProfilsUniques.map((profilId) => {
+            const profilIndisponible =
+              profilId !== user.id && idsIndisponibles.has(profilId);
+
+            if (profilIndisponible) {
+              return (
+                <div
+                  key={profilId}
+                  className="
+        flex
+        items-center
+        justify-between
+        gap-3
+        rounded
+        border
+        p-3
+      "
+                >
+                  <div>
+                    <p className="font-medium text-gray-500">
+                      Profil indisponible
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
             const profil = listeProfils.find((item) => item.id === profilId);
 
             if (!profil) {

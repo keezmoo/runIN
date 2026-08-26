@@ -14,14 +14,10 @@ export default function ToutMarquerLuButton({
 }: ToutMarquerLuButtonProps) {
   const router = useRouter();
 
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function toutMarquerCommeLu() {
-    if (
-      loading ||
-      conversationIds.length === 0
-    ) {
+    if (loading || conversationIds.length === 0) {
       return;
     }
 
@@ -29,36 +25,21 @@ export default function ToutMarquerLuButton({
 
     const supabase = createClient();
 
-    const resultats =
-      await Promise.all(
-        conversationIds.map(
-          (conversationId) =>
-            supabase.rpc(
-              "marquer_messages_comme_lus",
-              {
-                p_conversation_id:
-                  conversationId,
-              },
-            ),
-        ),
-      );
-
-    const erreur = resultats.find(
-      (resultat) => resultat.error,
-    )?.error;
-
-    if (erreur) {
-      console.error(
-        "Erreur lecture des messages :",
-        erreur,
-      );
-    }
-
-    window.dispatchEvent(
-      new Event(
-        "messages-non-lus-modifies",
+    const resultats = await Promise.all(
+      conversationIds.map((conversationId) =>
+        supabase.rpc("marquer_messages_comme_lus", {
+          p_conversation_id: conversationId,
+        }),
       ),
     );
+
+    const erreur = resultats.find((resultat) => resultat.error)?.error;
+
+    if (erreur) {
+      console.error("Erreur lecture des messages :", erreur);
+    }
+
+    window.dispatchEvent(new Event("messages-non-lus-modifies"));
 
     router.refresh();
 
@@ -80,9 +61,7 @@ export default function ToutMarquerLuButton({
         disabled:opacity-50
       "
     >
-      {loading
-        ? "Lecture..."
-        : "Tout marquer comme lu"}
+      {loading ? "Lecture..." : "Tout marquer comme lu"}
     </button>
   );
 }

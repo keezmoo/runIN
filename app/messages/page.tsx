@@ -78,6 +78,29 @@ export default async function MessagesPage() {
   }
 
   // ------------------------------------------------
+  // UTILISATEURS INDISPONIBLES
+  // ------------------------------------------------
+
+  const {
+    data: utilisateursIndisponiblesData,
+    error: utilisateursIndisponiblesError,
+  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+
+  if (utilisateursIndisponiblesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Impossible de charger les conversations.</p>
+      </main>
+    );
+  }
+
+  const idsIndisponibles = new Set(
+    (utilisateursIndisponiblesData ?? []).map(
+      (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
+    ),
+  );
+
+  // ------------------------------------------------
   // CONVERSATIONS ACCESSIBLES
   // ------------------------------------------------
 
@@ -157,6 +180,15 @@ export default async function MessagesPage() {
     );
 
     if (!sortie) {
+      return false;
+    }
+
+    const interlocuteurId =
+      conversation.utilisateur_id === user.id
+        ? sortie.organisateur_id
+        : conversation.utilisateur_id;
+
+    if (idsIndisponibles.has(interlocuteurId)) {
       return false;
     }
 

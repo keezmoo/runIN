@@ -2,11 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 import MenuProfil from "./menu-profil";
@@ -19,13 +15,11 @@ type IconeProps = {
   type: string;
 };
 
-
 // ------------------------------------------------
 // ICÔNES
 // ------------------------------------------------
 
 function Icone({ type }: IconeProps) {
-
   // Recherche
   if (type === "search") {
     return (
@@ -38,17 +32,12 @@ function Icone({ type }: IconeProps) {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <circle
-          cx="11"
-          cy="11"
-          r="7"
-        />
+        <circle cx="11" cy="11" r="7" />
 
         <path d="m20 20-4-4" />
       </svg>
     );
   }
-
 
   // Mes sorties
   if (type === "calendar") {
@@ -62,13 +51,7 @@ function Icone({ type }: IconeProps) {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <rect
-          x="3"
-          y="5"
-          width="18"
-          height="16"
-          rx="2"
-        />
+        <rect x="3" y="5" width="18" height="16" rx="2" />
 
         <path d="M8 3v4" />
         <path d="M16 3v4" />
@@ -76,7 +59,6 @@ function Icone({ type }: IconeProps) {
       </svg>
     );
   }
-
 
   // Créer
   if (type === "plus") {
@@ -95,7 +77,6 @@ function Icone({ type }: IconeProps) {
       </svg>
     );
   }
-
 
   // Messages
   if (type === "message") {
@@ -128,7 +109,6 @@ function Icone({ type }: IconeProps) {
     );
   }
 
-
   // Notifications
   if (type === "bell") {
     return (
@@ -156,7 +136,6 @@ function Icone({ type }: IconeProps) {
     );
   }
 
-
   // Profil
   return (
     <svg
@@ -168,11 +147,7 @@ function Icone({ type }: IconeProps) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle
-        cx="12"
-        cy="8"
-        r="4"
-      />
+      <circle cx="12" cy="8" r="4" />
 
       <path
         d="
@@ -185,21 +160,14 @@ function Icone({ type }: IconeProps) {
   );
 }
 
-
 // ------------------------------------------------
 // BADGE
 // ------------------------------------------------
 
-function Badge({
-  nombre,
-}: {
-  nombre: number;
-}) {
-
+function Badge({ nombre }: { nombre: number }) {
   if (nombre <= 0) {
     return null;
   }
-
 
   return (
     <span
@@ -224,144 +192,88 @@ function Badge({
         text-black
       "
     >
-      {nombre > 99
-        ? "99+"
-        : nombre}
+      {nombre > 99 ? "99+" : nombre}
     </span>
   );
 }
-
 
 // ------------------------------------------------
 // NAVIGATION PRINCIPALE
 // ------------------------------------------------
 
 export default function NavigationPrincipale() {
+  const pathname = usePathname();
 
-  const pathname =
-    usePathname();
-
-
-  const estPageAuth =
-    pathname.startsWith("/auth");
-
+  const estPageAuth = pathname.startsWith("/auth");
 
   // ------------------------------------------------
   // COMPTEURS
   // ------------------------------------------------
 
-  const [
-    nombreMessagesNonLus,
-    setNombreMessagesNonLus,
-  ] = useState(0);
+  const [nombreMessagesNonLus, setNombreMessagesNonLus] = useState(0);
 
-
-  const [
-    nombreNotificationsNonLues,
-    setNombreNotificationsNonLues,
-  ] = useState(0);
-
+  const [nombreNotificationsNonLues, setNombreNotificationsNonLues] =
+    useState(0);
 
   // ------------------------------------------------
   // CHARGEMENT MESSAGES NON LUS
   // ------------------------------------------------
 
-  const chargerMessagesNonLus =
-    useCallback(async () => {
+  const chargerMessagesNonLus = useCallback(async () => {
+    const supabase = createClient();
 
-      const supabase =
-        createClient();
+    const { data, error } = await supabase.rpc(
+      "nombre_messages_non_lus_visibles",
+    );
 
+    if (error) {
+      console.error("Erreur compteur messages :", {
+        message: error.message,
 
-      const {
-        data,
-        error,
-      } = await supabase.rpc(
-        "nombre_messages_non_lus"
-      );
+        code: error.code,
 
+        details: error.details,
 
-      if (error) {
+        hint: error.hint,
+      });
 
-        console.error(
-          "Erreur compteur messages :",
-          {
-            message:
-              error.message,
+      return;
+    }
 
-            code:
-              error.code,
-
-            details:
-              error.details,
-
-            hint:
-              error.hint,
-          }
-        );
-
-        return;
-      }
-
-
-      setNombreMessagesNonLus(
-        Number(data ?? 0)
-      );
-
-    }, []);
-
+    setNombreMessagesNonLus(Number(data ?? 0));
+  }, []);
 
   // ------------------------------------------------
   // CHARGEMENT NOTIFICATIONS NON LUES
   // ------------------------------------------------
 
-  const chargerNotificationsNonLues =
-    useCallback(async () => {
+  const chargerNotificationsNonLues = useCallback(async () => {
+    const supabase = createClient();
 
-      const supabase =
-        createClient();
+    const { data, error } = await supabase.rpc(
+      "nombre_notifications_non_lues_visibles",
+    );
 
+    if (error) {
+      console.error("Erreur compteur notifications :", error);
 
-      const {
-        data,
-        error,
-      } = await supabase.rpc(
-        "nombre_notifications_non_lues"
-      );
+      return;
+    }
 
-
-      if (error) {
-
-        console.error(
-          "Erreur compteur notifications :",
-          error
-        );
-
-        return;
-      }
-
-
-      setNombreNotificationsNonLues(
-        Number(data ?? 0)
-      );
-
-    }, []);
-
+    setNombreNotificationsNonLues(Number(data ?? 0));
+  }, []);
 
   // ------------------------------------------------
   // ACTUALISATION AU CHANGEMENT DE PAGE
   // ------------------------------------------------
 
   useEffect(() => {
-
     if (estPageAuth) {
       return;
     }
 
-
     chargerMessagesNonLus();
     chargerNotificationsNonLues();
-
   }, [
     pathname,
     estPageAuth,
@@ -369,216 +281,144 @@ export default function NavigationPrincipale() {
     chargerNotificationsNonLues,
   ]);
 
-
   // ------------------------------------------------
   // ÉVÉNEMENT INTERNE NOTIFICATIONS
   // ------------------------------------------------
 
   useEffect(() => {
-
     if (estPageAuth) {
       return;
     }
 
-
     function actualiserNotifications() {
-
       chargerNotificationsNonLues();
-
     }
-
 
     window.addEventListener(
       "notifications-non-lues-modifiees",
-      actualiserNotifications
+      actualiserNotifications,
     );
 
-
     return () => {
-
       window.removeEventListener(
         "notifications-non-lues-modifiees",
-        actualiserNotifications
+        actualiserNotifications,
       );
-
     };
-
-  }, [
-    estPageAuth,
-    chargerNotificationsNonLues,
-  ]);
-
+  }, [estPageAuth, chargerNotificationsNonLues]);
 
   // ------------------------------------------------
   // ÉVÉNEMENT INTERNE MESSAGES
   // ------------------------------------------------
 
   useEffect(() => {
-
     if (estPageAuth) {
       return;
     }
 
-
     function actualiserCompteur() {
-
       chargerMessagesNonLus();
-
     }
 
-
-    window.addEventListener(
-      "messages-non-lus-modifies",
-      actualiserCompteur
-    );
-
+    window.addEventListener("messages-non-lus-modifies", actualiserCompteur);
 
     return () => {
-
       window.removeEventListener(
         "messages-non-lus-modifies",
-        actualiserCompteur
+        actualiserCompteur,
       );
-
     };
-
-  }, [
-    estPageAuth,
-    chargerMessagesNonLus,
-  ]);
-
+  }, [estPageAuth, chargerMessagesNonLus]);
 
   // ------------------------------------------------
   // REALTIME MESSAGES
   // ------------------------------------------------
 
   useEffect(() => {
-
     if (estPageAuth) {
       return;
     }
 
+    const supabase = createClient();
 
-    const supabase =
-      createClient();
+    const channel = supabase
+      .channel("navigation-messages-global")
 
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        () => {
+          chargerMessagesNonLus();
+        },
+      )
 
-    const channel =
-      supabase
-        .channel(
-          "navigation-messages-global"
-        )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+        },
+        () => {
+          chargerMessagesNonLus();
+        },
+      )
 
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-          },
-          () => {
-
-            chargerMessagesNonLus();
-
-          }
-        )
-
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "messages",
-          },
-          () => {
-
-            chargerMessagesNonLus();
-
-          }
-        )
-
-        .subscribe();
-
+      .subscribe();
 
     return () => {
-
-      supabase.removeChannel(
-        channel
-      );
-
+      supabase.removeChannel(channel);
     };
-
-  }, [
-    estPageAuth,
-    chargerMessagesNonLus,
-  ]);
-
+  }, [estPageAuth, chargerMessagesNonLus]);
 
   // ------------------------------------------------
   // REALTIME NOTIFICATIONS
   // ------------------------------------------------
 
   useEffect(() => {
-
     if (estPageAuth) {
       return;
     }
 
+    const supabase = createClient();
 
-    const supabase =
-      createClient();
+    const channel = supabase
+      .channel("navigation-notifications-global")
 
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          chargerNotificationsNonLues();
+        },
+      )
 
-    const channel =
-      supabase
-        .channel(
-          "navigation-notifications-global"
-        )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+        },
+        () => {
+          chargerNotificationsNonLues();
+        },
+      )
 
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-          },
-          () => {
-
-            chargerNotificationsNonLues();
-
-          }
-        )
-
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "notifications",
-          },
-          () => {
-
-            chargerNotificationsNonLues();
-
-          }
-        )
-
-        .subscribe();
-
+      .subscribe();
 
     return () => {
-
-      supabase.removeChannel(
-        channel
-      );
-
+      supabase.removeChannel(channel);
     };
-
-  }, [
-    estPageAuth,
-    chargerNotificationsNonLues,
-  ]);
-
+  }, [estPageAuth, chargerNotificationsNonLues]);
 
   // ------------------------------------------------
   // PAS DE NAVIGATION SUR AUTH
@@ -590,56 +430,27 @@ export default function NavigationPrincipale() {
     return null;
   }
 
-
   // ------------------------------------------------
   // LIENS ACTIFS
   // ------------------------------------------------
 
   const sortiesActif =
     pathname === "/sorties" ||
-    (
-      pathname.startsWith(
-        "/sorties/"
-      ) &&
-      !pathname.startsWith(
-        "/sorties/nouvelle"
-      ) &&
-      !pathname.includes(
-        "/modifier"
-      )
-    );
-
+    (pathname.startsWith("/sorties/") &&
+      !pathname.startsWith("/sorties/nouvelle") &&
+      !pathname.includes("/modifier"));
 
   const mesSortiesActif =
-    pathname === "/mes-sorties" ||
-    pathname.includes(
-      "/modifier"
-    );
+    pathname === "/mes-sorties" || pathname.includes("/modifier");
 
+  const creerActif = pathname === "/sorties/nouvelle";
 
-  const creerActif =
-    pathname ===
-    "/sorties/nouvelle";
+  const messagesActif = pathname.startsWith("/messages");
 
-
-  const messagesActif =
-    pathname.startsWith(
-      "/messages"
-    );
-
-
-  const notificationsActif =
-    pathname.startsWith(
-      "/notifications"
-    );
-
+  const notificationsActif = pathname.startsWith("/notifications");
 
   const profilActif =
-    pathname === "/profil" ||
-    pathname.startsWith(
-      "/parametres"
-    );
-
+    pathname === "/profil" || pathname.startsWith("/parametres");
 
   // ------------------------------------------------
   // AFFICHAGE
@@ -647,7 +458,6 @@ export default function NavigationPrincipale() {
 
   return (
     <>
-
       {/* ============================================ */}
       {/* MOBILE : BARRE DU HAUT                     */}
       {/* ============================================ */}
@@ -676,7 +486,6 @@ export default function NavigationPrincipale() {
             px-4
           "
         >
-
           {/* LOGO */}
 
           <Link
@@ -689,7 +498,6 @@ export default function NavigationPrincipale() {
             runIN
           </Link>
 
-
           {/* ACTIONS HAUTES */}
 
           <div
@@ -699,17 +507,12 @@ export default function NavigationPrincipale() {
               gap-1
             "
           >
-
             {/* MESSAGES */}
 
             <Link
               href="/messages"
               aria-label="Messages"
-              aria-current={
-                messagesActif
-                  ? "page"
-                  : undefined
-              }
+              aria-current={messagesActif ? "page" : undefined}
               className={`
                 flex
                 h-10
@@ -719,38 +522,26 @@ export default function NavigationPrincipale() {
                 rounded-full
                 transition
 
-                ${messagesActif
-                  ? "text-[#8ED8B6]"
-                  : "text-foreground hover:bg-zinc-800"
+                ${
+                  messagesActif
+                    ? "text-[#8ED8B6]"
+                    : "text-foreground hover:bg-zinc-800"
                 }
               `}
             >
               <div className="relative">
+                <Icone type="message" />
 
-                <Icone
-                  type="message"
-                />
-
-                <Badge
-                  nombre={
-                    nombreMessagesNonLus
-                  }
-                />
-
+                <Badge nombre={nombreMessagesNonLus} />
               </div>
             </Link>
-
 
             {/* NOTIFICATIONS */}
 
             <Link
               href="/notifications"
               aria-label="Alertes"
-              aria-current={
-                notificationsActif
-                  ? "page"
-                  : undefined
-              }
+              aria-current={notificationsActif ? "page" : undefined}
               className={`
                 flex
                 h-10
@@ -760,39 +551,26 @@ export default function NavigationPrincipale() {
                 rounded-full
                 transition
 
-                ${notificationsActif
-                  ? "text-[#8ED8B6]"
-                  : "text-foreground hover:bg-zinc-800"
+                ${
+                  notificationsActif
+                    ? "text-[#8ED8B6]"
+                    : "text-foreground hover:bg-zinc-800"
                 }
               `}
             >
               <div className="relative">
+                <Icone type="bell" />
 
-                <Icone
-                  type="bell"
-                />
-
-                <Badge
-                  nombre={
-                    nombreNotificationsNonLues
-                  }
-                />
-
+                <Badge nombre={nombreNotificationsNonLues} />
               </div>
             </Link>
 
-
             {/* PROFIL */}
 
-            <MenuProfil
-              actif={profilActif}
-            />
-
+            <MenuProfil actif={profilActif} />
           </div>
-
         </div>
       </header>
-
 
       {/* ============================================ */}
       {/* MOBILE : BARRE DU BAS                      */}
@@ -822,16 +600,11 @@ export default function NavigationPrincipale() {
             items-center
           "
         >
-
           {/* SORTIES */}
 
           <Link
             href="/sorties"
-            aria-current={
-              sortiesActif
-                ? "page"
-                : undefined
-            }
+            aria-current={sortiesActif ? "page" : undefined}
             className={`
               flex
               h-full
@@ -843,31 +616,19 @@ export default function NavigationPrincipale() {
               text-xs
               transition
 
-              ${sortiesActif
-                ? "text-[#8ED8B6]"
-                : "text-foreground"
-              }
+              ${sortiesActif ? "text-[#8ED8B6]" : "text-foreground"}
             `}
           >
-            <Icone
-              type="search"
-            />
+            <Icone type="search" />
 
-            <span>
-              Sorties
-            </span>
+            <span>Sorties</span>
           </Link>
-
 
           {/* MES SORTIES */}
 
           <Link
             href="/mes-sorties"
-            aria-current={
-              mesSortiesActif
-                ? "page"
-                : undefined
-            }
+            aria-current={mesSortiesActif ? "page" : undefined}
             className={`
               flex
               h-full
@@ -879,31 +640,19 @@ export default function NavigationPrincipale() {
               text-xs
               transition
 
-              ${mesSortiesActif
-                ? "text-[#8ED8B6]"
-                : "text-foreground"
-              }
+              ${mesSortiesActif ? "text-[#8ED8B6]" : "text-foreground"}
             `}
           >
-            <Icone
-              type="calendar"
-            />
+            <Icone type="calendar" />
 
-            <span>
-              Mes sorties
-            </span>
+            <span>Mes sorties</span>
           </Link>
-
 
           {/* CRÉER */}
 
           <Link
             href="/sorties/nouvelle"
-            aria-current={
-              creerActif
-                ? "page"
-                : undefined
-            }
+            aria-current={creerActif ? "page" : undefined}
             className="
               flex
               h-full
@@ -927,25 +676,20 @@ export default function NavigationPrincipale() {
                 rounded-full
                 border
 
-                ${creerActif
-                  ? "border-[#8ED8B6] bg-[#8ED8B6] text-black"
-                  : "border-[#8ED8B6]"
+                ${
+                  creerActif
+                    ? "border-[#8ED8B6] bg-[#8ED8B6] text-black"
+                    : "border-[#8ED8B6]"
                 }
               `}
             >
-              <Icone
-                type="plus"
-              />
+              <Icone type="plus" />
             </div>
 
-            <span>
-              Créer
-            </span>
+            <span>Créer</span>
           </Link>
-
         </div>
       </nav>
-
 
       {/* ============================================ */}
       {/* ORDINATEUR                                  */}
@@ -976,7 +720,6 @@ export default function NavigationPrincipale() {
             px-6
           "
         >
-
           {/* GAUCHE */}
 
           <div
@@ -986,7 +729,6 @@ export default function NavigationPrincipale() {
               gap-4
             "
           >
-
             <Link
               href="/sorties"
               className="
@@ -998,7 +740,6 @@ export default function NavigationPrincipale() {
               runIN
             </Link>
 
-
             <Link
               href="/sorties"
               className={`
@@ -1008,15 +749,11 @@ export default function NavigationPrincipale() {
                 text-sm
                 transition
 
-                ${sortiesActif
-                  ? "text-[#8ED8B6]"
-                  : "hover:bg-zinc-800"
-                }
+                ${sortiesActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
               `}
             >
               Sorties
             </Link>
-
 
             <Link
               href="/mes-sorties"
@@ -1027,15 +764,11 @@ export default function NavigationPrincipale() {
                 text-sm
                 transition
 
-                ${mesSortiesActif
-                  ? "text-[#8ED8B6]"
-                  : "hover:bg-zinc-800"
-                }
+                ${mesSortiesActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
               `}
             >
               Mes sorties
             </Link>
-
 
             <Link
               href="/sorties/nouvelle"
@@ -1052,15 +785,10 @@ export default function NavigationPrincipale() {
                 text-black
               "
             >
-              <Icone
-                type="plus"
-              />
-
+              <Icone type="plus" />
               Créer
             </Link>
-
           </div>
-
 
           {/* DROITE */}
 
@@ -1071,7 +799,6 @@ export default function NavigationPrincipale() {
               gap-1
             "
           >
-
             <Link
               href="/messages"
               aria-label="Messages"
@@ -1084,27 +811,15 @@ export default function NavigationPrincipale() {
                 rounded-full
                 transition
 
-                ${messagesActif
-                  ? "text-[#8ED8B6]"
-                  : "hover:bg-zinc-800"
-                }
+                ${messagesActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
               `}
             >
               <div className="relative">
+                <Icone type="message" />
 
-                <Icone
-                  type="message"
-                />
-
-                <Badge
-                  nombre={
-                    nombreMessagesNonLus
-                  }
-                />
-
+                <Badge nombre={nombreMessagesNonLus} />
               </div>
             </Link>
-
 
             <Link
               href="/notifications"
@@ -1118,37 +833,20 @@ export default function NavigationPrincipale() {
                 rounded-full
                 transition
 
-                ${notificationsActif
-                  ? "text-[#8ED8B6]"
-                  : "hover:bg-zinc-800"
-                }
+                ${notificationsActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
               `}
             >
               <div className="relative">
+                <Icone type="bell" />
 
-                <Icone
-                  type="bell"
-                />
-
-                <Badge
-                  nombre={
-                    nombreNotificationsNonLues
-                  }
-                />
-
+                <Badge nombre={nombreNotificationsNonLues} />
               </div>
             </Link>
 
-
-            <MenuProfil
-              actif={profilActif}
-            />
-
+            <MenuProfil actif={profilActif} />
           </div>
-
         </div>
       </nav>
-
     </>
   );
 }
