@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-
+import "leaflet/dist/leaflet.css";
 import NavigationPrincipale from "../components/navigation-principale";
 
 const defaultUrl = process.env.VERCEL_URL

@@ -1,3 +1,226 @@
+﻿==================================================
+FICHIER : app\api\geocode\route.ts
+==================================================
+import { createClient } from "@/lib/supabase/server";
+
+type NominatimResult = {
+    lat: string;
+    lon: string;
+    display_name: string;
+};
+
+export async function GET(request: Request) {
+
+    try {
+
+        // ------------------------------------------------
+        // UTILISATEUR CONNECTÃ‰
+        // ------------------------------------------------
+
+        const supabase =
+            await createClient();
+
+        const {
+            data: {
+                user,
+            },
+            error: userError,
+        } =
+            await supabase.auth.getUser();
+
+
+        if (
+            userError ||
+            !user
+        ) {
+
+            return Response.json(
+                {
+                    error:
+                        "Utilisateur non authentifiÃ©.",
+                },
+                {
+                    status: 401,
+                }
+            );
+
+        }
+
+
+        // ------------------------------------------------
+        // RECHERCHE
+        // ------------------------------------------------
+
+        const {
+            searchParams,
+        } =
+            new URL(request.url);
+
+        const recherche =
+            searchParams
+                .get("q")
+                ?.trim();
+
+
+        if (!recherche) {
+
+            return Response.json(
+                {
+                    error:
+                        "Lieu manquant.",
+                },
+                {
+                    status: 400,
+                }
+            );
+
+        }
+
+
+        // EmpÃªche les requÃªtes absurdes ou excessivement longues.
+
+        if (recherche.length > 150) {
+
+            return Response.json(
+                {
+                    error:
+                        "Recherche trop longue.",
+                },
+                {
+                    status: 400,
+                }
+            );
+
+        }
+
+
+        // ------------------------------------------------
+        // NOMINATIM
+        // ------------------------------------------------
+
+        const url =
+            new URL(
+                "https://nominatim.openstreetmap.org/search"
+            );
+
+        url.searchParams.set(
+            "q",
+            recherche
+        );
+
+        url.searchParams.set(
+            "format",
+            "jsonv2"
+        );
+
+        url.searchParams.set(
+            "limit",
+            "1"
+        );
+
+        // Pour l'instant runIN recherche
+        // uniquement en France.
+
+        url.searchParams.set(
+            "countrycodes",
+            "fr"
+        );
+
+
+        const response =
+            await fetch(
+                url,
+                {
+                    headers: {
+                        "User-Agent":
+                            "runIN/0.1",
+                        "Accept-Language":
+                            "fr",
+                    },
+
+                    cache:
+                        "no-store",
+                }
+            );
+
+
+        if (!response.ok) {
+
+            return Response.json(
+                {
+                    error:
+                        "Le service de localisation ne rÃ©pond pas.",
+                },
+                {
+                    status: 502,
+                }
+            );
+
+        }
+
+
+        const resultats =
+            (await response.json()) as NominatimResult[];
+
+
+        if (
+            resultats.length === 0
+        ) {
+
+            return Response.json(
+                {
+                    error:
+                        "Localisation introuvable.",
+                },
+                {
+                    status: 404,
+                }
+            );
+
+        }
+
+
+        const lieu =
+            resultats[0];
+
+
+        return Response.json({
+            nom:
+                lieu.display_name,
+
+            latitude:
+                Number(lieu.lat),
+
+            longitude:
+                Number(lieu.lon),
+        });
+
+
+    } catch (error) {
+
+        console.error(
+            "Erreur gÃ©ocodage :",
+            error
+        );
+
+
+        return Response.json(
+            {
+                error:
+                    "Une erreur inattendue est survenue.",
+            },
+            {
+                status: 500,
+            }
+        );
+
+    }
+
+}
+
+==================================================
+FICHIER : app\sorties\[id]\page.tsx
+==================================================
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +238,6 @@ import {
 import ContacterOrganisateurButton from "./contacter-organisateur-button";
 import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
 import ContacterParticipantButton from "./contacter-participant-button";
-import CarteSortie from "./carte-sortie";
 
 type PageProps = {
   params: Promise<{
@@ -29,7 +251,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
   const supabase = await createClient();
 
   // ------------------------------------------------
-  // UTILISATEUR CONNECTÉ
+  // UTILISATEUR CONNECTÃ‰
   // ------------------------------------------------
 
   const {
@@ -112,8 +334,8 @@ export default async function DetailSortiePage({ params }: PageProps) {
     ),
   );
 
-  // Une sortie organisée par une personne
-  // indisponible ne doit pas être accessible.
+  // Une sortie organisÃ©e par une personne
+  // indisponible ne doit pas Ãªtre accessible.
 
   if (
     sortie.organisateur_id !== user.id &&
@@ -125,31 +347,6 @@ export default async function DetailSortiePage({ params }: PageProps) {
   const genreUtilisateurAutorise = sortie.genres_autorises.includes(
     profilUtilisateur.sexe,
   );
-
-  // ------------------------------------------------
-  // COORDONNÉES DU POINT DE DÉPART
-  // ------------------------------------------------
-
-  const { data: coordonneesData, error: coordonneesError } = await supabase.rpc(
-    "coordonnees_sortie",
-    {
-      p_sortie_id: sortie.id,
-    },
-  );
-
-  if (coordonneesError) {
-    console.error("Erreur chargement coordonnées :", coordonneesError);
-  }
-
-  const coordonnees = coordonneesData?.[0] ?? null;
-
-  const latitude = coordonnees ? Number(coordonnees.latitude) : NaN;
-
-  const longitude = coordonnees ? Number(coordonnees.longitude) : NaN;
-
-  const coordonneesValides =
-    Number.isFinite(latitude) && Number.isFinite(longitude);
-
   // ------------------------------------------------
   // PARTICIPATIONS
   // ------------------------------------------------
@@ -240,7 +437,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
   const totalDemandesEnAttente = nombreDemandesEnAttente ?? 0;
 
   // ------------------------------------------------
-  // UTILISATEUR RETIRÉ PAR L'ORGANISATEUR ?
+  // UTILISATEUR RETIRÃ‰ PAR L'ORGANISATEUR ?
   // ------------------------------------------------
 
   const { data: exclusionSortie, error: exclusionSortieError } = await supabase
@@ -265,14 +462,14 @@ export default async function DetailSortiePage({ params }: PageProps) {
   // ------------------------------------------------
 
   // L'organisateur compte comme premier participant,
-  // même s'il n'est pas dans la table participations.
+  // mÃªme s'il n'est pas dans la table participations.
 
   const idsProfils = [
     sortie.organisateur_id,
     ...listeParticipations.map((participation) => participation.utilisateur_id),
   ];
 
-  // Évite les doublons éventuels.
+  // Ã‰vite les doublons Ã©ventuels.
   const idsProfilsUniques = [...new Set(idsProfils)];
 
   const idsProfilsACharger = idsProfilsUniques.filter(
@@ -298,7 +495,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
     listeProfils.find((profil) => profil.id === sortie.organisateur_id) ?? null;
 
   // ------------------------------------------------
-  // ÉTAT DE LA PARTICIPATION
+  // Ã‰TAT DE LA PARTICIPATION
   // ------------------------------------------------
 
   const nombreActuel = 1 + listeParticipations.length;
@@ -310,7 +507,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
   const estOrganisateur = sortie.organisateur_id === user.id;
 
   // ------------------------------------------------
-  // DEMANDES REÇUES PAR L'ORGANISATEUR
+  // DEMANDES REÃ‡UES PAR L'ORGANISATEUR
   // ------------------------------------------------
 
   let demandesRecues: {
@@ -371,7 +568,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
   }
 
   // ------------------------------------------------
-  // SORTIE COMPLÈTE ?
+  // SORTIE COMPLÃˆTE ?
   // ------------------------------------------------
 
   const complet = nombreActuel >= sortie.nombre_max_participants;
@@ -442,14 +639,14 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
   if (intensiteAffiche) {
     caracteristiques.push({
-      label: "Intensité",
+      label: "IntensitÃ©",
       valeur: intensiteAffiche,
     });
   }
 
   if (sortie.duree_estimee_minutes !== null) {
     caracteristiques.push({
-      label: "Durée totale",
+      label: "DurÃ©e totale",
       valeur: afficherDuree(sortie.duree_estimee_minutes),
     });
   }
@@ -474,7 +671,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
   return (
     <main className="mx-auto max-w-2xl p-6 pb-32">
-      {/* EN-TÊTE DE LA SORTIE */}
+      {/* EN-TÃŠTE DE LA SORTIE */}
 
       <header className="mb-8">
         <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -484,7 +681,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
           {sortie.statut === "annulee" && (
             <span className="rounded-full border px-3 py-1 text-sm font-semibold">
-              Sortie annulée
+              Sortie annulÃ©e
             </span>
           )}
         </div>
@@ -523,7 +720,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
         {organisateur && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-gray-600">
-              Organisée par{" "}
+              OrganisÃ©e par{" "}
               <Link
                 href={`/membres/${organisateur.id}`}
                 className="font-medium text-gray-300 hover:underline"
@@ -542,36 +739,29 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
             <p className="mt-1 font-medium">
               {formatDateLongue(dateKey)}
-              {" à "}
+              {" Ã  "}
               {formatHeure(sortie.date_heure_depart)}
             </p>
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Lieu de départ</p>
+            <p className="text-sm text-gray-500">Lieu de dÃ©part</p>
 
             <p className="mt-1 font-medium">{sortie.lieu_depart}</p>
           </div>
         </div>
       </header>
 
-      {/* CARTE */}
+      {/* CARTE
+    Elle viendra ici lorsque nous traiterons
+    la localisation / carte interactive.
+*/}
 
-      {coordonneesValides && (
-        <section className="mb-8">
-          <CarteSortie
-            latitude={latitude}
-            longitude={longitude}
-            lieu={sortie.lieu_depart}
-          />
-        </section>
-      )}
-
-      {/* TYPE D'ENTRAÎNEMENT */}
+      {/* TYPE D'ENTRAÃŽNEMENT */}
 
       {typeEntrainementAffiche && (
         <section className="mb-5">
-          <p className="text-sm text-gray-500">Type d&apos;entraînement</p>
+          <p className="text-sm text-gray-500">Type d&apos;entraÃ®nement</p>
 
           <p className="mt-1 text-lg font-semibold">
             {typeEntrainementAffiche}
@@ -579,14 +769,14 @@ export default async function DetailSortiePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* PARTICIPANTS AUTORISÉS */}
+      {/* PARTICIPANTS AUTORISÃ‰S */}
       <div>
-        <p className="text-sm text-gray-500">Participants autorisés</p>
+        <p className="text-sm text-gray-500">Participants autorisÃ©s</p>
 
         <p>{genresAutorisesAffiches}</p>
       </div>
 
-      {/* CARACTÉRISTIQUES */}
+      {/* CARACTÃ‰RISTIQUES */}
 
       <section className="mb-8">
         <div className="overflow-x-auto rounded border">
@@ -791,8 +981,8 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
             {complet ? (
               <p className="mt-2 text-sm text-gray-500">
-                La sortie est actuellement complète. Votre demande reste active
-                si une place se libère.
+                La sortie est actuellement complÃ¨te. Votre demande reste active
+                si une place se libÃ¨re.
               </p>
             ) : (
               <p className="mt-2 text-sm text-gray-500">
@@ -855,9 +1045,9 @@ text-white
 
           <div className="flex flex-1 items-center justify-end gap-2">
             {sortie.statut === "annulee" ? (
-              <span className="font-medium text-gray-500">Sortie annulée</span>
+              <span className="font-medium text-gray-500">Sortie annulÃ©e</span>
             ) : sortiePassee ? (
-              <span className="font-medium text-gray-500">Sortie terminée</span>
+              <span className="font-medium text-gray-500">Sortie terminÃ©e</span>
             ) : estExcluDeLaSortie ? (
               <span className="font-medium text-red-500">
                 Participation impossible
@@ -886,3 +1076,4 @@ text-white
     </main>
   );
 }
+

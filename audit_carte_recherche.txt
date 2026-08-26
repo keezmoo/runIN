@@ -1,3 +1,6 @@
+﻿==================================================
+FICHIER : app\sorties\page.tsx
+==================================================
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -11,7 +14,6 @@ import {
   formatHeure,
   getDateKey,
 } from "@/lib/date-utils";
-import CarteSorties from "./carte-sorties";
 
 type SortiesPageProps = {
   searchParams: Promise<{
@@ -64,9 +66,6 @@ type SortieListe = {
   allure_secondes_km: number | null;
   genres_autorises: string[];
   distance_geo_km: number;
-
-  latitude: number;
-  longitude: number;
 };
 
 function nombreParametre(valeur?: string) {
@@ -148,7 +147,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
   const supabase = await createClient();
 
-  // Utilisateur connecté
+  // Utilisateur connectÃ©
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -158,7 +157,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // DONNÉES UTILISATEUR
+  // DONNÃ‰ES UTILISATEUR
   // ------------------------------------------------
 
   const [
@@ -188,7 +187,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // UTILISATEURS INDISPONIBLES (blocages)
+  // UTILISATEURS INDISPONIBLES
   // ------------------------------------------------
 
   if (utilisateursIndisponiblesResult.error) {
@@ -223,7 +222,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   const idsSuivisSet = new Set(idsSuivis);
 
   // ------------------------------------------------
-  // LOCALISATION ENREGISTRÉE
+  // LOCALISATION ENREGISTRÃ‰E
   // ------------------------------------------------
 
   const filtreProfil = filtreProfilResult.data?.[0] ?? null;
@@ -245,7 +244,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     : 10;
 
   // ------------------------------------------------
-  // COORDONNÉES
+  // COORDONNÃ‰ES
   // ------------------------------------------------
 
   const latitudeParam = params.lat !== undefined ? Number(params.lat) : NaN;
@@ -310,7 +309,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // INTENSITÉ
+  // INTENSITÃ‰
   // ------------------------------------------------
 
   if (filtreIntensite) {
@@ -318,7 +317,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // TYPE D'ENTRAÎNEMENT
+  // TYPE D'ENTRAÃŽNEMENT
   // ------------------------------------------------
 
   if (filtreTypeEntrainement) {
@@ -326,7 +325,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // DURÉE ESTIMÉE
+  // DURÃ‰E ESTIMÃ‰E
   // ------------------------------------------------
 
   if (filtreDureeMin !== null) {
@@ -338,7 +337,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // GENRES AUTORISÉS
+  // GENRES AUTORISÃ‰S
   // ------------------------------------------------
 
   if (filtreGenres.length > 0) {
@@ -368,7 +367,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // TRAIL : DÉNIVELÉ
+  // TRAIL : DÃ‰NIVELÃ‰
   // ------------------------------------------------
 
   if (filtreType === "trail") {
@@ -383,9 +382,9 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
   // Si une date valide est choisie
   if (dateFiltreValide) {
-    // On charge aussi le jour précédent,
-    // pour qu'il puisse apparaître à gauche
-    // de la date sélectionnée.
+    // On charge aussi le jour prÃ©cÃ©dent,
+    // pour qu'il puisse apparaÃ®tre Ã  gauche
+    // de la date sÃ©lectionnÃ©e.
     const jourPrecedent = ajouterJours(filtreDate, -1);
 
     const dateRechercheDebut =
@@ -442,7 +441,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     participationsError = error;
   }
 
-  const idsParticipantsSuivisSet = new Set<string>();
+    const idsParticipantsSuivisSet = new Set<string>();
 
   const participantsSuivisParSortie = new Map<string, string[]>();
 
@@ -453,7 +452,10 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     const nombreActuel =
       nombreParticipantsParSortie.get(participation.sortie_id) ?? 0;
 
-    nombreParticipantsParSortie.set(participation.sortie_id, nombreActuel + 1);
+    nombreParticipantsParSortie.set(
+      participation.sortie_id,
+      nombreActuel + 1,
+    );
 
     // Participants suivis
     if (!idsSuivisSet.has(participation.utilisateur_id)) {
@@ -473,7 +475,9 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     );
   }
 
-  const idsParticipantsSuivis = [...idsParticipantsSuivisSet];
+  const idsParticipantsSuivis = [
+    ...idsParticipantsSuivisSet,
+  ];
 
   // ------------------------------------------------
   // PROFILS
@@ -507,7 +511,33 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
       </main>
     );
   }
+
+  const listeParticipations = participations;
+
   const listeProfils = profils;
+
+  for (const participation of listeParticipations) {
+    if (!idsSuivisSet.has(participation.utilisateur_id)) {
+      continue;
+    }
+
+    const participantsActuels =
+      participantsSuivisParSortie.get(participation.sortie_id) ?? [];
+
+    participantsActuels.push(participation.utilisateur_id);
+
+    participantsSuivisParSortie.set(
+      participation.sortie_id,
+      participantsActuels,
+    );
+  }
+
+  for (const participation of listeParticipations) {
+    const nombreActuel =
+      nombreParticipantsParSortie.get(participation.sortie_id) ?? 0;
+
+    nombreParticipantsParSortie.set(participation.sortie_id, nombreActuel + 1);
+  }
 
   let listeSorties = masquerCompletes
     ? listeSortiesVisibles.filter((sortie) => {
@@ -529,22 +559,6 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     });
   }
 
-  const sortiesCarte = listeSorties
-    .map((sortie) => ({
-      id: sortie.id,
-      titre: sortie.titre,
-      lieu_depart: sortie.lieu_depart,
-      type_sortie: sortie.type_sortie,
-      date_heure_depart: sortie.date_heure_depart,
-
-      latitude: Number(sortie.latitude),
-      longitude: Number(sortie.longitude),
-    }))
-    .filter(
-      (sortie) =>
-        Number.isFinite(sortie.latitude) && Number.isFinite(sortie.longitude),
-    );
-
   const profilsParId = new Map(
     listeProfils.map((profil) => [profil.id, profil]),
   );
@@ -565,7 +579,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   // ------------------------------------------------
-  // BARRE AUJOURD'HUI → J+7
+  // BARRE AUJOURD'HUI â†’ J+7
   // ------------------------------------------------
 
   const dateNavigationDemandee = dateFiltreValide
@@ -576,7 +590,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     dateNavigationDemandee < aujourdHui ? aujourdHui : dateNavigationDemandee;
 
   // ------------------------------------------------
-  // 7 JOURS AFFICHÉS
+  // 7 JOURS AFFICHÃ‰S
   // ------------------------------------------------
 
   const joursNavigation = Array.from({ length: 7 }, (_, index) => {
@@ -616,13 +630,6 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
         typeActuel={filtreType}
       />
 
-      <CarteSorties
-        sorties={sortiesCarte}
-        centreLatitude={latitude}
-        centreLongitude={longitude}
-        rayonKm={filtreRayon}
-      />
-
       {/* Navigation des jours */}
       <NavigationJours
         jours={joursNavigation}
@@ -642,7 +649,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
         "
         >
           {listeSorties.length === 0 ? (
-            <p>Aucune sortie ne correspond à votre recherche.</p>
+            <p>Aucune sortie ne correspond Ã  votre recherche.</p>
           ) : (
             <div className="space-y-10">
               {Array.from(sortiesParJour.entries()).map(
@@ -657,9 +664,9 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
                     <h2 className="border-b pb-2 text-xl font-semibold">
                       {date === aujourdHui
-                        ? `Aujourd'hui — ${formatDateLongue(date)}`
+                        ? `Aujourd'hui â€” ${formatDateLongue(date)}`
                         : date === ajouterJours(aujourdHui, 1)
-                          ? `Demain — ${formatDateLongue(date)}`
+                          ? `Demain â€” ${formatDateLongue(date)}`
                           : formatDateLongue(date)}
                     </h2>
 
@@ -707,7 +714,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                           texteParticipantsSuivis,
                         ]
                           .filter(Boolean)
-                          .join(" · ");
+                          .join(" Â· ");
 
                         const nombreActuel =
                           1 + (nombreParticipantsParSortie.get(sortie.id) ?? 0);
@@ -752,14 +759,14 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                                 intensiteAffichee,
                               ]
                                 .filter(Boolean)
-                                .join(" • ")
+                                .join(" â€¢ ")
                             : [
                                 distanceAffichee,
                                 allureAffichee,
                                 intensiteAffichee,
                               ]
                                 .filter(Boolean)
-                                .join(" • ");
+                                .join(" â€¢ ");
 
                         const modeInscriptionAffiche =
                           sortie.mode_inscription === "validation"
@@ -815,7 +822,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                                 </span>
                               </div>
 
-                              {/* DONNÉES SPORTIVES */}
+                              {/* DONNÃ‰ES SPORTIVES */}
 
                               <p className="mt-1 truncate text-sm text-gray-500">
                                 {infosSportives}
@@ -827,7 +834,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                                 {organisateur?.nom ?? "Organisateur"}
 
                                 {distanceGeoAffichee !== null &&
-                                  ` • ${distanceGeoAffichee} km`}
+                                  ` â€¢ ${distanceGeoAffichee} km`}
                               </p>
 
                               {infosSuivis && (
@@ -873,3 +880,102 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     </main>
   );
 }
+
+
+==================================================
+DERNIERE MIGRATION DEFINISSANT sorties_dans_rayon
+==================================================
+FICHIER SQL : C:\Developpement\runin\supabase\migrations\20260826100309_resserrer_permissions_fonctions_blocage.sql -- ============================================================
+-- RESSERRER LES PERMISSIONS DES FONCTIONS PUBLIQUES
+-- ============================================================
+
+
+-- ------------------------------------------------------------
+-- RPC UTILISÃ‰ES PAR L'APPLICATION
+-- Elles nÃ©cessitent un utilisateur authentifiÃ©.
+-- ------------------------------------------------------------
+
+revoke all on function public.bloquer_utilisateur(uuid)
+from public, anon;
+
+grant execute on function public.bloquer_utilisateur(uuid)
+to authenticated;
+
+
+revoke all on function public.debloquer_utilisateur(uuid)
+from public, anon;
+
+grant execute on function public.debloquer_utilisateur(uuid)
+to authenticated;
+
+
+revoke all on function public.est_relation_bloquee(uuid)
+from public, anon;
+
+grant execute on function public.est_relation_bloquee(uuid)
+to authenticated;
+
+
+revoke all on function public.marquer_toutes_notifications_visibles_lues()
+from public, anon;
+
+grant execute on function public.marquer_toutes_notifications_visibles_lues()
+to authenticated;
+
+
+revoke all on function public.mes_utilisateurs_indisponibles()
+from public, anon;
+
+grant execute on function public.mes_utilisateurs_indisponibles()
+to authenticated;
+
+
+revoke all on function public.nombre_messages_non_lus_visibles()
+from public, anon;
+
+grant execute on function public.nombre_messages_non_lus_visibles()
+to authenticated;
+
+
+revoke all on function public.nombre_notifications_non_lues_visibles()
+from public, anon;
+
+grant execute on function public.nombre_notifications_non_lues_visibles()
+to authenticated;
+
+
+revoke all on function public.sorties_dans_rayon(
+    double precision,
+    double precision,
+    double precision
+)
+from public, anon;
+
+grant execute on function public.sorties_dans_rayon(
+    double precision,
+    double precision,
+    double precision
+)
+to authenticated;
+
+
+-- ------------------------------------------------------------
+-- FONCTIONS DE TRIGGER
+--
+-- Elles ne doivent jamais Ãªtre appelÃ©es directement
+-- depuis le navigateur.
+--
+-- Le trigger PostgreSQL continuera Ã  les utiliser.
+-- ------------------------------------------------------------
+
+revoke all on function public.verifier_blocage_conversation_sortie()
+from public, anon, authenticated;
+
+revoke all on function public.verifier_blocage_demande_participation()
+from public, anon, authenticated;
+
+revoke all on function public.verifier_blocage_message()
+from public, anon, authenticated;
+
+revoke all on function public.verifier_blocage_participation()
+from public, anon, authenticated;
