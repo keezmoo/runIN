@@ -9,6 +9,7 @@ import {
   INTENSITES,
   validerDonneesSportives,
 } from "@/lib/sortie-utils";
+import SelecteurLieu, { type Localisation } from "../selecteur-lieu";
 
 type Genre = "homme" | "femme" | "autre";
 
@@ -24,6 +25,7 @@ export default function SortieForm({ sexeOrganisateur }: SortieFormProps) {
   // Date + heure sélectionnées par l'utilisateur
   const [dateHeure, setDateHeure] = useState("");
   const [lieuDepart, setLieuDepart] = useState("");
+  const [localisation, setLocalisation] = useState<Localisation | null>(null);
   const [typeSortie, setTypeSortie] = useState("route");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,6 +104,13 @@ export default function SortieForm({ sexeOrganisateur }: SortieFormProps) {
       return;
     }
 
+    if (!localisation) {
+      setMessage(
+        "Localisez le lieu de départ et vérifiez sa position sur la carte.",
+      );
+      return;
+    }
+
     // ------------------------------------------------
     // DONNÉES SPORTIVES
     // ------------------------------------------------
@@ -132,20 +141,19 @@ export default function SortieForm({ sexeOrganisateur }: SortieFormProps) {
 
     setLoading(true);
 
-    // Recherche les coordonnées du lieu de départ
-    const geocodeResponse = await fetch(
-      `/api/geocode?q=${encodeURIComponent(lieuDepart.trim())}`,
-    );
-
-    if (!geocodeResponse.ok) {
-      setMessage("Impossible de trouver le lieu de départ.");
-      setLoading(false);
-      return;
-    }
-
-    const localisation = await geocodeResponse.json();
-
     const supabase = createClient();
+
+    console.log(
+      "DEBUG_CREATION_SORTIE",
+      [
+        `typeSortie=${typeSortie}`,
+        `deniveleChamp="${denivelePositif}"`,
+        `denivele=${String(denivele)}`,
+        `typeDenivele=${typeof denivele}`,
+        `latitude=${localisation.latitude}`,
+        `longitude=${localisation.longitude}`,
+      ].join(" | "),
+    );
 
     const { data, error } = await supabase.rpc("creer_sortie_securisee", {
       p_titre: titre.trim(),
@@ -205,6 +213,13 @@ export default function SortieForm({ sexeOrganisateur }: SortieFormProps) {
         setLoading(false);
         return;
       }
+
+      console.error("Erreur création sortie :", error);
+
+      setMessage(`Impossible de créer la sortie : ${error.message}`);
+
+      setLoading(false);
+      return;
 
       setMessage("Impossible de créer la sortie.");
 
@@ -336,21 +351,14 @@ export default function SortieForm({ sexeOrganisateur }: SortieFormProps) {
 
         {/* LIEU */}
 
-        <div>
-          <label className="mb-1 block font-medium">Lieu de départ</label>
+        {/* LIEU */}
 
-          <input
-            type="text"
-            value={lieuDepart}
-            onChange={(e) => setLieuDepart(e.target.value)}
-            className="w-full rounded border p-2"
-            placeholder="Chambéry"
-          />
-
-          <p className="mt-1 text-xs text-gray-500">
-            Données de localisation © contributeurs OpenStreetMap
-          </p>
-        </div>
+        <SelecteurLieu
+          lieu={lieuDepart}
+          onLieuChange={setLieuDepart}
+          localisation={localisation}
+          onLocalisationChange={setLocalisation}
+        />
 
         {/* DATE */}
 
