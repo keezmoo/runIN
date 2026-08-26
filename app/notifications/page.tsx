@@ -91,15 +91,32 @@ export default async function NotificationsPage() {
   }
 
   // ------------------------------------------------
-  // UTILISATEURS INDISPONIBLES
+  // DONNÉES
   // ------------------------------------------------
 
-  const {
-    data: utilisateursIndisponiblesData,
-    error: utilisateursIndisponiblesError,
-  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+  const [utilisateursIndisponiblesResult, notificationsResult] =
+    await Promise.all([
+      supabase.rpc("mes_utilisateurs_indisponibles"),
 
-  if (utilisateursIndisponiblesError) {
+      supabase
+        .from("notifications")
+        .select(
+          `
+          id,
+          acteur_id,
+          titre,
+          contenu,
+          lien,
+          created_at,
+          lu_at
+        `,
+        )
+        .order("created_at", {
+          ascending: false,
+        }),
+    ]);
+
+  if (utilisateursIndisponiblesResult.error || notificationsResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <h1 className="mb-6 text-2xl font-bold">Notifications</h1>
@@ -110,46 +127,14 @@ export default async function NotificationsPage() {
   }
 
   const idsIndisponibles = new Set(
-    (utilisateursIndisponiblesData ?? []).map(
+    (utilisateursIndisponiblesResult.data ?? []).map(
       (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
     ),
   );
 
-  // ------------------------------------------------
-  // NOTIFICATIONS
-  // ------------------------------------------------
+  const notifications = notificationsResult.data ?? [];
 
-  const { data: notifications, error } = await supabase
-    .from("notifications")
-    .select(
-      `
-            id,
-            type,
-            acteur_id,
-            titre,
-            contenu,
-            lien,
-            created_at,
-            lu_at
-        `,
-    )
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (error) {
-    console.error("Erreur chargement notifications :", error);
-
-    return (
-      <main className="mx-auto max-w-2xl p-6">
-        <h1 className="mb-6 text-2xl font-bold">Notifications</h1>
-
-        <p>Impossible de charger les notifications.</p>
-      </main>
-    );
-  }
-
-  const listeNotifications = (notifications ?? []).filter(
+  const listeNotifications = notifications.filter(
     (notification) =>
       !notification.acteur_id || !idsIndisponibles.has(notification.acteur_id),
   );
@@ -193,7 +178,7 @@ export default async function NotificationsPage() {
       </div>
 
       {listeNotifications.length === 0 ? (
-        <p className="text-gray-500">Vous n'avez aucune notification.</p>
+        <p className="text-gray-500">Vous n&apos;avez aucune notification.</p>
       ) : (
         <div className="space-y-3">
           {listeNotifications.map((notification) => {

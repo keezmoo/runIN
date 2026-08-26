@@ -14,50 +14,25 @@ export default async function NouvelleSortiePage() {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (!profile) {
-    redirect("/profil");
-  }
-
-  const {
-    data: profil,
-    error: profilError,
-  } = await supabase
+  const { data: profil, error: profilError } = await supabase
     .from("profiles")
     .select("sexe")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (
-    profilError ||
-    !profil
-  ) {
+  if (profilError || !profil) {
     redirect("/profil");
   }
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-
       {/* Titre */}
-      <h1 className="mb-6 text-2xl font-bold">
-        Créer une sortie
-      </h1>
+      <h1 className="mb-6 text-2xl font-bold">Créer une sortie</h1>
 
       {/* Formulaire */}
       <SortieForm
-        sexeOrganisateur={
-          profil.sexe as
-          | "homme"
-          | "femme"
-          | "autre"
-        }
+        sexeOrganisateur={profil.sexe as "homme" | "femme" | "autre"}
       />
-
     </main>
   );
 }

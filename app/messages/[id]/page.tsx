@@ -6,7 +6,6 @@ import MarquerMessagesLus from "./marquer-messages-lus";
 import RealtimeMessages from "./realtime-messages";
 import ScrollVersDernierMessage from "./scroll-vers-dernier-message";
 import StatutConversation from "./statut-conversation";
-import ContacterParticipantButton from "../../sorties/[id]/contacter-participant-button";
 
 type PageProps = {
   params: Promise<{
@@ -105,43 +104,39 @@ export default async function ConversationPage({ params }: PageProps) {
     notFound();
   }
 
-  const { data: interlocuteur } = await supabase
-    .from("profiles")
-    .select(
-      `
-            id,
-            nom
+  const [interlocuteurResult, messagesResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, nom")
+      .eq("id", interlocuteurId)
+      .maybeSingle(),
+
+    supabase
+      .from("messages")
+      .select(
+        `
+          id,
+          expediteur_id,
+          contenu,
+          created_at
         `,
-    )
-    .eq("id", interlocuteurId)
-    .maybeSingle();
+      )
+      .eq("conversation_id", conversation.id)
+      .order("created_at", {
+        ascending: true,
+      }),
+  ]);
 
-  // ------------------------------------------------
-  // MESSAGES
-  // ------------------------------------------------
-
-  const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select(
-      `
-            id,
-            expediteur_id,
-            contenu,
-            created_at
-        `,
-    )
-    .eq("conversation_id", conversation.id)
-    .order("created_at", {
-      ascending: true,
-    });
-
-  if (messagesError) {
+  if (interlocuteurResult.error || messagesResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Impossible de charger les messages.</p>
       </main>
     );
   }
+
+  const interlocuteur = interlocuteurResult.data;
+  const messages = messagesResult.data ?? [];
 
   // ------------------------------------------------
   // ÉTAT DE LA CONVERSATION
@@ -241,14 +236,13 @@ export default async function ConversationPage({ params }: PageProps) {
             "
       >
         <div className="pb-3">
-          {(messages ?? []).length === 0 ? (
+          {messages.length === 0 ? (
             <p className="text-gray-500">Aucun message pour le moment.</p>
           ) : (
-            (messages ?? []).map((message, index) => {
+            messages.map((message, index) => {
               const estMoi = message.expediteur_id === user.id;
 
-              const messagePrecedent =
-                index > 0 ? (messages ?? [])[index - 1] : null;
+              const messagePrecedent = index > 0 ? messages[index - 1] : null;
 
               const memeExpediteurQuePrecedent =
                 messagePrecedent?.expediteur_id === message.expediteur_id;
@@ -297,12 +291,10 @@ export default async function ConversationPage({ params }: PageProps) {
 
           <ScrollVersDernierMessage
             dernierMessageId={
-              messages && messages.length > 0
-                ? messages[messages.length - 1].id
-                : undefined
+              messages.length > 0 ? messages[messages.length - 1].id : undefined
             }
             dernierMessageEstMoi={
-              messages && messages.length > 0
+              messages.length > 0
                 ? messages[messages.length - 1].expediteur_id === user.id
                 : false
             }

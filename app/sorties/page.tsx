@@ -153,14 +153,33 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     redirect("/auth/login");
   }
 
-  // Vérifie que l'utilisateur possède un profil
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
+  // ------------------------------------------------
+  // DONNÉES UTILISATEUR
+  // ------------------------------------------------
 
-  if (!profile) {
+  const [
+    profilResult,
+    utilisateursIndisponiblesResult,
+    suivisResult,
+    filtreProfilResult,
+  ] = await Promise.all([
+    supabase.from("profiles").select("id").eq("id", user.id).maybeSingle(),
+
+    supabase.rpc("mes_utilisateurs_indisponibles"),
+
+    supabase
+      .from("suivis")
+      .select("profil_suivi_id")
+      .eq("utilisateur_id", user.id),
+
+    supabase.rpc("mon_filtre_geographique"),
+  ]);
+
+  // ------------------------------------------------
+  // PROFIL
+  // ------------------------------------------------
+
+  if (!profilResult.data) {
     redirect("/profil");
   }
 
@@ -168,12 +187,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   // UTILISATEURS INDISPONIBLES
   // ------------------------------------------------
 
-  const {
-    data: utilisateursIndisponiblesData,
-    error: utilisateursIndisponiblesError,
-  } = await supabase.rpc("mes_utilisateurs_indisponibles");
-
-  if (utilisateursIndisponiblesError) {
+  if (utilisateursIndisponiblesResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Erreur lors du chargement des sorties.</p>
@@ -182,7 +196,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   }
 
   const idsIndisponibles = new Set(
-    (utilisateursIndisponiblesData ?? []).map(
+    (utilisateursIndisponiblesResult.data ?? []).map(
       (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
     ),
   );
@@ -191,12 +205,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   // PROFILS SUIVIS
   // ------------------------------------------------
 
-  const { data: suivisData, error: suivisError } = await supabase
-    .from("suivis")
-    .select("profil_suivi_id")
-    .eq("utilisateur_id", user.id);
-
-  if (suivisError) {
+  if (suivisResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Erreur lors du chargement des profils suivis.</p>
@@ -204,20 +213,20 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     );
   }
 
-  const idsSuivis = suivisData?.map((suivi) => suivi.profil_suivi_id) ?? [];
+  const idsSuivis =
+    suivisResult.data?.map((suivi) => suivi.profil_suivi_id) ?? [];
 
   const idsSuivisSet = new Set(idsSuivis);
 
-  // Localisation enregistrée dans le profil
-  const { data: filtreProfilData, error: filtreProfilError } =
-    await supabase.rpc("mon_filtre_geographique");
+  // ------------------------------------------------
+  // LOCALISATION ENREGISTRÉE
+  // ------------------------------------------------
 
-  const filtreProfil = filtreProfilData?.[0] ?? null;
+  const filtreProfil = filtreProfilResult.data?.[0] ?? null;
 
-  if (filtreProfilError || !filtreProfil) {
+  if (filtreProfilResult.error || !filtreProfil) {
     redirect("/profil");
   }
-
   // ------------------------------------------------
   // RAYON
   // ------------------------------------------------
@@ -391,7 +400,13 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   sortiesQuery = sortiesQuery.order("date_heure_depart", { ascending: true });
 
   const { data: sorties, error: sortiesError } = await sortiesQuery;
-
+  if (sortiesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des sorties.</p>
+      </main>
+    );
+  }
   const listeSortiesBrutes = (sorties ?? []) as SortieListe[];
   const listeSortiesVisibles = listeSortiesBrutes.filter(
     (sortie) => !idsIndisponibles.has(sortie.organisateur_id),
@@ -423,14 +438,42 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     participationsError = error;
   }
 
+    const idsParticipantsSuivisSet = new Set<string>();
+
+  const participantsSuivisParSortie = new Map<string, string[]>();
+
+  const nombreParticipantsParSortie = new Map<string, number>();
+
+  for (const participation of participations) {
+    // Nombre de participants
+    const nombreActuel =
+      nombreParticipantsParSortie.get(participation.sortie_id) ?? 0;
+
+    nombreParticipantsParSortie.set(
+      participation.sortie_id,
+      nombreActuel + 1,
+    );
+
+    // Participants suivis
+    if (!idsSuivisSet.has(participation.utilisateur_id)) {
+      continue;
+    }
+
+    idsParticipantsSuivisSet.add(participation.utilisateur_id);
+
+    const participantsActuels =
+      participantsSuivisParSortie.get(participation.sortie_id) ?? [];
+
+    participantsActuels.push(participation.utilisateur_id);
+
+    participantsSuivisParSortie.set(
+      participation.sortie_id,
+      participantsActuels,
+    );
+  }
+
   const idsParticipantsSuivis = [
-    ...new Set(
-      participations
-        .filter((participation) =>
-          idsSuivisSet.has(participation.utilisateur_id),
-        )
-        .map((participation) => participation.utilisateur_id),
-    ),
+    ...idsParticipantsSuivisSet,
   ];
 
   // ------------------------------------------------
@@ -458,7 +501,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     profilsError = error;
   }
 
-  if (sortiesError || participationsError || profilsError) {
+  if (participationsError || profilsError) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Erreur lors du chargement des sorties.</p>
@@ -469,7 +512,6 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
   const listeParticipations = participations;
 
   const listeProfils = profils;
-  const participantsSuivisParSortie = new Map<string, string[]>();
 
   for (const participation of listeParticipations) {
     if (!idsSuivisSet.has(participation.utilisateur_id)) {
@@ -486,7 +528,6 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
       participantsActuels,
     );
   }
-  const nombreParticipantsParSortie = new Map<string, number>();
 
   for (const participation of listeParticipations) {
     const nombreActuel =

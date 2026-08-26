@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 type ParticiperButtonProps = {
   sortieId: string;
   userId: string;
-  nombreMax: number;
   dejaParticipant: boolean;
   estOrganisateur: boolean;
   complet: boolean;
@@ -20,7 +19,6 @@ type ParticiperButtonProps = {
 export default function ParticiperButton({
   sortieId,
   userId,
-  nombreMax,
   dejaParticipant,
   estOrganisateur,
   complet,

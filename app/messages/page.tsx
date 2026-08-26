@@ -78,15 +78,29 @@ export default async function MessagesPage() {
   }
 
   // ------------------------------------------------
-  // UTILISATEURS INDISPONIBLES
+  // DONNÉES INITIALES
   // ------------------------------------------------
 
-  const {
-    data: utilisateursIndisponiblesData,
-    error: utilisateursIndisponiblesError,
-  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+  const [utilisateursIndisponiblesResult, conversationsResult] =
+    await Promise.all([
+      supabase.rpc("mes_utilisateurs_indisponibles"),
 
-  if (utilisateursIndisponiblesError) {
+      supabase
+        .from("conversations_sortie")
+        .select(
+          `
+          id,
+          sortie_id,
+          utilisateur_id,
+          created_at
+        `,
+        )
+        .order("created_at", {
+          ascending: false,
+        }),
+    ]);
+
+  if (utilisateursIndisponiblesResult.error || conversationsResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Impossible de charger les conversations.</p>
@@ -95,38 +109,14 @@ export default async function MessagesPage() {
   }
 
   const idsIndisponibles = new Set(
-    (utilisateursIndisponiblesData ?? []).map(
+    (utilisateursIndisponiblesResult.data ?? []).map(
       (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
     ),
   );
 
-  // ------------------------------------------------
-  // CONVERSATIONS ACCESSIBLES
-  // ------------------------------------------------
+  const conversations = conversationsResult.data ?? [];
 
-  const { data: conversations, error: conversationsError } = await supabase
-    .from("conversations_sortie")
-    .select(
-      `
-            id,
-            sortie_id,
-            utilisateur_id,
-            created_at
-        `,
-    )
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (conversationsError) {
-    return (
-      <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les conversations.</p>
-      </main>
-    );
-  }
-
-  if (!conversations || conversations.length === 0) {
+  if (conversations.length === 0) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <h1 className="mb-6 text-3xl font-bold">Messages</h1>
@@ -168,6 +158,10 @@ export default async function MessagesPage() {
     );
   }
 
+  const sortiesParId = new Map(
+    (sorties ?? []).map((sortie) => [sortie.id, sortie]),
+  );
+
   // ------------------------------------------------
   // CONVERSATIONS ENCORE ACTIVES
   // ------------------------------------------------
@@ -175,9 +169,7 @@ export default async function MessagesPage() {
   const maintenant = Date.now();
 
   const conversationsActives = conversations.filter((conversation) => {
-    const sortie = (sorties ?? []).find(
-      (sortie) => sortie.id === conversation.sortie_id,
-    );
+    const sortie = sortiesParId.get(conversation.sortie_id);
 
     if (!sortie) {
       return false;
@@ -226,9 +218,7 @@ export default async function MessagesPage() {
   // ------------------------------------------------
 
   const idsInterlocuteurs = conversationsActives.map((conversation) => {
-    const sortie = (sorties ?? []).find(
-      (sortie) => sortie.id === conversation.sortie_id,
-    );
+    const sortie = sortiesParId.get(conversation.sortie_id);
 
     if (!sortie) {
       return "";
@@ -243,66 +233,77 @@ export default async function MessagesPage() {
     ...new Set(idsInterlocuteurs.filter(Boolean)),
   ];
 
-  const { data: profils, error: profilsError } = await supabase
-    .from("profiles")
-    .select(
-      `
-            id,
-            nom
-        `,
-    )
-    .in("id", idsInterlocuteursUniques);
-
-  if (profilsError) {
-    return (
-      <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les interlocuteurs.</p>
-      </main>
-    );
-  }
-
-  // ------------------------------------------------
-  // DERNIERS MESSAGES
-  // ------------------------------------------------
-
   const idsConversations = conversationsActives.map(
     (conversation) => conversation.id,
   );
 
-  const { data: messages, error: messagesError } = await supabase
-    .from("messages")
-    .select(
-      `
-        id,
-        conversation_id,
-        expediteur_id,
-        contenu,
-        created_at,
-        lu_at
-    `,
-    )
-    .in("conversation_id", idsConversations)
-    .order("created_at", {
-      ascending: false,
-    });
+  const [profilsResult, messagesResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, nom")
+      .in("id", idsInterlocuteursUniques),
 
-  if (messagesError) {
+    supabase
+      .from("messages")
+      .select(
+        `
+          id,
+          conversation_id,
+          expediteur_id,
+          contenu,
+          created_at,
+          lu_at
+        `,
+      )
+      .in("conversation_id", idsConversations)
+      .order("created_at", {
+        ascending: false,
+      }),
+  ]);
+
+  if (profilsResult.error || messagesResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les messages.</p>
+        <p>Impossible de charger les conversations.</p>
       </main>
     );
   }
+
+  const profils = profilsResult.data ?? [];
+  const messages = messagesResult.data ?? [];
+
+  const profilsParId = new Map(profils.map((profil) => [profil.id, profil]));
 
   // ------------------------------------------------
   // PRÉPARATION DE L'AFFICHAGE
   // ------------------------------------------------
 
+  const dernierMessageParConversation = new Map<
+    string,
+    (typeof messages)[number]
+  >();
+
+  const nombreNonLusParConversation = new Map<string, number>();
+
+  for (const message of messages) {
+    if (!dernierMessageParConversation.has(message.conversation_id)) {
+      dernierMessageParConversation.set(message.conversation_id, message);
+    }
+
+    if (message.expediteur_id !== user.id && message.lu_at === null) {
+      const nombreActuel =
+        nombreNonLusParConversation.get(message.conversation_id) ?? 0;
+
+      nombreNonLusParConversation.set(
+        message.conversation_id,
+        nombreActuel + 1,
+      );
+    }
+  }
+
   const conversationsAffichees = conversationsActives
     .map((conversation) => {
-      const sortie = (sorties ?? []).find(
-        (sortie) => sortie.id === conversation.sortie_id,
-      );
+      const sortie = sortiesParId.get(conversation.sortie_id);
 
       if (!sortie) {
         return null;
@@ -312,22 +313,12 @@ export default async function MessagesPage() {
           ? sortie.organisateur_id
           : conversation.utilisateur_id;
 
-      const interlocuteur = (profils ?? []).find(
-        (profil) => profil.id === interlocuteurId,
-      );
+      const interlocuteur = profilsParId.get(interlocuteurId);
 
-      // Les messages sont déjà triés
-      // du plus récent au plus ancien
-      const dernierMessage = (messages ?? []).find(
-        (message) => message.conversation_id === conversation.id,
-      );
+      const dernierMessage = dernierMessageParConversation.get(conversation.id);
 
-      const nombreNonLus = (messages ?? []).filter(
-        (message) =>
-          message.conversation_id === conversation.id &&
-          message.expediteur_id !== user.id &&
-          message.lu_at === null,
-      ).length;
+      const nombreNonLus =
+        nombreNonLusParConversation.get(conversation.id) ?? 0;
 
       return {
         conversation,

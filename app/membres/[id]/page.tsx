@@ -76,6 +76,12 @@ export default async function ProfilPublicPage({
         "Erreur vérification relation bloquée :",
         relationBloqueeError,
       );
+
+      return (
+        <main className="mx-auto max-w-xl p-6">
+          <p>Impossible de charger ce profil.</p>
+        </main>
+      );
     }
 
     if (monBlocageError) {
@@ -129,12 +135,23 @@ export default async function ProfilPublicPage({
 
     notFound();
   }
-
   // ------------------------------------------------
-  // SUIVI
+  // DONNÉES DU PROFIL
   // ------------------------------------------------
 
-  const [{ count: nombreAbonnes }, { count: nombreAbonnements }] =
+  const suiviPromise = estMonProfil
+    ? Promise.resolve({
+        data: null as { profil_suivi_id: string } | null,
+        error: null,
+      })
+    : supabase
+        .from("suivis")
+        .select("profil_suivi_id")
+        .eq("utilisateur_id", user.id)
+        .eq("profil_suivi_id", profil.id)
+        .maybeSingle();
+
+  const [abonnesResult, abonnementsResult, suiviResult, sortiesResult] =
     await Promise.all([
       supabase
         .from("suivis")
@@ -151,52 +168,59 @@ export default async function ProfilPublicPage({
           head: true,
         })
         .eq("utilisateur_id", profil.id),
+
+      suiviPromise,
+
+      supabase
+        .from("sorties")
+        .select(
+          `
+          id,
+          titre,
+          date_heure_depart,
+          type_sortie,
+          distance_km,
+          denivele_positif_m,
+          allure_secondes_km,
+          intensite
+        `,
+        )
+        .eq("organisateur_id", profil.id)
+        .eq("statut", "planifiee")
+        .gt("date_heure_depart", new Date().toISOString())
+        .order("date_heure_depart", {
+          ascending: true,
+        })
+        .limit(5),
     ]);
 
-  let estSuivi = false;
+  if (
+    abonnesResult.error ||
+    abonnementsResult.error ||
+    suiviResult.error ||
+    sortiesResult.error
+  ) {
+    console.error("Erreur chargement données du profil :", {
+      abonnes: abonnesResult.error,
+      abonnements: abonnementsResult.error,
+      suivi: suiviResult.error,
+      sorties: sortiesResult.error,
+    });
 
-  if (!estMonProfil) {
-    const { data: suivi } = await supabase
-      .from("suivis")
-      .select("profil_suivi_id")
-      .eq("utilisateur_id", user.id)
-      .eq("profil_suivi_id", profil.id)
-      .maybeSingle();
-
-    estSuivi = suivi !== null;
+    return (
+      <main className="mx-auto max-w-xl p-6">
+        <p>Impossible de charger ce profil.</p>
+      </main>
+    );
   }
 
-  // ------------------------------------------------
-  // PROCHAINES SORTIES ORGANISÉES
-  // ------------------------------------------------
+  const nombreAbonnes = abonnesResult.count ?? 0;
 
-  const { data: sortiesOrganisees, error: sortiesError } = await supabase
-    .from("sorties")
-    .select(
-      `
-      id,
-      titre,
-      date_heure_depart,
-      type_sortie,
-      distance_km,
-      denivele_positif_m,
-      allure_secondes_km,
-      intensite
-    `,
-    )
-    .eq("organisateur_id", profil.id)
-    .eq("statut", "planifiee")
-    .gt("date_heure_depart", new Date().toISOString())
-    .order("date_heure_depart", {
-      ascending: true,
-    })
-    .limit(5);
+  const nombreAbonnements = abonnementsResult.count ?? 0;
 
-  if (sortiesError) {
-    console.error("Erreur chargement sorties du profil :", sortiesError);
-  }
+  const estSuivi = !estMonProfil && suiviResult.data !== null;
 
-  const prochainesSorties = sortiesOrganisees ?? [];
+  const prochainesSorties = sortiesResult.data ?? [];
 
   // ------------------------------------------------
   // AFFICHAGE
@@ -239,16 +263,16 @@ export default async function ProfilPublicPage({
             href={`/membres/${profil.id}/abonnes`}
             className="hover:underline"
           >
-            <strong>{nombreAbonnes ?? 0}</strong>{" "}
-            {(nombreAbonnes ?? 0) === 1 ? "abonné" : "abonnés"}
+            <strong>{nombreAbonnes}</strong>{" "}
+            {nombreAbonnes === 1 ? "abonné" : "abonnés"}
           </Link>
 
           <Link
             href={`/membres/${profil.id}/abonnements`}
             className="hover:underline"
           >
-            <strong>{nombreAbonnements ?? 0}</strong>{" "}
-            {(nombreAbonnements ?? 0) === 1 ? "abonnement" : "abonnements"}
+            <strong>{nombreAbonnements}</strong>{" "}
+            {nombreAbonnements === 1 ? "abonnement" : "abonnements"}
           </Link>
         </div>
       </header>

@@ -20,15 +20,77 @@ export default async function MesSortiesPage() {
   }
 
   // ------------------------------------------------
-  // UTILISATEURS INDISPONIBLES
+  // CHARGEMENT DES DONNÉES
   // ------------------------------------------------
 
-  const {
-    data: utilisateursIndisponiblesData,
-    error: utilisateursIndisponiblesError,
-  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+  type SortieListe = {
+    id: string;
+    titre: string;
+    organisateur_id: string;
+    date_heure_depart: string;
+    lieu_depart: string;
+    type_sortie: string;
+    nombre_max_participants: number;
+    type_entrainement: string | null;
+    distance_km: number | null;
+    denivele_positif_m: number | null;
+    duree_estimee_minutes: number | null;
+    statut: string;
+  };
 
-  if (utilisateursIndisponiblesError) {
+  const champsSortie = `
+    id,
+    titre,
+    organisateur_id,
+    date_heure_depart,
+    lieu_depart,
+    type_sortie,
+    nombre_max_participants,
+    type_entrainement,
+    distance_km,
+    denivele_positif_m,
+    duree_estimee_minutes,
+    statut
+  ` as const;
+
+  const maintenant = new Date().toISOString();
+
+  // Ces quatre requêtes sont indépendantes :
+  // on les exécute donc en parallèle.
+  const [
+    utilisateursIndisponiblesResult,
+    sortiesOrganiseesResult,
+    mesDemandesEnAttenteResult,
+    mesParticipationsResult,
+  ] = await Promise.all([
+    supabase.rpc("mes_utilisateurs_indisponibles"),
+
+    supabase
+      .from("sorties")
+      .select(champsSortie)
+      .eq("organisateur_id", user.id)
+      .order("date_heure_depart", {
+        ascending: true,
+      }),
+
+    supabase
+      .from("demandes_participation")
+      .select("sortie_id")
+      .eq("utilisateur_id", user.id)
+      .eq("statut", "en_attente"),
+
+    supabase
+      .from("participations")
+      .select("sortie_id")
+      .eq("utilisateur_id", user.id),
+  ]);
+
+  if (
+    utilisateursIndisponiblesResult.error ||
+    sortiesOrganiseesResult.error ||
+    mesDemandesEnAttenteResult.error ||
+    mesParticipationsResult.error
+  ) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Erreur lors du chargement des sorties.</p>
@@ -36,8 +98,12 @@ export default async function MesSortiesPage() {
     );
   }
 
+  // ------------------------------------------------
+  // UTILISATEURS INDISPONIBLES
+  // ------------------------------------------------
+
   const idsIndisponibles = new Set(
-    (utilisateursIndisponiblesData ?? []).map(
+    (utilisateursIndisponiblesResult.data ?? []).map(
       (ligne: { utilisateur_id: string }) => ligne.utilisateur_id,
     ),
   );
@@ -46,318 +112,102 @@ export default async function MesSortiesPage() {
   // SORTIES QUE J'ORGANISE
   // ------------------------------------------------
 
-  const { data: sortiesOrganisees, error: sortiesOrganiseesError } =
-    await supabase
-      .from("sorties")
-      .select(
-        `
-        id,
-        titre,
-        date_heure_depart,
-        lieu_depart,
-        type_sortie,
-        nombre_max_participants,
-        type_entrainement,
-        distance_km,
-        denivele_positif_m,
-        duree_estimee_minutes,
-        statut
-      `,
-      )
-      .eq("organisateur_id", user.id)
-      .gte("date_heure_depart", new Date().toISOString())
-      .order("date_heure_depart", {
-        ascending: true,
-      });
+  const toutesSortiesOrganisees = (sortiesOrganiseesResult.data ??
+    []) as SortieListe[];
 
-  // ------------------------------------------------
-  // SORTIES PASSÉES QUE J'AI ORGANISÉES
-  // ------------------------------------------------
-
-  const {
-    data: sortiesOrganiseesPassees,
-    error: sortiesOrganiseesPasseesError,
-  } = await supabase
-    .from("sorties")
-    .select(
-      `
-        id,
-        titre,
-        date_heure_depart,
-        lieu_depart,
-        type_sortie,
-        nombre_max_participants,
-        type_entrainement,
-        distance_km,
-        denivele_positif_m,
-        duree_estimee_minutes,
-        statut
-    `,
-    )
-    .eq("organisateur_id", user.id)
-    .lt("date_heure_depart", new Date().toISOString())
-    .order("date_heure_depart", {
-      ascending: false,
-    });
-
-  // ------------------------------------------------
-  // DEMANDES EN ATTENTE SUR MES SORTIES
-  // ------------------------------------------------
-
-  const idsSortiesOrganisees =
-    sortiesOrganisees?.map((sortie) => sortie.id) ?? [];
-
-  // ------------------------------------------------
-  // DEMANDES SUR MES SORTIES
-  // ------------------------------------------------
-
-  let demandesSurMesSorties: {
-    sortie_id: string;
-    statut: string;
-  }[] = [];
-
-  if (idsSortiesOrganisees.length > 0) {
-    const { data: demandesData, error: demandesError } = await supabase
-      .from("demandes_participation")
-      .select("sortie_id, statut")
-      .in("sortie_id", idsSortiesOrganisees);
-
-    if (demandesError) {
-      return (
-        <main className="mx-auto max-w-2xl p-6">
-          <p>Erreur lors du chargement des demandes.</p>
-        </main>
-      );
-    }
-
-    demandesSurMesSorties = demandesData ?? [];
-  }
-
-  // ------------------------------------------------
-  // DEMANDES EN ATTENTE UNIQUEMENT
-  // ------------------------------------------------
-
-  const demandesEnAttente = demandesSurMesSorties.filter(
-    (demande) => demande.statut === "en_attente",
+  const sortiesOrganisees = toutesSortiesOrganisees.filter(
+    (sortie) => sortie.date_heure_depart >= maintenant,
   );
 
-  // ------------------------------------------------
-  // NOMBRE DE DEMANDES EN ATTENTE PAR SORTIE
-  // ------------------------------------------------
+  const sortiesOrganiseesPassees = toutesSortiesOrganisees
+    .filter((sortie) => sortie.date_heure_depart < maintenant)
+    .reverse();
 
-  const nombreDemandesParSortie = demandesEnAttente.reduce<
-    Record<string, number>
-  >((compteur, demande) => {
-    compteur[demande.sortie_id] = (compteur[demande.sortie_id] ?? 0) + 1;
-
-    return compteur;
-  }, {});
+  const idsSortiesOrganisees = sortiesOrganisees.map((sortie) => sortie.id);
 
   // ------------------------------------------------
-  // MES PROPRES DEMANDES DE PARTICIPATION EN ATTENTE
+  // MES DEMANDES EN ATTENTE
   // ------------------------------------------------
-
-  const { data: mesDemandesEnAttenteData, error: mesDemandesEnAttenteError } =
-    await supabase
-      .from("demandes_participation")
-      .select("sortie_id")
-      .eq("utilisateur_id", user.id)
-      .eq("statut", "en_attente");
-
-  if (mesDemandesEnAttenteError) {
-    return (
-      <main className="mx-auto max-w-2xl p-6">
-        <p>Erreur lors du chargement de vos demandes.</p>
-      </main>
-    );
-  }
 
   const idsMesDemandesEnAttente = [
     ...new Set(
-      (mesDemandesEnAttenteData ?? []).map((demande) => demande.sortie_id),
+      (mesDemandesEnAttenteResult.data ?? []).map(
+        (demande) => demande.sortie_id,
+      ),
     ),
   ];
 
-  let sortiesEnAttente: {
-    id: string;
-    titre: string;
-    date_heure_depart: string;
-    lieu_depart: string;
-    type_sortie: string;
-    nombre_max_participants: number;
-
-    type_entrainement: string | null;
-    distance_km: number | null;
-    denivele_positif_m: number | null;
-    duree_estimee_minutes: number | null;
-    statut: string;
-    organisateur_id: string;
-  }[] = [];
-
-  if (idsMesDemandesEnAttente.length > 0) {
-    const { data, error: sortiesEnAttenteError } = await supabase
-      .from("sorties")
-      .select(
-        `
-        id,
-        titre,
-        organisateur_id,
-        date_heure_depart,
-        lieu_depart,
-        type_sortie,
-        nombre_max_participants,
-        type_entrainement,
-        distance_km,
-        denivele_positif_m,
-        duree_estimee_minutes,
-        statut
-    `,
-      )
-      .in("id", idsMesDemandesEnAttente)
-      .gte("date_heure_depart", new Date().toISOString())
-      .order("date_heure_depart", { ascending: true });
-
-    if (sortiesEnAttenteError) {
-      return (
-        <main className="mx-auto max-w-2xl p-6">
-          <p>Erreur lors du chargement des sorties en attente.</p>
-        </main>
-      );
-    }
-
-    sortiesEnAttente = data ?? [];
-  }
-
   // ------------------------------------------------
-  // PARTICIPATIONS DE L'UTILISATEUR
+  // MES PARTICIPATIONS
   // ------------------------------------------------
 
-  const { data: mesParticipations, error: participationsError } = await supabase
-    .from("participations")
-    .select("sortie_id")
-    .eq("utilisateur_id", user.id);
-
-  const idsSortiesParticipees =
-    mesParticipations?.map((participation) => participation.sortie_id) ?? [];
-
-  // ------------------------------------------------
-  // SORTIES AUXQUELLES JE PARTICIPE
-  // ------------------------------------------------
-
-  let sortiesParticipees: {
-    id: string;
-    titre: string;
-    date_heure_depart: string;
-    lieu_depart: string;
-    type_sortie: string;
-    nombre_max_participants: number;
-    organisateur_id: string;
-    type_entrainement: string | null;
-    distance_km: number | null;
-    denivele_positif_m: number | null;
-    duree_estimee_minutes: number | null;
-    statut: string;
-  }[] = [];
-
-  if (idsSortiesParticipees.length > 0) {
-    const { data, error: sortiesParticipeesError } = await supabase
-      .from("sorties")
-      .select(
-        `
-          id,
-          titre,
-          organisateur_id,
-          date_heure_depart,
-          lieu_depart,
-          type_sortie,
-          nombre_max_participants,
-          type_entrainement,
-        distance_km,
-        denivele_positif_m,
-        duree_estimee_minutes,
-        statut
-        `,
-      )
-      .in("id", idsSortiesParticipees)
-      .gte("date_heure_depart", new Date().toISOString())
-      .order("date_heure_depart", {
-        ascending: true,
-      });
-
-    if (sortiesParticipeesError) {
-      return (
-        <main className="mx-auto max-w-2xl p-6">
-          <p>Erreur lors du chargement des sorties.</p>
-        </main>
-      );
-    }
-
-    sortiesParticipees = data ?? [];
-  }
+  const idsSortiesParticipees = [
+    ...new Set(
+      (mesParticipationsResult.data ?? []).map(
+        (participation) => participation.sortie_id,
+      ),
+    ),
+  ];
 
   // ------------------------------------------------
-  // SORTIES PASSÉES AUXQUELLES J'AI PARTICIPÉ
+  // REQUÊTES DÉPENDANTES
   // ------------------------------------------------
 
-  let sortiesParticipeesPassees: {
-    id: string;
-    titre: string;
-    organisateur_id: string;
-    date_heure_depart: string;
-    lieu_depart: string;
-    type_sortie: string;
-    nombre_max_participants: number;
-    type_entrainement: string | null;
-    distance_km: number | null;
-    denivele_positif_m: number | null;
-    duree_estimee_minutes: number | null;
-    statut: string;
-  }[] = [];
+  const demandesSurMesSortiesPromise =
+    idsSortiesOrganisees.length > 0
+      ? supabase
+          .from("demandes_participation")
+          .select("sortie_id")
+          .in("sortie_id", idsSortiesOrganisees)
+          .eq("statut", "en_attente")
+      : Promise.resolve({
+          data: [] as { sortie_id: string }[],
+          error: null,
+        });
 
-  if (idsSortiesParticipees.length > 0) {
-    const { data, error: sortiesParticipeesPasseesError } = await supabase
-      .from("sorties")
-      .select(
-        `
-            id,
-            titre,
-            organisateur_id,
-            date_heure_depart,
-            lieu_depart,
-            type_sortie,
-            nombre_max_participants,
-            type_entrainement,
-            distance_km,
-            denivele_positif_m,
-            duree_estimee_minutes,
-            statut
-        `,
-      )
-      .in("id", idsSortiesParticipees)
-      .lt("date_heure_depart", new Date().toISOString())
-      .order("date_heure_depart", {
-        ascending: false,
-      });
+  const sortiesEnAttentePromise =
+    idsMesDemandesEnAttente.length > 0
+      ? supabase
+          .from("sorties")
+          .select(champsSortie)
+          .in("id", idsMesDemandesEnAttente)
+          .gte("date_heure_depart", maintenant)
+          .order("date_heure_depart", {
+            ascending: true,
+          })
+      : Promise.resolve({
+          data: [] as SortieListe[],
+          error: null,
+        });
 
-    if (sortiesParticipeesPasseesError) {
-      return (
-        <main className="mx-auto max-w-2xl p-6">
-          <p>Erreur lors du chargement de l&apos;historique.</p>
-        </main>
-      );
-    }
+  const sortiesParticipeesPromise =
+    idsSortiesParticipees.length > 0
+      ? supabase
+          .from("sorties")
+          .select(champsSortie)
+          .in("id", idsSortiesParticipees)
+          .order("date_heure_depart", {
+            ascending: true,
+          })
+      : Promise.resolve({
+          data: [] as SortieListe[],
+          error: null,
+        });
 
-    sortiesParticipeesPassees = data ?? [];
-  }
-
-  // ------------------------------------------------
-  // ERREURS
-  // ------------------------------------------------
+  const [
+    demandesSurMesSortiesResult,
+    sortiesEnAttenteResult,
+    sortiesParticipeesResult,
+  ] = await Promise.all([
+    demandesSurMesSortiesPromise,
+    sortiesEnAttentePromise,
+    sortiesParticipeesPromise,
+  ]);
 
   if (
-    sortiesOrganiseesError ||
-    sortiesOrganiseesPasseesError ||
-    participationsError
+    demandesSurMesSortiesResult.error ||
+    sortiesEnAttenteResult.error ||
+    sortiesParticipeesResult.error
   ) {
     return (
       <main className="mx-auto max-w-2xl p-6">
@@ -365,6 +215,39 @@ export default async function MesSortiesPage() {
       </main>
     );
   }
+
+  // ------------------------------------------------
+  // DEMANDES REÇUES PAR SORTIE
+  // ------------------------------------------------
+
+  const nombreDemandesParSortie = (
+    demandesSurMesSortiesResult.data ?? []
+  ).reduce<Record<string, number>>((compteur, demande) => {
+    compteur[demande.sortie_id] = (compteur[demande.sortie_id] ?? 0) + 1;
+
+    return compteur;
+  }, {});
+
+  // ------------------------------------------------
+  // SORTIES EN ATTENTE DE VALIDATION
+  // ------------------------------------------------
+
+  const sortiesEnAttente = (sortiesEnAttenteResult.data ?? []) as SortieListe[];
+
+  // ------------------------------------------------
+  // SORTIES AUXQUELLES JE PARTICIPE
+  // ------------------------------------------------
+
+  const toutesSortiesParticipees = (sortiesParticipeesResult.data ??
+    []) as SortieListe[];
+
+  const sortiesParticipees = toutesSortiesParticipees.filter(
+    (sortie) => sortie.date_heure_depart >= maintenant,
+  );
+
+  const sortiesParticipeesPassees = toutesSortiesParticipees
+    .filter((sortie) => sortie.date_heure_depart < maintenant)
+    .reverse();
 
   const listeSortiesOrganisees = (sortiesOrganisees ?? []).filter(
     (sortie) => sortie.statut === "planifiee",

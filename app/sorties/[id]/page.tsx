@@ -838,7 +838,6 @@ text-white
                 <ParticiperButton
                   sortieId={sortie.id}
                   userId={user.id}
-                  nombreMax={sortie.nombre_max_participants}
                   dejaParticipant={dejaParticipant}
                   estOrganisateur={estOrganisateur}
                   complet={complet}
