@@ -16,6 +16,7 @@ import ContacterOrganisateurButton from "./contacter-organisateur-button";
 import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
 import ContacterParticipantButton from "./contacter-participant-button";
 import CarteSortie from "./carte-sortie";
+import SignalerButton from "@/components/signaler-button";
 
 type PageProps = {
   params: Promise<{
@@ -812,6 +813,22 @@ export default async function DetailSortiePage({ params }: PageProps) {
             </p>
           </section>
         )}
+
+      {!estOrganisateur && (
+        <section
+          className="
+            mt-8
+            border-t
+            pt-6
+        "
+        >
+          <SignalerButton
+            typeCible="sortie"
+            cibleId={sortie.id}
+            libelle="Signaler cette sortie"
+          />
+        </section>
+      )}
 
       {/* PARTICIPATION */}
 

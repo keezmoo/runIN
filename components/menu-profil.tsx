@@ -2,20 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type MenuProfilProps = {
   actif?: boolean;
 };
 
-
 function IconeProfil() {
-
   return (
     <svg
       viewBox="0 0 24 24"
@@ -26,11 +20,7 @@ function IconeProfil() {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle
-        cx="12"
-        cy="8"
-        r="4"
-      />
+      <circle cx="12" cy="8" r="4" />
 
       <path
         d="
@@ -43,133 +33,105 @@ function IconeProfil() {
   );
 }
 
+export default function MenuProfil({ actif = false }: MenuProfilProps) {
+  const pathname = usePathname();
 
-export default function MenuProfil({
-  actif = false,
-}: MenuProfilProps) {
+  const [ouvert, setOuvert] = useState(false);
 
-  const pathname =
-    usePathname();
+  const [estAdministrateur, setEstAdministrateur] = useState(false);
 
+  const [roleCharge, setRoleCharge] = useState(false);
 
-  const [
-    ouvert,
-    setOuvert,
-  ] = useState(false);
-
-
-  const conteneurRef =
-    useRef<HTMLDivElement>(
-      null
-    );
-
+  const conteneurRef = useRef<HTMLDivElement>(null);
 
   // Fermer le menu
   // lorsqu'on change de page
   useEffect(() => {
-
     setOuvert(false);
-
   }, [pathname]);
-
 
   // Fermer si clic
   // en dehors du menu
   useEffect(() => {
-
-    function fermerSiClicExterieur(
-      event: MouseEvent
-    ) {
-
+    function fermerSiClicExterieur(event: MouseEvent) {
       if (
         conteneurRef.current &&
-        !conteneurRef.current.contains(
-          event.target as Node
-        )
+        !conteneurRef.current.contains(event.target as Node)
       ) {
-
         setOuvert(false);
-
       }
-
     }
-
 
     if (ouvert) {
-
-      document.addEventListener(
-        "mousedown",
-        fermerSiClicExterieur
-      );
-
+      document.addEventListener("mousedown", fermerSiClicExterieur);
     }
 
-
     return () => {
-
-      document.removeEventListener(
-        "mousedown",
-        fermerSiClicExterieur
-      );
-
+      document.removeEventListener("mousedown", fermerSiClicExterieur);
     };
-
   }, [ouvert]);
-
 
   // Fermer avec Échap
   useEffect(() => {
-
-    function fermerAvecEchap(
-      event: KeyboardEvent
-    ) {
-
-      if (
-        event.key === "Escape"
-      ) {
-
+    function fermerAvecEchap(event: KeyboardEvent) {
+      if (event.key === "Escape") {
         setOuvert(false);
-
       }
-
     }
 
-
-    document.addEventListener(
-      "keydown",
-      fermerAvecEchap
-    );
-
+    document.addEventListener("keydown", fermerAvecEchap);
 
     return () => {
-
-      document.removeEventListener(
-        "keydown",
-        fermerAvecEchap
-      );
-
+      document.removeEventListener("keydown", fermerAvecEchap);
     };
-
   }, []);
 
+  // ------------------------------------------------
+  // RÔLE ADMINISTRATEUR
+  // Chargé uniquement lorsque le menu est ouvert.
+  // ------------------------------------------------
+
+  useEffect(() => {
+    if (!ouvert || roleCharge) {
+      return;
+    }
+
+    let actif = true;
+
+    async function chargerRole() {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.rpc("mon_role_application");
+
+      if (!actif) {
+        return;
+      }
+
+      if (!error) {
+        setEstAdministrateur(
+          data === "administrateur" || data === "moderateur",
+        );
+      }
+
+      setRoleCharge(true);
+    }
+
+    void chargerRole();
+
+    return () => {
+      actif = false;
+    };
+  }, [ouvert, roleCharge]);
 
   return (
-    <div
-      ref={conteneurRef}
-      className="relative"
-    >
-
+    <div ref={conteneurRef} className="relative">
       {/* BOUTON PROFIL */}
 
       <button
         type="button"
         aria-label="Menu du profil"
         aria-expanded={ouvert}
-        onClick={() =>
-          setOuvert(
-            (valeur) => !valeur
-          )
-        }
+        onClick={() => setOuvert((valeur) => !valeur)}
         className={`
           flex
           h-10
@@ -189,11 +151,9 @@ export default function MenuProfil({
         <IconeProfil />
       </button>
 
-
       {/* MENU */}
 
       {ouvert && (
-
         <div
           className="
             absolute
@@ -212,9 +172,7 @@ export default function MenuProfil({
             shadow-xl
           "
         >
-
           <div className="p-1">
-
             <Link
               href="/profil"
               className="
@@ -230,7 +188,6 @@ export default function MenuProfil({
             >
               Mon profil
             </Link>
-
 
             <Link
               href="/parametres"
@@ -248,8 +205,23 @@ export default function MenuProfil({
               Paramètres
             </Link>
 
+            {estAdministrateur && (
+              <Link
+                href="/admin"
+                className="
+            block
+            rounded-lg
+            px-3
+            py-2.5
+            text-sm
+            text-[#8ED8B6]
+            hover:bg-zinc-800
+        "
+              >
+                Administration
+              </Link>
+            )}
           </div>
-
 
           <div
             className="
@@ -258,11 +230,7 @@ export default function MenuProfil({
               p-1
             "
           >
-
-            <form
-              action="/auth/signout"
-              method="post"
-            >
+            <form action="/auth/signout" method="post">
               <button
                 type="submit"
                 className="
@@ -282,13 +250,9 @@ export default function MenuProfil({
                 Déconnexion
               </button>
             </form>
-
           </div>
-
         </div>
-
       )}
-
     </div>
   );
 }

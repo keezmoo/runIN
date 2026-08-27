@@ -204,7 +204,7 @@ function Badge({ nombre }: { nombre: number }) {
 export default function NavigationPrincipale() {
   const pathname = usePathname();
 
-  const estPageAuth = pathname.startsWith("/auth");
+  const estPageAuth = pathname.startsWith("/auth") || pathname === "/sanction";
 
   // ------------------------------------------------
   // COMPTEURS

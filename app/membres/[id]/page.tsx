@@ -3,7 +3,7 @@ import SuivreButton from "./suivre-button";
 import { notFound, redirect } from "next/navigation";
 import BlocageUtilisateurButton from "@/components/blocage-utilisateur-button";
 import Link from "next/link";
-
+import SignalerButton from "@/components/signaler-button";
 import { afficherAllure, afficherIntensite } from "@/lib/sortie-utils";
 
 import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
@@ -452,9 +452,22 @@ export default async function ProfilPublicPage({
 
       {/* BLOCAGE */}
 
+      {/* ACTIONS SUR UN AUTRE PROFIL */}
+
       {!estMonProfil && (
         <section className="mt-8 border-t pt-6">
-          <BlocageUtilisateurButton utilisateurId={profil.id} mode="bloquer" />
+          <div className="space-y-4">
+            <BlocageUtilisateurButton
+              utilisateurId={profil.id}
+              mode="bloquer"
+            />
+
+            <SignalerButton
+              typeCible="profil"
+              cibleId={profil.id}
+              libelle="Signaler ce profil"
+            />
+          </div>
         </section>
       )}
 
