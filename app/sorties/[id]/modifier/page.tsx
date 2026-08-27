@@ -1,51 +1,40 @@
 import { createClient } from "@/lib/supabase/server";
 
-import {
-    notFound,
-    redirect,
-} from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import ModifierSortieForm from "./modifier-sortie-form";
 
-
 type PageProps = {
-    params: Promise<{
-        id: string;
-    }>;
+  params: Promise<{
+    id: string;
+  }>;
 };
 
+export default async function ModifierSortiePage({ params }: PageProps) {
+  const { id } = await params;
 
-export default async function ModifierSortiePage({
-    params,
-}: PageProps) {
-    const { id } = await params;
+  const supabase = await createClient();
 
-    const supabase = await createClient();
+  // ------------------------------------------------
+  // UTILISATEUR CONNECTÉ
+  // ------------------------------------------------
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    // ------------------------------------------------
-    // UTILISATEUR CONNECTÉ
-    // ------------------------------------------------
+  if (!user) {
+    redirect("/auth/login");
+  }
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+  // ------------------------------------------------
+  // SORTIE
+  // ------------------------------------------------
 
-    if (!user) {
-        redirect("/auth/login");
-    }
-
-
-    // ------------------------------------------------
-    // SORTIE
-    // ------------------------------------------------
-
-    const {
-        data: sortie,
-        error,
-    } = await supabase
-        .from("sorties")
-        .select(`
+  const { data: sortie, error } = await supabase
+    .from("sorties")
+    .select(
+      `
             id,
             titre,
             organisateur_id,
@@ -62,73 +51,83 @@ export default async function ModifierSortiePage({
             allure_secondes_km,
             genres_autorises,
             description
-        `)
-        .eq("id", id)
-        .eq("organisateur_id", user.id)
-        .eq("statut", "planifiee")
-        .maybeSingle();
+        `,
+    )
+    .eq("id", id)
+    .eq("organisateur_id", user.id)
+    .eq("statut", "planifiee")
+    .maybeSingle();
 
+  if (error || !sortie) {
+    notFound();
+  }
 
-    if (error || !sortie) {
-        notFound();
-    }
+  // ------------------------------------------------
+  // COORDONNÉES DU POINT DE DÉPART
+  // ------------------------------------------------
 
-    const {
-        data: profilOrganisateur,
-        error: profilOrganisateurError,
-    } = await supabase
-        .from("profiles")
-        .select("sexe")
-        .eq("id", user.id)
-        .single();
+  const { data: coordonneesData, error: coordonneesError } = await supabase.rpc(
+    "coordonnees_sortie",
+    {
+      p_sortie_id: sortie.id,
+    },
+  );
 
-    if (
-        profilOrganisateurError ||
-        !profilOrganisateur
-    ) {
-        redirect("/profil");
-    }
-    // ------------------------------------------------
-    // NOMBRE DE PARTICIPANTS
-    // ------------------------------------------------
+  if (coordonneesError) {
+    console.error("Erreur chargement coordonnées :", coordonneesError);
+  }
 
-    const { count } = await supabase
-        .from("participations")
-        .select("*", {
-            count: "exact",
-            head: true,
-        })
-        .eq("sortie_id", id);
+  const coordonnees = coordonneesData?.[0] ?? null;
 
-    // L'organisateur compte comme participant.
-    const nombreParticipants =
-        (count ?? 0) + 1;
+  const latitude = coordonnees ? Number(coordonnees.latitude) : NaN;
 
+  const longitude = coordonnees ? Number(coordonnees.longitude) : NaN;
 
-    // ------------------------------------------------
-    // AFFICHAGE
-    // ------------------------------------------------
+  const localisationInitiale =
+    Number.isFinite(latitude) && Number.isFinite(longitude)
+      ? {
+          latitude,
+          longitude,
+        }
+      : null;
 
-    return (
-        <main className="mx-auto max-w-2xl p-6">
+  const { data: profilOrganisateur, error: profilOrganisateurError } =
+    await supabase.from("profiles").select("sexe").eq("id", user.id).single();
 
-            <h1 className="mb-6 text-2xl font-bold">
-                Modifier la sortie
-            </h1>
+  if (profilOrganisateurError || !profilOrganisateur) {
+    redirect("/profil");
+  }
+  // ------------------------------------------------
+  // NOMBRE DE PARTICIPANTS
+  // ------------------------------------------------
 
-            <ModifierSortieForm
-                sortie={sortie}
-                nombreParticipants={
-                    nombreParticipants
-                }
-                sexeOrganisateur={
-                    profilOrganisateur.sexe as
-                    | "homme"
-                    | "femme"
-                    | "autre"
-                }
-            />
+  const { count } = await supabase
+    .from("participations")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .eq("sortie_id", id);
 
-        </main>
-    );
+  // L'organisateur compte comme participant.
+  const nombreParticipants = (count ?? 0) + 1;
+
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
+  return (
+    <main className="mx-auto max-w-2xl p-6">
+      <h1 className="mb-6 text-2xl font-bold">Modifier la sortie</h1>
+
+      <ModifierSortieForm
+        sortie={sortie}
+        nombreParticipants={nombreParticipants}
+        sexeOrganisateur={
+          profilOrganisateur.sexe as "homme" | "femme" | "autre"
+        }
+        localisationInitiale={localisationInitiale}
+      />
+    </main>
+  );
 }

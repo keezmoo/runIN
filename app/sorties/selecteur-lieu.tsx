@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type {
-  Map as LeafletMap,
-  Marker as LeafletMarker,
-} from "leaflet";
+import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 
 export type Localisation = {
   latitude: number;
@@ -35,6 +32,38 @@ export default function SelecteurLieu({
   // ------------------------------------------------
   // CARTE
   // ------------------------------------------------
+
+  async function actualiserLieuDepuisCoordonnees(
+    nouvelleLocalisation: Localisation,
+  ) {
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(
+          nouvelleLocalisation.latitude,
+        )}&lon=${encodeURIComponent(nouvelleLocalisation.longitude)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !resultat.nom) {
+        setMessage(
+          resultat.error ??
+            "Impossible de déterminer le lieu correspondant à cette position.",
+        );
+
+        return;
+      }
+
+      onLieuChange(resultat.nom);
+      setNomTrouve(resultat.nom);
+      setMessage("");
+    } catch {
+      setMessage("Impossible de mettre à jour le nom du lieu.");
+    }
+  }
 
   useEffect(() => {
     let annule = false;
@@ -75,21 +104,15 @@ export default function SelecteurLieu({
 
       const carte = L.map(conteneurRef.current, {
         scrollWheelZoom: false,
-      }).setView(
-        [localisation.latitude, localisation.longitude],
-        16,
-      );
+      }).setView([localisation.latitude, localisation.longitude], 16);
 
       carteRef.current = carte;
 
-      L.tileLayer(
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        },
-      ).addTo(carte);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(carte);
 
       // Icône personnalisée :
       // évite les problèmes d'images des marqueurs Leaflet avec Next.js.
@@ -125,20 +148,28 @@ export default function SelecteurLieu({
       marqueur.on("dragend", () => {
         const position = marqueur.getLatLng();
 
-        onLocalisationChange({
+        const nouvelleLocalisation = {
           latitude: position.lat,
           longitude: position.lng,
-        });
+        };
+
+        onLocalisationChange(nouvelleLocalisation);
+
+        void actualiserLieuDepuisCoordonnees(nouvelleLocalisation);
       });
 
       // Clic directement sur la carte.
       carte.on("click", (evenement) => {
         marqueur.setLatLng(evenement.latlng);
 
-        onLocalisationChange({
+        const nouvelleLocalisation = {
           latitude: evenement.latlng.lat,
           longitude: evenement.latlng.lng,
-        });
+        };
+
+        onLocalisationChange(nouvelleLocalisation);
+
+        void actualiserLieuDepuisCoordonnees(nouvelleLocalisation);
       });
 
       requestAnimationFrame(() => {
@@ -193,9 +224,7 @@ export default function SelecteurLieu({
       };
 
       if (!response.ok) {
-        setMessage(
-          resultat.error ?? "Impossible de trouver ce lieu.",
-        );
+        setMessage(resultat.error ?? "Impossible de trouver ce lieu.");
 
         onLocalisationChange(null);
 
@@ -205,10 +234,7 @@ export default function SelecteurLieu({
       const latitude = Number(resultat.latitude);
       const longitude = Number(resultat.longitude);
 
-      if (
-        !Number.isFinite(latitude) ||
-        !Number.isFinite(longitude)
-      ) {
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         setMessage("Les coordonnées retournées sont invalides.");
         onLocalisationChange(null);
         return;
@@ -219,9 +245,7 @@ export default function SelecteurLieu({
         longitude,
       });
 
-      setNomTrouve(
-        resultat.nom ?? recherche,
-      );
+      setNomTrouve(resultat.nom ?? recherche);
     } catch {
       setMessage("Impossible de contacter le service de localisation.");
       onLocalisationChange(null);
@@ -243,9 +267,7 @@ export default function SelecteurLieu({
 
   return (
     <div>
-      <label className="mb-1 block font-medium">
-        Lieu de départ
-      </label>
+      <label className="mb-1 block font-medium">Lieu de départ</label>
 
       <div className="flex gap-2">
         <input
@@ -276,11 +298,7 @@ export default function SelecteurLieu({
         </button>
       </div>
 
-      {message && (
-        <p className="mt-2 text-sm text-red-600">
-          {message}
-        </p>
-      )}
+      {message && <p className="mt-2 text-sm text-red-600">{message}</p>}
 
       {nomTrouve && (
         <p className="mt-2 text-xs text-gray-500">
@@ -303,8 +321,8 @@ export default function SelecteurLieu({
           />
 
           <p className="mt-2 text-xs text-gray-500">
-            Cliquez sur la carte ou déplacez le point pour préciser
-            le lieu exact du rendez-vous.
+            Cliquez sur la carte ou déplacez le point pour préciser le lieu
+            exact du rendez-vous.
           </p>
         </>
       )}
