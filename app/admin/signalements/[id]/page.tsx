@@ -86,6 +86,16 @@ type DetailSortieActions = {
   nombre_messages: number;
 };
 
+type DetailMessageSignalement = {
+  signalement_id: string;
+
+  contenu_snapshot: string | null;
+
+  auteur_nom_snapshot: string | null;
+
+  date_message_snapshot: string | null;
+};
+
 function afficherDate(date: string | null) {
   if (!date) {
     return "—";
@@ -211,11 +221,17 @@ export default async function SignalementAdminPage({ params }: Props) {
 
   let detailSortie: DetailSortieActions | null = null;
 
+  let detailMessage: DetailMessageSignalement | null = null;
+
   // ------------------------------------------------------------
   // PROFIL SIGNALE
   // ------------------------------------------------------------
 
-  if (signalement.type_cible === "profil" && signalement.cible_utilisateur_id) {
+  if (
+    (signalement.type_cible === "profil" ||
+      signalement.type_cible === "message") &&
+    signalement.cible_utilisateur_id
+  ) {
     const { data: utilisateurData, error: utilisateurError } =
       await supabase.rpc("admin_detail_utilisateur", {
         p_utilisateur_id: signalement.cible_utilisateur_id,
@@ -261,6 +277,31 @@ export default async function SignalementAdminPage({ params }: Props) {
       });
     } else {
       detailSortie = (sortieData?.[0] ?? null) as DetailSortieActions | null;
+    }
+  }
+
+  // ------------------------------------------------------------
+  // MESSAGE SIGNALE
+  // ------------------------------------------------------------
+
+  if (signalement.type_cible === "message") {
+    const { data: messageData, error: messageError } = await supabase.rpc(
+      "admin_detail_message_signalement",
+      {
+        p_signalement_id: signalement.signalement_id,
+      },
+    );
+
+    if (messageError) {
+      console.error("Erreur détail message signalé :", {
+        code: messageError.code,
+        message: messageError.message,
+        details: messageError.details,
+        hint: messageError.hint,
+      });
+    } else {
+      detailMessage = (messageData?.[0] ??
+        null) as DetailMessageSignalement | null;
     }
   }
 
@@ -491,7 +532,49 @@ export default async function SignalementAdminPage({ params }: Props) {
           </div>
         )}
       </section>
+      {/* MESSAGE SIGNALE */}
 
+      {signalement.type_cible === "message" && (
+        <section className="rounded-xl border p-5">
+          <h2 className="mb-4 text-lg font-semibold">Message signalé</h2>
+
+          {detailMessage ? (
+            <div className="space-y-4">
+              <div className="grid gap-2 text-sm sm:grid-cols-2">
+                <p>
+                  <span className="font-medium">Auteur :</span>{" "}
+                  {detailMessage.auteur_nom_snapshot ?? "Utilisateur"}
+                </p>
+
+                <p>
+                  <span className="font-medium">Date du message :</span>{" "}
+                  {afficherDate(detailMessage.date_message_snapshot)}
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">
+                  Contenu conservé au moment du signalement
+                </p>
+
+                <div className="whitespace-pre-wrap break-words rounded-lg border bg-gray-50 p-4 text-sm dark:bg-gray-950">
+                  {detailMessage.contenu_snapshot || "Contenu indisponible."}
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                Cet extrait est une copie conservée au moment du signalement. Il
+                reste disponible même si le message original disparaît.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Impossible de charger la copie du message signalé.
+            </p>
+          )}
+        </section>
+      )}
+      
       {/* =========================================================
     ACTION SUR LE CONTENU SIGNALE
 ========================================================= */}

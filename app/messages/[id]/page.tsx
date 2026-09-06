@@ -6,6 +6,7 @@ import MarquerMessagesLus from "./marquer-messages-lus";
 import RealtimeMessages from "./realtime-messages";
 import ScrollVersDernierMessage from "./scroll-vers-dernier-message";
 import StatutConversation from "./statut-conversation";
+import SignalerButton from "@/components/signaler-button";
 
 type PageProps = {
   params: Promise<{
@@ -283,6 +284,15 @@ export default async function ConversationPage({ params }: PageProps) {
                         timeStyle: "short",
                       })}
                     </p>
+                    {!estMoi && (
+                      <div className="mt-2">
+                        <SignalerButton
+                          typeCible="message"
+                          cibleId={message.id}
+                          libelle="Signaler"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );

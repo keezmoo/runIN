@@ -114,7 +114,7 @@ export default async function SignalementsAdminPage({ searchParams }: Props) {
     "rejete",
   ];
 
-  const types = ["tous", "profil", "sortie"];
+  const types = ["tous", "profil", "sortie", "message"];
 
   const motifs = [
     "tous",
@@ -144,7 +144,7 @@ export default async function SignalementsAdminPage({ searchParams }: Props) {
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase.rpc("admin_lister_signalements", {
+  const { data, error } = await supabase.rpc("admin_lister_signalements_v2", {
     p_statut: statut,
 
     p_type: type,
@@ -317,6 +317,8 @@ export default async function SignalementsAdminPage({ searchParams }: Props) {
           <option value="profil">Profils</option>
 
           <option value="sortie">Sorties</option>
+
+          <option value="message">Messages</option>
         </select>
 
         <select

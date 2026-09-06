@@ -5,7 +5,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
-  typeCible: "profil" | "sortie";
+  typeCible: "profil" | "sortie" | "message";
 
   cibleId: string;
 
@@ -41,15 +41,24 @@ export default function SignalerButton({ typeCible, cibleId, libelle }: Props) {
 
     const supabase = createClient();
 
-    const { error } = await supabase.rpc("creer_signalement", {
-      p_type_cible: typeCible,
+    const { error } =
+      typeCible === "message"
+        ? await supabase.rpc("creer_signalement_message", {
+            p_message_id: cibleId,
 
-      p_cible_id: cibleId,
+            p_motif: motif,
 
-      p_motif: motif,
+            p_commentaire: commentaireNettoye || null,
+          })
+        : await supabase.rpc("creer_signalement", {
+            p_type_cible: typeCible,
 
-      p_commentaire: commentaireNettoye || null,
-    });
+            p_cible_id: cibleId,
+
+            p_motif: motif,
+
+            p_commentaire: commentaireNettoye || null,
+          });
 
     if (error) {
       const texte = error.message ?? "";
