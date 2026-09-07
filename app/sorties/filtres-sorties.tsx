@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-
+import { FormEvent, useRef, useState } from "react";
+import CarteZoneRecherche from "./carte-zone-recherche";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type TypeSortie = "" | "route" | "trail";
@@ -12,7 +12,27 @@ type FiltresSortiesProps = {
   lieuActuel: string;
   rayonActuel: number;
   typeActuel: string;
+  latitudeActuelle: number;
+  longitudeActuelle: number;
 };
+
+const RAYONS_KM = [1, 2, 3, 5, 10, 15, 20] as const;
+
+function indexRayonLePlusProche(valeur: number) {
+  let meilleurIndex = 0;
+
+  for (let index = 1; index < RAYONS_KM.length; index++) {
+    const distanceActuelle = Math.abs(RAYONS_KM[index] - valeur);
+
+    const meilleureDistance = Math.abs(RAYONS_KM[meilleurIndex] - valeur);
+
+    if (distanceActuelle < meilleureDistance) {
+      meilleurIndex = index;
+    }
+  }
+
+  return meilleurIndex;
+}
 
 function secondesVersAllure(secondesTexte: string | null) {
   if (!secondesTexte) {
@@ -62,10 +82,28 @@ export default function FiltresSorties({
   lieuActuel,
   rayonActuel,
   typeActuel,
+  latitudeActuelle,
+  longitudeActuelle,
 }: FiltresSortiesProps) {
   const router = useRouter();
-
+  const requeteReverseId = useRef(0);
   const searchParams = useSearchParams();
+
+  const [localisationOuverte, setLocalisationOuverte] = useState(false);
+
+  const [rechercheLieuEnCours, setRechercheLieuEnCours] = useState(false);
+
+  const [localisationValidee, setLocalisationValidee] = useState(true);
+
+  const [messageLocalisation, setMessageLocalisation] = useState("");
+
+  const [lieuValide, setLieuValide] = useState(lieuActuel);
+
+  const [latitude, setLatitude] = useState(latitudeActuelle);
+
+  const [longitude, setLongitude] = useState(longitudeActuelle);
+
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
 
   // ------------------------------------------------
   // NIVEAU D'AFFICHAGE
@@ -103,8 +141,11 @@ export default function FiltresSorties({
 
   const rayonInitial = Math.min(20, Math.max(1, Number(rayonActuel) || 10));
 
-  const [rayon, setRayon] = useState(rayonInitial);
+  const [rayonIndex, setRayonIndex] = useState(
+    indexRayonLePlusProche(rayonInitial),
+  );
 
+  const rayon = RAYONS_KM[rayonIndex];
   // ------------------------------------------------
   // FILTRES SPORTIFS
   // ------------------------------------------------
@@ -192,6 +233,7 @@ export default function FiltresSorties({
   // ------------------------------------------------
   // RECHERCHE
   // ------------------------------------------------
+
   function basculerGenre(genre: string) {
     setGenres((genresActuels) =>
       genresActuels.includes(genre)
@@ -225,19 +267,38 @@ export default function FiltresSorties({
 
     setMasquerCompletes(true);
     setAvecSuivis(false);
+
     setMessage("");
   }
 
-  async function rechercher(event: FormEvent) {
+  // ------------------------------------------------
+  // APPLICATION DES FILTRES
+  // ------------------------------------------------
+
+  function rechercher(event: FormEvent) {
     event.preventDefault();
 
     setMessage("");
 
-    if (lieu.trim().length < 2) {
-      setMessage("Indiquez un lieu de recherche.");
+    // ------------------------------------------------
+    // LOCALISATION
+    // ------------------------------------------------
+
+    if (!localisationValidee) {
+      setMessage("Localisez le lieu saisi avant de lancer la recherche.");
 
       return;
     }
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      setMessage("Le centre de recherche est invalide.");
+
+      return;
+    }
+
+    // ------------------------------------------------
+    // DISTANCE
+    // ------------------------------------------------
 
     const distanceMinNombre = nombreDepuisChamp(distanceMin);
 
@@ -260,6 +321,10 @@ export default function FiltresSorties({
 
       return;
     }
+
+    // ------------------------------------------------
+    // TRAIL : DENIVELE
+    // ------------------------------------------------
 
     let deniveleMinNombre: number | null = null;
 
@@ -287,6 +352,10 @@ export default function FiltresSorties({
       }
     }
 
+    // ------------------------------------------------
+    // ROUTE : ALLURE
+    // ------------------------------------------------
+
     let allureMinSecondes: number | null = null;
 
     let allureMaxSecondes: number | null = null;
@@ -313,6 +382,10 @@ export default function FiltresSorties({
       }
     }
 
+    // ------------------------------------------------
+    // DUREE
+    // ------------------------------------------------
+
     const dureeMinNombre = nombreDepuisChamp(dureeMin);
 
     const dureeMaxNombre = nombreDepuisChamp(dureeMax);
@@ -333,128 +406,301 @@ export default function FiltresSorties({
       return;
     }
 
+    // ------------------------------------------------
+    // CONSTRUCTION DE L'URL
+    // ------------------------------------------------
+
     setLoading(true);
 
+    // On conserve les paramètres qui ne font pas
+    // partie des filtres, notamment la navigation
+    // de date.
+    const params = new URLSearchParams(searchParams.toString());
+
+    const filtresAGerer = [
+      "lieu",
+      "rayon",
+      "lat",
+      "lon",
+      "type",
+      "distanceMin",
+      "distanceMax",
+      "deniveleMin",
+      "deniveleMax",
+      "allureMin",
+      "allureMax",
+      "intensite",
+      "typeEntrainement",
+      "dureeMin",
+      "dureeMax",
+      "genres",
+      "modeInscription",
+      "masquerCompletes",
+      "suivis",
+    ];
+
+    for (const filtre of filtresAGerer) {
+      params.delete(filtre);
+    }
+
+    // ------------------------------------------------
+    // LOCALISATION
+    // ------------------------------------------------
+
+    params.set("lieu", lieuValide);
+
+    params.set("rayon", String(rayon));
+
+    params.set("lat", String(latitude));
+
+    params.set("lon", String(longitude));
+
+    // ------------------------------------------------
+    // TYPE DE SORTIE
+    // ------------------------------------------------
+
+    if (typeSortie) {
+      params.set("type", typeSortie);
+    }
+
+    // ------------------------------------------------
+    // DISTANCE
+    // ------------------------------------------------
+
+    if (distanceMinNombre !== null) {
+      params.set("distanceMin", String(distanceMinNombre));
+    }
+
+    if (distanceMaxNombre !== null) {
+      params.set("distanceMax", String(distanceMaxNombre));
+    }
+
+    // ------------------------------------------------
+    // TRAIL : DENIVELE
+    // ------------------------------------------------
+
+    if (typeSortie === "trail") {
+      if (deniveleMinNombre !== null) {
+        params.set("deniveleMin", String(deniveleMinNombre));
+      }
+
+      if (deniveleMaxNombre !== null) {
+        params.set("deniveleMax", String(deniveleMaxNombre));
+      }
+    }
+
+    // ------------------------------------------------
+    // ROUTE : ALLURE
+    // ------------------------------------------------
+
+    if (typeSortie === "route") {
+      if (allureMinSecondes !== null) {
+        params.set("allureMin", String(allureMinSecondes));
+      }
+
+      if (allureMaxSecondes !== null) {
+        params.set("allureMax", String(allureMaxSecondes));
+      }
+    }
+
+    // ------------------------------------------------
+    // INTENSITE
+    // ------------------------------------------------
+
+    if (intensite) {
+      params.set("intensite", intensite);
+    }
+
+    // ------------------------------------------------
+    // TYPE D'ENTRAINEMENT
+    // ------------------------------------------------
+
+    if (typeEntrainement) {
+      params.set("typeEntrainement", typeEntrainement);
+    }
+
+    // ------------------------------------------------
+    // DUREE
+    // ------------------------------------------------
+
+    if (dureeMinNombre !== null) {
+      params.set("dureeMin", String(dureeMinNombre));
+    }
+
+    if (dureeMaxNombre !== null) {
+      params.set("dureeMax", String(dureeMaxNombre));
+    }
+
+    // ------------------------------------------------
+    // GENRES
+    // ------------------------------------------------
+
+    if (genres.length > 0) {
+      params.set("genres", genres.join(","));
+    }
+
+    // ------------------------------------------------
+    // MODE D'INSCRIPTION
+    // ------------------------------------------------
+
+    if (modeInscription) {
+      params.set("modeInscription", modeInscription);
+    }
+
+    // ------------------------------------------------
+    // SORTIES COMPLETES
+    // ------------------------------------------------
+
+    params.set("masquerCompletes", masquerCompletes ? "1" : "0");
+
+    // ------------------------------------------------
+    // CONTACTS SUIVIS
+    // ------------------------------------------------
+
+    if (avecSuivis) {
+      params.set("suivis", "1");
+    }
+
+    // ------------------------------------------------
+    // NAVIGATION
+    // ------------------------------------------------
+
+    router.push(`/sorties?${params.toString()}`);
+
+    setLoading(false);
+  }
+
+  function modifierLieu(valeur: string) {
+    setLieu(valeur);
+
+    // Le texte saisi ne correspond plus
+    // forcément au centre actuellement enregistré.
+    setLocalisationValidee(false);
+
+    setMessageLocalisation("");
+  }
+
+  async function localiserLieu() {
+    const recherche = lieu.trim();
+
+    setMessageLocalisation("");
+
+    if (recherche.length < 2) {
+      setMessageLocalisation("Indiquez un lieu de recherche.");
+
+      return;
+    }
+
+    setRechercheLieuEnCours(true);
+
     try {
-      const reponse = await fetch(
-        `/api/geocode?q=${encodeURIComponent(lieu.trim())}`,
+      const response = await fetch(
+        `/api/geocode?q=${encodeURIComponent(recherche)}`,
       );
 
-      if (!reponse.ok) {
-        setMessage("Impossible de trouver ce lieu.");
+      const resultat = (await response.json()) as {
+        nom?: string;
+        latitude?: number;
+        longitude?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setMessageLocalisation(
+          resultat.error ?? "Impossible de trouver ce lieu.",
+        );
 
         return;
       }
 
-      const localisation = await reponse.json();
+      const nouvelleLatitude = Number(resultat.latitude);
 
-      // On part des paramètres existants
-      // afin de conserver notamment la
-      // navigation de date.
-      const params = new URLSearchParams(searchParams.toString());
+      const nouvelleLongitude = Number(resultat.longitude);
 
-      const filtresAGerer = [
-        "lieu",
-        "rayon",
-        "lat",
-        "lon",
-        "type",
-        "distanceMin",
-        "distanceMax",
-        "deniveleMin",
-        "deniveleMax",
-        "allureMin",
-        "allureMax",
-        "intensite",
-        "typeEntrainement",
-        "dureeMin",
-        "dureeMax",
-        "genres",
-        "modeInscription",
-        "masquerCompletes",
-        "suivis",
-      ];
+      if (
+        !Number.isFinite(nouvelleLatitude) ||
+        !Number.isFinite(nouvelleLongitude)
+      ) {
+        setMessageLocalisation("Les coordonnées retournées sont invalides.");
 
-      for (const filtre of filtresAGerer) {
-        params.delete(filtre);
+        return;
       }
 
-      params.set("lieu", lieu.trim());
+      const nouveauNom =
+        typeof resultat.nom === "string" && resultat.nom.trim()
+          ? resultat.nom.trim()
+          : recherche;
 
-      params.set("rayon", String(rayon));
+      setLatitude(nouvelleLatitude);
+      setLongitude(nouvelleLongitude);
 
-      params.set("lat", String(localisation.latitude));
+      setLieu(nouveauNom);
+      setLieuValide(nouveauNom);
 
-      params.set("lon", String(localisation.longitude));
-
-      if (typeSortie) {
-        params.set("type", typeSortie);
-      }
-
-      if (distanceMinNombre !== null) {
-        params.set("distanceMin", String(distanceMinNombre));
-      }
-
-      if (distanceMaxNombre !== null) {
-        params.set("distanceMax", String(distanceMaxNombre));
-      }
-
-      if (typeSortie === "trail") {
-        if (deniveleMinNombre !== null) {
-          params.set("deniveleMin", String(deniveleMinNombre));
-        }
-
-        if (deniveleMaxNombre !== null) {
-          params.set("deniveleMax", String(deniveleMaxNombre));
-        }
-      }
-
-      if (typeSortie === "route") {
-        if (allureMinSecondes !== null) {
-          params.set("allureMin", String(allureMinSecondes));
-        }
-
-        if (allureMaxSecondes !== null) {
-          params.set("allureMax", String(allureMaxSecondes));
-        }
-      }
-
-      if (intensite) {
-        params.set("intensite", intensite);
-      }
-
-      if (typeEntrainement) {
-        params.set("typeEntrainement", typeEntrainement);
-      }
-
-      if (dureeMinNombre !== null) {
-        params.set("dureeMin", String(dureeMinNombre));
-      }
-
-      if (dureeMaxNombre !== null) {
-        params.set("dureeMax", String(dureeMaxNombre));
-      }
-
-      if (genres.length > 0) {
-        params.set("genres", genres.join(","));
-      }
-
-      if (modeInscription) {
-        params.set("modeInscription", modeInscription);
-      }
-
-      params.set("masquerCompletes", masquerCompletes ? "1" : "0");
-      if (avecSuivis) {
-        params.set("suivis", "1");
-      }
-
-      router.push(`/sorties?${params.toString()}`);
+      setLocalisationValidee(true);
     } catch (erreur) {
-      console.error("Erreur recherche sorties :", erreur);
+      console.error("Erreur localisation :", erreur);
 
-      setMessage("Impossible d'effectuer la recherche.");
+      setMessageLocalisation(
+        "Impossible de contacter le service de localisation.",
+      );
     } finally {
-      setLoading(false);
+      setRechercheLieuEnCours(false);
+    }
+  }
+
+  async function changerCentreCarte(
+    nouvelleLatitude: number,
+    nouvelleLongitude: number,
+  ) {
+    // Le centre est modifié immédiatement.
+    setLatitude(nouvelleLatitude);
+    setLongitude(nouvelleLongitude);
+
+    setLocalisationValidee(true);
+    setMessageLocalisation("");
+
+    // Tant que le reverse geocoding n'a pas répondu,
+    // on ne conserve pas un ancien nom devenu faux.
+    setLieu("Position personnalisée");
+    setLieuValide("Position personnalisée");
+
+    const idRequete = ++requeteReverseId.current;
+
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(
+          nouvelleLatitude,
+        )}&lon=${encodeURIComponent(nouvelleLongitude)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        latitude?: number;
+        longitude?: number;
+        error?: string;
+      };
+
+      // Une autre position a été choisie entre-temps :
+      // on ignore cette ancienne réponse.
+      if (idRequete !== requeteReverseId.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        console.error("Erreur géocodage inverse :", resultat.error);
+
+        return;
+      }
+
+      if (typeof resultat.nom === "string" && resultat.nom.trim()) {
+        const nouveauNom = resultat.nom.trim();
+
+        setLieu(nouveauNom);
+        setLieuValide(nouveauNom);
+      }
+    } catch (erreur) {
+      console.error("Erreur géocodage inverse :", erreur);
     }
   }
 
@@ -463,403 +709,642 @@ export default function FiltresSorties({
   // ------------------------------------------------
 
   return (
-    <form onSubmit={rechercher} className="mb-4 space-y-4">
-      {/* SPORT */}
+    <div className="mb-4 overflow-hidden rounded-xl border">
+      <button
+        type="button"
+        onClick={() => {
+          const prochainEtat = !filtresOuverts;
 
-      <div className="grid grid-cols-3 gap-2">
-        <button
-          type="button"
-          onClick={() => choisirType("")}
-          className={
-            typeSortie === ""
-              ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
-              : "rounded border px-3 py-2"
+          setFiltresOuverts(prochainEtat);
+
+          if (!prochainEtat) {
+            setLocalisationOuverte(false);
           }
-        >
-          Tous
-        </button>
-
-        <button
-          type="button"
-          onClick={() => choisirType("route")}
-          className={
-            typeSortie === "route"
-              ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
-              : "rounded border px-3 py-2"
-          }
-        >
-          Route
-        </button>
-
-        <button
-          type="button"
-          onClick={() => choisirType("trail")}
-          className={
-            typeSortie === "trail"
-              ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
-              : "rounded border px-3 py-2"
-          }
-        >
-          Trail
-        </button>
-      </div>
-
-      {/* LIEU */}
-
-      <div className="flex items-center gap-3">
-        <label
-          htmlFor="lieu-recherche"
-          className="shrink-0 text-sm font-medium"
-        >
-          Lieu
-        </label>
-
-        <input
-          id="lieu-recherche"
-          type="text"
-          value={lieu}
-          onChange={(event) => setLieu(event.target.value)}
-          className="
-      min-w-0
-      flex-1
-      rounded
-      border
-      p-2
-    "
-          placeholder="Lieu de départ"
-        />
-
-        <button
-          type="button"
-          onClick={() => setNiveauFiltres(niveauFiltres === 3 ? 1 : 3)}
-          className="
-      shrink-0
-      whitespace-nowrap
-      text-sm
-      font-medium
-    "
-        >
-          {niveauFiltres === 3 ? "< Fermer" : "Autres filtres >"}
-        </button>
-      </div>
-
-      {/* RAYON */}
-
-      <div>
-        <div className="mb-1 flex justify-between text-sm">
-          <span>Rayon</span>
-
-          <span>{rayon} km</span>
-        </div>
-
-        <input
-          type="range"
-          min="1"
-          max="20"
-          step="1"
-          value={rayon}
-          onChange={(event) => setRayon(Number(event.target.value))}
-          className="w-full"
-        />
-
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>1 km</span>
-          <span>20 km</span>
-        </div>
-      </div>
-
-      {/* NIVEAU SPORTIF */}
-
-      {niveauFiltres >= 2 && (
-        <div className="space-y-4 border-t pt-4">
-          {niveauFiltres === 3 && (
-            <h3 className="font-semibold">Caractéristiques sportives</h3>
-          )}
-
-          {/* DISTANCE */}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">Distance</label>
-
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="Min. km"
-                value={distanceMin}
-                onChange={(event) => setDistanceMin(event.target.value)}
-                className="rounded border p-2"
-              />
-
-              <input
-                type="number"
-                min="0"
-                step="0.1"
-                placeholder="Max. km"
-                value={distanceMax}
-                onChange={(event) => setDistanceMax(event.target.value)}
-                className="rounded border p-2"
-              />
-            </div>
-          </div>
-
-          {/* ROUTE : ALLURE */}
-
-          {typeSortie === "route" && (
-            <div>
-              <label className="mb-2 block text-sm font-medium">Allure</label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Min. 4:30"
-                  value={allureMin}
-                  onChange={(event) => setAllureMin(event.target.value)}
-                  className="rounded border p-2"
-                />
-
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="Max. 6:00"
-                  value={allureMax}
-                  onChange={(event) => setAllureMax(event.target.value)}
-                  className="rounded border p-2"
-                />
-              </div>
-
-              <p className="mt-1 text-xs text-gray-500">min/km</p>
-            </div>
-          )}
-
-          {/* TRAIL : D+ */}
-
-          {typeSortie === "trail" && (
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Dénivelé positif
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  placeholder="Min. D+"
-                  value={deniveleMin}
-                  onChange={(event) => setDeniveleMin(event.target.value)}
-                  className="rounded border p-2"
-                />
-
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  placeholder="Max. D+"
-                  value={deniveleMax}
-                  onChange={(event) => setDeniveleMax(event.target.value)}
-                  className="rounded border p-2"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* INTENSITÉ */}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium">Intensité</label>
-
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                ["tranquille", "Tranquille"],
-                ["moderee", "Modérée"],
-                ["soutenue", "Soutenue"],
-              ].map(([valeur, texte]) => (
-                <button
-                  key={valeur}
-                  type="button"
-                  onClick={() =>
-                    setIntensite(
-                      intensite === valeur ? "" : (valeur as Intensite),
-                    )
-                  }
-                  className={
-                    intensite === valeur
-                      ? "rounded border-2 border-[#8ED8B6] px-2 py-2 text-sm font-semibold"
-                      : "rounded border px-2 py-2 text-sm"
-                  }
-                >
-                  {texte}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {niveauFiltres === 3 && (
-        <div className="space-y-5">
-          <div className="border-t pt-4">
-            <h3 className="mb-4 font-semibold">Filtres complémentaires</h3>
-
-            {/* TYPE D'ENTRAÎNEMENT */}
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Type d&apos;entraînement
-              </label>
-
-              <select
-                value={typeEntrainement}
-                onChange={(event) => setTypeEntrainement(event.target.value)}
-                className="w-full rounded border p-2"
-              >
-                <option value="">Tous</option>
-
-                <option value="endurance_fondamentale">
-                  Endurance fondamentale
-                </option>
-
-                <option value="sortie_longue">Sortie longue</option>
-
-                <option value="tempo_seuil">Tempo / seuil</option>
-
-                <option value="fractionne">Fractionné</option>
-
-                <option value="cotes">Côtes</option>
-
-                <option value="recuperation">Récupération</option>
-
-                <option value="libre">Libre</option>
-              </select>
-            </div>
-
-            {/* DURÉE */}
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Durée estimée
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Min. minutes"
-                  value={dureeMin}
-                  onChange={(event) => setDureeMin(event.target.value)}
-                  className="rounded border p-2"
-                />
-
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="Max. minutes"
-                  value={dureeMax}
-                  onChange={(event) => setDureeMax(event.target.value)}
-                  className="rounded border p-2"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* PARTICIPATION */}
-
-          <div className="border-t pt-4">
-            <h4 className="mb-3 font-semibold">Participation</h4>
-
-            {/* GENRES */}
-
-            <div className="mb-4">
-              <p className="mb-2 text-sm font-medium">Genres autorisés</p>
-
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={genres.includes("homme")}
-                    onChange={() => basculerGenre("homme")}
-                  />
-                  Homme
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={genres.includes("femme")}
-                    onChange={() => basculerGenre("femme")}
-                  />
-                  Femme
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={genres.includes("autre")}
-                    onChange={() => basculerGenre("autre")}
-                  />
-                  Autre
-                </label>
-              </div>
-            </div>
-
-            {/* MODE D'INSCRIPTION */}
-
-            <div className="mb-4">
-              <p className="mb-2 text-sm font-medium">
-                Mode d&apos;inscription
-              </p>
-
-              <select
-                value={modeInscription}
-                onChange={(event) => setModeInscription(event.target.value)}
-                className="w-full rounded border p-2"
-              >
-                <option value="">Tous</option>
-
-                <option value="automatique">Validation automatique</option>
-
-                <option value="validation">Sur acceptation</option>
-              </select>
-            </div>
-
-            {/* SORTIES COMPLÈTES */}
-
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={masquerCompletes}
-                onChange={(event) => setMasquerCompletes(event.target.checked)}
-              />
-              Masquer les sorties complètes
-            </label>
-          </div>
-        </div>
-      )}
-
-      {/* COMMANDES */}
-
-      <div
+        }}
+        aria-expanded={filtresOuverts}
         className="
+        flex
+        w-full
+        items-center
+        gap-2
+        px-4
+        py-3
+        text-left
+        text-sm
+        font-medium
+      "
+      >
+        <span
+          className={`
+          inline-block
+          transition-transform
+          ${filtresOuverts ? "rotate-90" : ""}
+        `}
+        >
+          &gt;
+        </span>
+        Filtres
+      </button>
+
+      {filtresOuverts && (
+        <form
+          onSubmit={rechercher}
+          className="
+      space-y-4
+      border-t
+      p-4
+    "
+        >
+          {/* SPORT */}
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => choisirType("")}
+              className={
+                typeSortie === ""
+                  ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
+                  : "rounded border px-3 py-2"
+              }
+            >
+              Tous
+            </button>
+
+            <button
+              type="button"
+              onClick={() => choisirType("route")}
+              className={
+                typeSortie === "route"
+                  ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
+                  : "rounded border px-3 py-2"
+              }
+            >
+              Route
+            </button>
+
+            <button
+              type="button"
+              onClick={() => choisirType("trail")}
+              className={
+                typeSortie === "trail"
+                  ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
+                  : "rounded border px-3 py-2"
+              }
+            >
+              Trail
+            </button>
+          </div>
+
+          {/* LOCALISATION */}
+
+          <div
+            className="
+    overflow-hidden
+    rounded-xl
+    border
+  "
+          >
+            {/* ETAT REPLIE */}
+
+            <button
+              type="button"
+              onClick={() => setLocalisationOuverte((ouverte) => !ouverte)}
+              aria-expanded={localisationOuverte}
+              className="
+      flex
+      w-full
+      items-center
+      justify-between
+      gap-3
+      px-4
+      py-3
+      text-left
+    "
+            >
+              <div
+                className="
+        flex
+        min-w-0
+        items-center
+        gap-2
+      "
+              >
+                {/* PIN */}
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-5 w-5 shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+
+                <span className="truncate font-medium">
+                  {lieuValide || "Ajouter une localisation"}
+                  {" · "}
+                  {rayon} km
+                </span>
+              </div>
+
+              <span
+                className={`
+        shrink-0
+        text-lg
+        transition-transform
+        ${localisationOuverte ? "rotate-180" : ""}
+      `}
+              >
+                ⌄
+              </span>
+            </button>
+
+            {/* ETAT DEPLIE */}
+
+            {localisationOuverte && (
+              <div
+                className="
+        space-y-4
+        border-t
+        p-4
+      "
+              >
+                {/* RECHERCHE DU LIEU */}
+
+                <div>
+                  <label
+                    htmlFor="lieu-recherche"
+                    className="
+            mb-1
+            block
+            text-sm
+            font-medium
+          "
+                  >
+                    Lieu de recherche
+                  </label>
+
+                  <div className="flex gap-2">
+                    <input
+                      id="lieu-recherche"
+                      type="text"
+                      value={lieu}
+                      onChange={(event) => modifierLieu(event.target.value)}
+                      placeholder="Chambéry"
+                      className="
+              min-w-0
+              flex-1
+              rounded-lg
+              border
+              p-2
+            "
+                    />
+
+                    <button
+                      type="button"
+                      onClick={localiserLieu}
+                      disabled={rechercheLieuEnCours}
+                      className="
+              shrink-0
+              rounded-lg
+              border
+              px-3
+              py-2
+              text-sm
+              font-medium
+              disabled:opacity-50
+            "
+                    >
+                      {rechercheLieuEnCours ? "Recherche..." : "Localiser"}
+                    </button>
+                  </div>
+
+                  {!localisationValidee && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Cliquez sur « Localiser » pour positionner ce lieu.
+                    </p>
+                  )}
+
+                  {messageLocalisation && (
+                    <p className="mt-2 text-sm text-red-500">
+                      {messageLocalisation}
+                    </p>
+                  )}
+                </div>
+
+                {/* RAYON */}
+
+                <div>
+                  <div
+                    className="
+            mb-1
+            flex
+            items-center
+            justify-between
+            text-sm
+          "
+                  >
+                    <span className="font-medium">Rayon de recherche</span>
+
+                    <span className="font-medium">{rayon} km</span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min={0}
+                    max={RAYONS_KM.length - 1}
+                    step={1}
+                    value={rayonIndex}
+                    onChange={(event) =>
+                      setRayonIndex(Number(event.target.value))
+                    }
+                    className="w-full"
+                  />
+
+                  <div
+                    className="
+            -mt-1
+            grid
+            grid-cols-7
+            text-center
+          "
+                  >
+                    {RAYONS_KM.map((valeur, index) => (
+                      <button
+                        key={valeur}
+                        type="button"
+                        onClick={() => setRayonIndex(index)}
+                        className={`
+                  text-[10px]
+                  ${rayon === valeur ? "font-semibold" : "text-gray-500"}
+                `}
+                      >
+                        {valeur}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CARTE */}
+
+                <div>
+                  {Number.isFinite(latitude) && Number.isFinite(longitude) ? (
+                    <CarteZoneRecherche
+                      latitude={latitude}
+                      longitude={longitude}
+                      rayonKm={rayon}
+                      onCentreChange={changerCentreCarte}
+                    />
+                  ) : (
+                    <div className="rounded-lg border p-4 text-sm text-gray-500">
+                      Localisez un lieu pour afficher la carte.
+                    </div>
+                  )}
+
+                  <p className="mt-2 text-xs text-gray-500">
+                    Cliquez sur la carte ou déplacez le point pour modifier le
+                    centre de la recherche.
+                  </p>
+                </div>
+
+                {/* VALIDATION */}
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!localisationValidee) {
+                        setMessageLocalisation(
+                          "Localisez d'abord le lieu saisi.",
+                        );
+
+                        return;
+                      }
+
+                      setLocalisationOuverte(false);
+                    }}
+                    className="
+            rounded-lg
+            border
+            px-4
+            py-2
+            text-sm
+            font-medium
+          "
+                  >
+                    Valider la localisation
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* NIVEAU SPORTIF */}
+
+          {niveauFiltres >= 2 && (
+            <div className="space-y-4 border-t pt-4">
+              {niveauFiltres === 3 && (
+                <h3 className="font-semibold">Caractéristiques sportives</h3>
+              )}
+
+              {/* DISTANCE */}
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Distance
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="Min. km"
+                    value={distanceMin}
+                    onChange={(event) => setDistanceMin(event.target.value)}
+                    className="rounded border p-2"
+                  />
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="Max. km"
+                    value={distanceMax}
+                    onChange={(event) => setDistanceMax(event.target.value)}
+                    className="rounded border p-2"
+                  />
+                </div>
+              </div>
+
+              {/* ROUTE : ALLURE */}
+
+              {typeSortie === "route" && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Allure
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Min. 4:30"
+                      value={allureMin}
+                      onChange={(event) => setAllureMin(event.target.value)}
+                      className="rounded border p-2"
+                    />
+
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="Max. 6:00"
+                      value={allureMax}
+                      onChange={(event) => setAllureMax(event.target.value)}
+                      className="rounded border p-2"
+                    />
+                  </div>
+
+                  <p className="mt-1 text-xs text-gray-500">min/km</p>
+                </div>
+              )}
+
+              {/* TRAIL : D+ */}
+
+              {typeSortie === "trail" && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Dénivelé positif
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      placeholder="Min. D+"
+                      value={deniveleMin}
+                      onChange={(event) => setDeniveleMin(event.target.value)}
+                      className="rounded border p-2"
+                    />
+
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      placeholder="Max. D+"
+                      value={deniveleMax}
+                      onChange={(event) => setDeniveleMax(event.target.value)}
+                      className="rounded border p-2"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* INTENSITÉ */}
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Intensité
+                </label>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    ["tranquille", "Tranquille"],
+                    ["moderee", "Modérée"],
+                    ["soutenue", "Soutenue"],
+                  ].map(([valeur, texte]) => (
+                    <button
+                      key={valeur}
+                      type="button"
+                      onClick={() =>
+                        setIntensite(
+                          intensite === valeur ? "" : (valeur as Intensite),
+                        )
+                      }
+                      className={
+                        intensite === valeur
+                          ? "rounded border-2 border-[#8ED8B6] px-2 py-2 text-sm font-semibold"
+                          : "rounded border px-2 py-2 text-sm"
+                      }
+                    >
+                      {texte}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {niveauFiltres === 3 && (
+            <div className="space-y-5">
+              <div className="border-t pt-4">
+                <h3 className="mb-4 font-semibold">Filtres complémentaires</h3>
+
+                {/* TYPE D'ENTRAÎNEMENT */}
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Type d&apos;entraînement
+                  </label>
+
+                  <select
+                    value={typeEntrainement}
+                    onChange={(event) =>
+                      setTypeEntrainement(event.target.value)
+                    }
+                    className="w-full rounded border p-2"
+                  >
+                    <option value="">Tous</option>
+
+                    <option value="endurance_fondamentale">
+                      Endurance fondamentale
+                    </option>
+
+                    <option value="sortie_longue">Sortie longue</option>
+
+                    <option value="tempo_seuil">Tempo / seuil</option>
+
+                    <option value="fractionne">Fractionné</option>
+
+                    <option value="cotes">Côtes</option>
+
+                    <option value="recuperation">Récupération</option>
+
+                    <option value="libre">Libre</option>
+                  </select>
+                </div>
+
+                {/* DURÉE */}
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Durée estimée
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Min. minutes"
+                      value={dureeMin}
+                      onChange={(event) => setDureeMin(event.target.value)}
+                      className="rounded border p-2"
+                    />
+
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Max. minutes"
+                      value={dureeMax}
+                      onChange={(event) => setDureeMax(event.target.value)}
+                      className="rounded border p-2"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* PARTICIPATION */}
+
+              <div className="border-t pt-4">
+                <h4 className="mb-3 font-semibold">Participation</h4>
+
+                {/* GENRES */}
+
+                <div className="mb-4">
+                  <p className="mb-2 text-sm font-medium">Genres autorisés</p>
+
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={genres.includes("homme")}
+                        onChange={() => basculerGenre("homme")}
+                      />
+                      Homme
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={genres.includes("femme")}
+                        onChange={() => basculerGenre("femme")}
+                      />
+                      Femme
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={genres.includes("autre")}
+                        onChange={() => basculerGenre("autre")}
+                      />
+                      Autre
+                    </label>
+                  </div>
+                </div>
+
+                {/* MODE D'INSCRIPTION */}
+
+                <div className="mb-4">
+                  <p className="mb-2 text-sm font-medium">
+                    Mode d&apos;inscription
+                  </p>
+
+                  <select
+                    value={modeInscription}
+                    onChange={(event) => setModeInscription(event.target.value)}
+                    className="w-full rounded border p-2"
+                  >
+                    <option value="">Tous</option>
+
+                    <option value="automatique">Validation automatique</option>
+
+                    <option value="validation">Sur acceptation</option>
+                  </select>
+                </div>
+
+                {/* SORTIES COMPLÈTES */}
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={masquerCompletes}
+                    onChange={(event) =>
+                      setMasquerCompletes(event.target.checked)
+                    }
+                  />
+                  Masquer les sorties complètes
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* COMMANDES */}
+
+          <div
+            className="
     grid
     grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]
     items-center
     gap-2
     pt-2
   "
-      >
-        {/* MES CONTACTS */}
+          >
+            {/* MES CONTACTS */}
 
-        <div className="flex justify-start">
-          <button
-            type="button"
-            onClick={() => setAvecSuivis((valeur) => !valeur)}
-            aria-pressed={avecSuivis}
-            className={
-              avecSuivis
-                ? `
+            <div className="flex justify-start">
+              <button
+                type="button"
+                onClick={() => setAvecSuivis((valeur) => !valeur)}
+                aria-pressed={avecSuivis}
+                className={
+                  avecSuivis
+                    ? `
             w-28
             rounded
             border-2
@@ -870,7 +1355,7 @@ export default function FiltresSorties({
             font-semibold
             leading-tight
           `
-                : `
+                    : `
             w-28
             rounded
             border
@@ -879,18 +1364,18 @@ export default function FiltresSorties({
             text-xs
             leading-tight
           `
-            }
-          >
-            Mes contacts
-            <span className="block">uniquement</span>
-          </button>
-        </div>
-        {/* CHEVRON */}
+                }
+              >
+                Mes contacts
+                <span className="block">uniquement</span>
+              </button>
+            </div>
+            {/* CHEVRON */}
 
-        <button
-          type="button"
-          onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
-          className="
+            <button
+              type="button"
+              onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
+              className="
       flex
       h-10
       w-10
@@ -901,39 +1386,39 @@ export default function FiltresSorties({
       font-bold
       leading-none
     "
-          aria-label={
-            niveauFiltres === 1
-              ? "Afficher les filtres sportifs"
-              : "Réduire les filtres"
-          }
-        >
-          {niveauFiltres === 1 ? "▼" : "▲"}
-        </button>
+              aria-label={
+                niveauFiltres === 1
+                  ? "Afficher les filtres sportifs"
+                  : "Réduire les filtres"
+              }
+            >
+              {niveauFiltres === 1 ? "▼" : "▲"}
+            </button>
 
-        {/* BOUTONS DE DROITE */}
+            {/* BOUTONS DE DROITE */}
 
-        <div className="flex justify-end gap-2">
-          {niveauFiltres !== 1 && (
-            <button
-              type="button"
-              onClick={reinitialiserFiltres}
-              disabled={loading}
-              className="
+            <div className="flex justify-end gap-2">
+              {niveauFiltres !== 1 && (
+                <button
+                  type="button"
+                  onClick={reinitialiserFiltres}
+                  disabled={loading}
+                  className="
           rounded
           border
           px-3
           py-2
           text-sm
         "
-            >
-              Réinitialiser
-            </button>
-          )}
+                >
+                  Réinitialiser
+                </button>
+              )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="
+              <button
+                type="submit"
+                disabled={loading}
+                className="
         w-28
         rounded
         border
@@ -942,13 +1427,15 @@ export default function FiltresSorties({
         text-sm
         font-medium
       "
-          >
-            {loading ? "Recherche..." : "Rechercher"}
-          </button>
-        </div>
-      </div>
+              >
+                {loading ? "Recherche..." : "Rechercher"}
+              </button>
+            </div>
+          </div>
 
-      {message && <p className="text-sm">{message}</p>}
-    </form>
+          {message && <p className="text-sm">{message}</p>}
+        </form>
+      )}
+    </div>
   );
 }

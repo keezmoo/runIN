@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { Map as LeafletMap } from "leaflet";
 
 type SortieCarte = {
@@ -26,16 +26,10 @@ export default function CarteSorties({
   centreLongitude,
   rayonKm,
 }: CarteSortiesProps) {
-  const [ouverte, setOuverte] = useState(false);
-
   const conteneurRef = useRef<HTMLDivElement | null>(null);
   const carteRef = useRef<LeafletMap | null>(null);
 
   useEffect(() => {
-    if (!ouverte) {
-      return;
-    }
-
     let annule = false;
 
     async function initialiser() {
@@ -71,12 +65,15 @@ export default function CarteSorties({
         const contenu = document.createElement("div");
 
         const titre = document.createElement("strong");
+
         titre.textContent = sortie.titre;
 
         const lieu = document.createElement("div");
+
         lieu.textContent = sortie.lieu_depart;
 
         const infos = document.createElement("div");
+
         infos.textContent = `${
           sortie.type_sortie === "trail" ? "Trail" : "Route"
         } · ${new Date(sortie.date_heure_depart).toLocaleString("fr-FR", {
@@ -85,6 +82,7 @@ export default function CarteSorties({
         })}`;
 
         const lien = document.createElement("a");
+
         lien.href = `/sorties/${sortie.id}`;
         lien.textContent = "Voir la sortie";
         lien.style.display = "inline-block";
@@ -119,39 +117,18 @@ export default function CarteSorties({
         carteRef.current = null;
       }
     };
-  }, [ouverte, sorties, centreLatitude, centreLongitude, rayonKm]);
+  }, [sorties, centreLatitude, centreLongitude, rayonKm]);
 
   return (
-    <div className="mb-4">
-      <button
-        type="button"
-        onClick={() => setOuverte((valeur) => !valeur)}
-        className="
-          rounded
-          border
-          px-4
-          py-2
-          text-sm
-          font-medium
-          hover:bg-gray-50
-        "
-      >
-        {ouverte ? "Masquer la carte" : "Voir sur la carte"}
-      </button>
-
-      {ouverte && (
-        <div
-          ref={conteneurRef}
-          className="
-            mt-3
-            h-72
-            w-full
-            overflow-hidden
-            rounded
-            border
-          "
-        />
-      )}
-    </div>
+    <div
+      ref={conteneurRef}
+      className="
+        h-72
+        w-full
+        overflow-hidden
+        rounded
+        border
+      "
+    />
   );
 }

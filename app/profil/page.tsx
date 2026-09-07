@@ -42,6 +42,42 @@ export default async function ProfilPage() {
     .maybeSingle();
 
   // ------------------------------------------------
+  // POSITION DE RECHERCHE
+  // ------------------------------------------------
+
+  let positionRechercheInitiale: {
+    latitude: number;
+    longitude: number;
+  } | null = null;
+
+  if (profile) {
+    const { data: filtreGeographiqueData, error: filtreGeographiqueError } =
+      await supabase.rpc("mon_filtre_geographique");
+
+    if (filtreGeographiqueError) {
+      console.error(
+        "Erreur chargement position de recherche :",
+        filtreGeographiqueError,
+      );
+    } else {
+      const filtreGeographique = filtreGeographiqueData?.[0] ?? null;
+
+      if (filtreGeographique) {
+        const latitude = Number(filtreGeographique.latitude);
+
+        const longitude = Number(filtreGeographique.longitude);
+
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+          positionRechercheInitiale = {
+            latitude,
+            longitude,
+          };
+        }
+      }
+    }
+  }
+
+  // ------------------------------------------------
   // RÉSEAU
   // ------------------------------------------------
 
@@ -133,7 +169,11 @@ export default async function ProfilPage() {
 
       {/* PROFIL */}
 
-      <ProfileForm userId={user.id} initialProfile={profile} />
+      <ProfileForm
+        userId={user.id}
+        initialProfile={profile}
+        initialPosition={positionRechercheInitiale}
+      />
 
       {/* RÉSEAU */}
 

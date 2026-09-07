@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
+
+import CarteZoneRecherche from "@/app/sorties/carte-zone-recherche";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,6 +21,12 @@ type Profile = {
 type ProfileFormProps = {
   userId: string;
   initialProfile: Profile;
+  initialPosition: PositionRecherche | null;
+};
+
+type PositionRecherche = {
+  latitude: number;
+  longitude: number;
 };
 
 type ValeursProfil = {
@@ -49,10 +57,28 @@ function afficherSexe(sexe: Sexe) {
 
   return "Homme";
 }
+const RAYONS_KM = [1, 2, 3, 5, 10, 15, 20] as const;
 
+function indexRayonLePlusProche(valeur: number) {
+  let meilleurIndex = 0;
+  let meilleureDifference = Infinity;
+
+  RAYONS_KM.forEach((rayon, index) => {
+    const difference = Math.abs(rayon - valeur);
+
+    if (difference < meilleureDifference) {
+      meilleureDifference = difference;
+
+      meilleurIndex = index;
+    }
+  });
+
+  return meilleurIndex;
+}
 export default function ProfileForm({
   userId,
   initialProfile,
+  initialPosition,
 }: ProfileFormProps) {
   const rayonInitial = Math.min(
     20,
@@ -79,6 +105,20 @@ export default function ProfileForm({
 
   const [loading, setLoading] = useState(false);
 
+  const [positionRecherche, setPositionRecherche] =
+    useState<PositionRecherche | null>(initialPosition);
+
+  const [positionSauvegardee, setPositionSauvegardee] =
+    useState<PositionRecherche | null>(initialPosition);
+
+  const [localisationOuverte, setLocalisationOuverte] = useState(false);
+
+  const [rechercheLieuEnCours, setRechercheLieuEnCours] = useState(false);
+
+  const [messageLocalisation, setMessageLocalisation] = useState("");
+
+  const requeteReverseId = useRef(0);
+
   // ------------------------------------------------
   // ANNULATION
   // ------------------------------------------------
@@ -86,9 +126,148 @@ export default function ProfileForm({
   function annulerModification() {
     setValeurs(valeursSauvegardees);
 
+    setPositionRecherche(positionSauvegardee);
+
+    setLocalisationOuverte(false);
+
+    setMessageLocalisation("");
     setMessage("");
 
     setEdition(false);
+  }
+  // ------------------------------------------------
+  // Localisation
+  // ------------------------------------------------
+
+  function modifierLieuRecherche(valeur: string) {
+    setValeurs((valeursActuelles) => ({
+      ...valeursActuelles,
+      lieuRecherche: valeur,
+    }));
+
+    // Le texte saisi ne correspond plus
+    // forcément au point enregistré.
+    setPositionRecherche(null);
+
+    setMessageLocalisation("");
+  }
+
+  async function localiserLieuRecherche() {
+    const recherche = valeurs.lieuRecherche.trim();
+
+    setMessageLocalisation("");
+
+    if (recherche.length < 2) {
+      setMessageLocalisation("Indiquez un lieu de recherche.");
+
+      return;
+    }
+
+    setRechercheLieuEnCours(true);
+
+    try {
+      const response = await fetch(
+        `/api/geocode?q=${encodeURIComponent(recherche)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        latitude?: number;
+        longitude?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setMessageLocalisation(
+          resultat.error ?? "Impossible de trouver ce lieu.",
+        );
+
+        return;
+      }
+
+      const latitude = Number(resultat.latitude);
+
+      const longitude = Number(resultat.longitude);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        setMessageLocalisation("Les coordonnées retournées sont invalides.");
+
+        return;
+      }
+
+      const nouveauNom =
+        typeof resultat.nom === "string" && resultat.nom.trim()
+          ? resultat.nom.trim()
+          : recherche;
+
+      setValeurs((valeursActuelles) => ({
+        ...valeursActuelles,
+        lieuRecherche: nouveauNom,
+      }));
+
+      setPositionRecherche({
+        latitude,
+        longitude,
+      });
+    } catch (erreur) {
+      console.error("Erreur localisation :", erreur);
+
+      setMessageLocalisation(
+        "Impossible de contacter le service de localisation.",
+      );
+    } finally {
+      setRechercheLieuEnCours(false);
+    }
+  }
+
+  async function changerCentreRecherche(latitude: number, longitude: number) {
+    setPositionRecherche({
+      latitude,
+      longitude,
+    });
+
+    setMessageLocalisation("");
+
+    setValeurs((valeursActuelles) => ({
+      ...valeursActuelles,
+      lieuRecherche: "Position personnalisée",
+    }));
+
+    const idRequete = ++requeteReverseId.current;
+
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(
+          latitude,
+        )}&lon=${encodeURIComponent(longitude)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        error?: string;
+      };
+
+      if (idRequete !== requeteReverseId.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        console.error("Erreur géocodage inverse :", resultat.error);
+
+        return;
+      }
+
+      if (typeof resultat.nom === "string" && resultat.nom.trim()) {
+        const nouveauNom = resultat.nom.trim();
+
+        setValeurs((valeursActuelles) => ({
+          ...valeursActuelles,
+          lieuRecherche: nouveauNom,
+        }));
+      }
+    } catch (erreur) {
+      console.error("Erreur géocodage inverse :", erreur);
+    }
   }
 
   // ------------------------------------------------
@@ -132,24 +311,28 @@ export default function ProfileForm({
       return;
     }
 
+    if (!positionRecherche) {
+      setMessage(
+        "Localisez votre zone de recherche avant d'enregistrer le profil.",
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isFinite(positionRecherche.latitude) ||
+      !Number.isFinite(positionRecherche.longitude)
+    ) {
+      setMessage("La position de recherche est invalide.");
+
+      return;
+    }
+
+    setLoading(true);
+
     setLoading(true);
 
     try {
-      // Recherche des coordonnées
-      // correspondant au lieu.
-
-      const geocodeResponse = await fetch(
-        `/api/geocode?q=${encodeURIComponent(lieu)}`,
-      );
-
-      if (!geocodeResponse.ok) {
-        setMessage("Impossible de trouver cette localisation.");
-
-        return;
-      }
-
-      const localisation = await geocodeResponse.json();
-
       const supabase = createClient();
 
       const { error } = await supabase.from("profiles").upsert({
@@ -160,7 +343,7 @@ export default function ProfileForm({
         description: valeurs.description.trim() || null,
         lieu_recherche: lieu,
         rayon_recherche_km: rayon,
-        position_recherche: `POINT(${localisation.longitude} ${localisation.latitude})`,
+        position_recherche: `POINT(${positionRecherche.longitude} ${positionRecherche.latitude})`,
       });
 
       if (error) {
@@ -183,7 +366,9 @@ export default function ProfileForm({
       setValeurs(nouvellesValeurs);
 
       setValeursSauvegardees(nouvellesValeurs);
+      setPositionSauvegardee(positionRecherche);
 
+      setLocalisationOuverte(false);
       setEdition(false);
 
       setMessage("Profil enregistré.");
@@ -195,8 +380,11 @@ export default function ProfileForm({
       setLoading(false);
     }
   }
-
   // ------------------------------------------------
+  // MODE LECTURE
+  // ------------------------------------------------
+
+   // ------------------------------------------------
   // MODE LECTURE
   // ------------------------------------------------
 
@@ -206,32 +394,13 @@ export default function ProfileForm({
         {/* PROFIL */}
 
         <section>
-          <div
-            className="
-            mb-4
-            flex
-            items-start
-            justify-between
-            gap-4
-          "
-          >
+          <div className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <h2
-                className="
-                text-lg
-                font-semibold
-              "
-              >
+              <h2 className="text-lg font-semibold">
                 Informations personnelles
               </h2>
 
-              <p
-                className="
-                mt-1
-                text-sm
-                text-gray-500
-              "
-              >
+              <p className="mt-1 text-sm text-gray-500">
                 Informations visibles sur votre profil.
               </p>
             </div>
@@ -240,38 +409,34 @@ export default function ProfileForm({
               type="button"
               onClick={() => {
                 setMessage("");
+                setMessageLocalisation("");
+                setLocalisationOuverte(false);
                 setEdition(true);
               }}
-              className="
-                shrink-0
-                rounded
-                border
-                px-3
-                py-2
-                text-sm
-              "
+              className="shrink-0 rounded border px-3 py-2 text-sm"
             >
               Modifier
             </button>
           </div>
 
           <div className="space-y-2">
-            <p className="font-medium">{valeursSauvegardees.nom}</p>
+            <p className="font-medium">
+              {valeursSauvegardees.nom}
+            </p>
 
             <p className="text-sm">
               {valeursSauvegardees.age} ans
               {" • "}
-              {afficherSexe(valeursSauvegardees.sexe)}
+              {afficherSexe(
+                valeursSauvegardees.sexe,
+              )}
             </p>
+
             {valeursSauvegardees.description && (
-              <p
-                className="
-    mt-4
-    whitespace-pre-wrap
-    text-sm
-  "
-              >
-                {valeursSauvegardees.description}
+              <p className="mt-4 whitespace-pre-wrap text-sm">
+                {
+                  valeursSauvegardees.description
+                }
               </p>
             )}
           </div>
@@ -279,50 +444,52 @@ export default function ProfileForm({
 
         {/* ZONE DE RECHERCHE */}
 
-        <section
-          className="
-          border-t
-          pt-6
-        "
-        >
-          <h2
-            className="
-            text-lg
-            font-semibold
-          "
-          >
+        <section className="border-t pt-6">
+          <h2 className="text-lg font-semibold">
             Zone de recherche
           </h2>
 
-          <p
-            className="
-            mt-1
-            text-sm
-            text-gray-500
-          "
-          >
-            Utilisée par défaut lorsque vous recherchez des sorties.
+          <p className="mt-1 text-sm text-gray-500">
+            Utilisée par défaut lorsque vous recherchez
+            des sorties.
           </p>
 
-          <div
-            className="
-            mt-4
-            space-y-2
-          "
-          >
-            <p>
-              <span className="font-medium">Lieu :</span>{" "}
-              {valeursSauvegardees.lieuRecherche}
-            </p>
+          <div className="mt-4 flex items-center gap-3 rounded-xl border px-4 py-3">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-5 w-5 shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
 
-            <p>
-              <span className="font-medium">Rayon :</span>{" "}
-              {valeursSauvegardees.rayonRecherche} km
-            </p>
+              <circle
+                cx="12"
+                cy="10"
+                r="2.5"
+              />
+            </svg>
+
+            <span className="min-w-0 truncate font-medium">
+              {
+                valeursSauvegardees.lieuRecherche
+              }
+              {" · "}
+              {
+                valeursSauvegardees.rayonRecherche
+              }{" "}
+              km
+            </span>
           </div>
         </section>
 
-        {message && <p className="text-sm">{message}</p>}
+        {message && (
+          <p className="text-sm">
+            {message}
+          </p>
+        )}
       </div>
     );
   }
@@ -332,43 +499,27 @@ export default function ProfileForm({
   // ------------------------------------------------
 
   return (
-    <form onSubmit={enregistrerProfil} className="space-y-8">
+    <form
+      onSubmit={enregistrerProfil}
+      className="space-y-8"
+    >
       {/* INFORMATIONS PERSONNELLES */}
 
       <section>
-        <h2
-          className="
-          text-lg
-          font-semibold
-        "
-        >
+        <h2 className="text-lg font-semibold">
           Informations personnelles
         </h2>
 
-        <p
-          className="
-          mt-1
-          text-sm
-          text-gray-500
-        "
-        >
-          Ces informations permettent aux autres coureurs de vous identifier.
+        <p className="mt-1 text-sm text-gray-500">
+          Ces informations permettent aux autres coureurs
+          de vous identifier.
         </p>
 
-        <div
-          className="
-          mt-5
-          space-y-5
-        "
-        >
+        <div className="mt-5 space-y-5">
+          {/* NOM */}
+
           <div>
-            <label
-              className="
-              mb-1
-              block
-              font-medium
-            "
-            >
+            <label className="mb-1 block font-medium">
               Nom
             </label>
 
@@ -376,29 +527,22 @@ export default function ProfileForm({
               type="text"
               value={valeurs.nom}
               onChange={(event) =>
-                setValeurs({
-                  ...valeurs,
-                  nom: event.target.value,
-                })
+                setValeurs(
+                  (valeursActuelles) => ({
+                    ...valeursActuelles,
+                    nom: event.target.value,
+                  }),
+                )
               }
-              className="
-                w-full
-                rounded
-                border
-                p-2
-              "
+              className="w-full rounded border p-2"
               placeholder="Vincent"
             />
           </div>
 
+          {/* ÂGE */}
+
           <div>
-            <label
-              className="
-              mb-1
-              block
-              font-medium
-            "
-            >
+            <label className="mb-1 block font-medium">
               Âge
             </label>
 
@@ -406,76 +550,77 @@ export default function ProfileForm({
               type="number"
               value={valeurs.age}
               onChange={(event) =>
-                setValeurs({
-                  ...valeurs,
-                  age: event.target.value,
-                })
+                setValeurs(
+                  (valeursActuelles) => ({
+                    ...valeursActuelles,
+                    age: event.target.value,
+                  }),
+                )
               }
-              className="
-                w-full
-                rounded
-                border
-                p-2
-              "
+              className="w-full rounded border p-2"
               min="16"
               max="100"
             />
           </div>
 
+          {/* SEXE */}
+
           <div>
-            <label
-              className="
-              mb-1
-              block
-              font-medium
-            "
-            >
+            <label className="mb-1 block font-medium">
               Sexe
             </label>
 
             <select
               value={valeurs.sexe}
               onChange={(event) =>
-                setValeurs({
-                  ...valeurs,
+                setValeurs(
+                  (valeursActuelles) => ({
+                    ...valeursActuelles,
 
-                  sexe: normaliserSexe(event.target.value),
-                })
+                    sexe: normaliserSexe(
+                      event.target.value,
+                    ),
+                  }),
+                )
               }
-              className="
-                w-full
-                rounded
-                border
-                p-2
-              "
+              className="w-full rounded border p-2"
             >
-              <option value="homme">Homme</option>
+              <option value="homme">
+                Homme
+              </option>
 
-              <option value="femme">Femme</option>
+              <option value="femme">
+                Femme
+              </option>
 
-              <option value="autre">Autre</option>
+              <option value="autre">
+                Autre
+              </option>
             </select>
           </div>
+
+          {/* DESCRIPTION */}
+
           <div>
-            <label className="mb-1 block font-medium">À propos de moi</label>
+            <label className="mb-1 block font-medium">
+              À propos de moi
+            </label>
 
             <textarea
               value={valeurs.description}
               onChange={(event) =>
-                setValeurs({
-                  ...valeurs,
-                  description: event.target.value,
-                })
+                setValeurs(
+                  (valeursActuelles) => ({
+                    ...valeursActuelles,
+
+                    description:
+                      event.target.value,
+                  }),
+                )
               }
               maxLength={500}
               rows={4}
-              className="
-      w-full
-      resize-y
-      rounded
-      border
-      p-2
-    "
+              className="w-full resize-y rounded border p-2"
               placeholder="Quelques mots sur votre pratique de la course, ce que vous recherchez..."
             />
 
@@ -488,146 +633,301 @@ export default function ProfileForm({
 
       {/* ZONE DE RECHERCHE */}
 
-      <section
-        className="
-        border-t
-        pt-6
-      "
-      >
-        <h2
-          className="
-          text-lg
-          font-semibold
-        "
-        >
+      <section className="border-t pt-6">
+        <h2 className="text-lg font-semibold">
           Zone de recherche
         </h2>
 
-        <p
-          className="
-          mt-1
-          text-sm
-          text-gray-500
-        "
-        >
-          Cette zone sera utilisée automatiquement pour rechercher les sorties
-          autour de vous.
+        <p className="mt-1 text-sm text-gray-500">
+          Cette zone sera utilisée automatiquement pour
+          rechercher les sorties autour de vous.
         </p>
 
-        <div
-          className="
-          mt-5
-          space-y-5
-        "
-        >
-          <div>
-            <label
-              className="
-              mb-1
-              block
-              font-medium
-            "
-            >
-              Lieu habituel
-            </label>
+        <div className="mt-5 overflow-hidden rounded-xl border">
+          {/* RÉSUMÉ */}
 
-            <input
-              type="text"
-              value={valeurs.lieuRecherche}
-              onChange={(event) =>
-                setValeurs({
-                  ...valeurs,
+          <button
+            type="button"
+            onClick={() =>
+              setLocalisationOuverte(
+                (ouverte) => !ouverte,
+              )
+            }
+            aria-expanded={
+              localisationOuverte
+            }
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5 shrink-0"
+                aria-hidden="true"
+              >
+                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
 
-                  lieuRecherche: event.target.value,
-                })
-              }
-              className="
-                w-full
-                rounded
-                border
-                p-2
-              "
-              placeholder="Chambéry"
-            />
+                <circle
+                  cx="12"
+                  cy="10"
+                  r="2.5"
+                />
+              </svg>
 
-            <p
-              className="
-              mt-1
-              text-xs
-              text-gray-500
-            "
-            >
-              Données © OpenStreetMap contributors.
-            </p>
-          </div>
-
-          <div>
-            <div
-              className="
-              mb-1
-              flex
-              justify-between
-              text-sm
-            "
-            >
-              <label className="font-medium">Rayon habituel</label>
-
-              <span>{valeurs.rayonRecherche} km</span>
+              <span className="truncate font-medium">
+                {valeurs.lieuRecherche ? (
+                  <>
+                    {valeurs.lieuRecherche}
+                    {" · "}
+                    {
+                      valeurs.rayonRecherche
+                    }{" "}
+                    km
+                  </>
+                ) : (
+                  "Ajouter une localisation"
+                )}
+              </span>
             </div>
 
-            <input
-              type="range"
-              min="1"
-              max="20"
-              step="1"
-              value={valeurs.rayonRecherche}
-              onChange={(event) =>
-                setValeurs({
-                  ...valeurs,
-
-                  rayonRecherche: Number(event.target.value),
-                })
-              }
-              className="w-full"
-            />
-
-            <div
-              className="
-              flex
-              justify-between
-              text-xs
-              text-gray-500
-            "
+            <span
+              className={`shrink-0 text-lg transition-transform ${
+                localisationOuverte
+                  ? "rotate-180"
+                  : ""
+              }`}
+              aria-hidden="true"
             >
-              <span>1 km</span>
-              <span>20 km</span>
+              ⌄
+            </span>
+          </button>
+
+          {/* ÉDITEUR */}
+
+          {localisationOuverte && (
+            <div className="space-y-4 border-t p-4">
+              {/* LIEU */}
+
+              <div>
+                <label
+                  htmlFor="lieu-recherche-profil"
+                  className="mb-1 block text-sm font-medium"
+                >
+                  Lieu de recherche
+                </label>
+
+                <div className="flex gap-2">
+                  <input
+                    id="lieu-recherche-profil"
+                    type="text"
+                    value={
+                      valeurs.lieuRecherche
+                    }
+                    onChange={(event) =>
+                      modifierLieuRecherche(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="Chambéry"
+                    className="min-w-0 flex-1 rounded-lg border p-2"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={
+                      localiserLieuRecherche
+                    }
+                    disabled={
+                      rechercheLieuEnCours
+                    }
+                    className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50"
+                  >
+                    {rechercheLieuEnCours
+                      ? "Recherche..."
+                      : "Localiser"}
+                  </button>
+                </div>
+
+                {!positionRecherche && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Cliquez sur « Localiser »
+                    pour positionner ce lieu.
+                  </p>
+                )}
+
+                {messageLocalisation && (
+                  <p className="mt-2 text-sm text-red-500">
+                    {
+                      messageLocalisation
+                    }
+                  </p>
+                )}
+              </div>
+
+              {/* RAYON */}
+
+              <div>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="font-medium">
+                    Rayon de recherche
+                  </span>
+
+                  <span className="font-medium">
+                    {
+                      valeurs.rayonRecherche
+                    }{" "}
+                    km
+                  </span>
+                </div>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={
+                    RAYONS_KM.length - 1
+                  }
+                  step={1}
+                  value={indexRayonLePlusProche(
+                    valeurs.rayonRecherche,
+                  )}
+                  onChange={(event) => {
+                    const index = Number(
+                      event.target.value,
+                    );
+
+                    setValeurs(
+                      (
+                        valeursActuelles,
+                      ) => ({
+                        ...valeursActuelles,
+
+                        rayonRecherche:
+                          RAYONS_KM[
+                            index
+                          ],
+                      }),
+                    );
+                  }}
+                  className="w-full"
+                />
+
+                <div className="-mt-1 grid grid-cols-7 text-center">
+                  {RAYONS_KM.map(
+                    (rayon) => (
+                      <button
+                        key={rayon}
+                        type="button"
+                        onClick={() =>
+                          setValeurs(
+                            (
+                              valeursActuelles,
+                            ) => ({
+                              ...valeursActuelles,
+
+                              rayonRecherche:
+                                rayon,
+                            }),
+                          )
+                        }
+                        className={`text-[10px] ${
+                          valeurs.rayonRecherche ===
+                          rayon
+                            ? "font-semibold"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {rayon}
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
+
+              {/* CARTE */}
+
+              {positionRecherche ? (
+                <div>
+                  <CarteZoneRecherche
+                    latitude={
+                      positionRecherche.latitude
+                    }
+                    longitude={
+                      positionRecherche.longitude
+                    }
+                    rayonKm={
+                      valeurs.rayonRecherche
+                    }
+                    onCentreChange={
+                      changerCentreRecherche
+                    }
+                  />
+
+                  <p className="mt-2 text-xs text-gray-500">
+                    Cliquez sur la carte ou
+                    déplacez le point pour
+                    modifier le centre de la
+                    recherche.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-lg border p-4 text-sm text-gray-500">
+                  Localisez un lieu pour
+                  afficher la carte.
+                </div>
+              )}
+
+              <p className="text-xs text-gray-500">
+                Données © OpenStreetMap
+                contributors.
+              </p>
+
+              {/* VALIDATION LOCALISATION */}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (
+                      !positionRecherche
+                    ) {
+                      setMessageLocalisation(
+                        "Localisez d'abord le lieu saisi.",
+                      );
+
+                      return;
+                    }
+
+                    setMessageLocalisation(
+                      "",
+                    );
+
+                    setLocalisationOuverte(
+                      false,
+                    );
+                  }}
+                  className="rounded-lg border px-4 py-2 text-sm font-medium"
+                >
+                  Valider la localisation
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
       {/* ACTIONS */}
 
-      <div
-        className="
-        flex
-        justify-end
-        gap-3
-        border-t
-        pt-5
-      "
-      >
+      <div className="flex justify-end gap-3 border-t pt-5">
         {initialProfile && (
           <button
             type="button"
-            onClick={annulerModification}
+            onClick={
+              annulerModification
+            }
             disabled={loading}
-            className="
-              rounded
-              border
-              px-4
-              py-2
-            "
+            className="rounded border px-4 py-2 disabled:opacity-50"
           >
             Annuler
           </button>
@@ -636,19 +936,19 @@ export default function ProfileForm({
         <button
           type="submit"
           disabled={loading}
-          className="
-            rounded
-            border
-            px-4
-            py-2
-            font-medium
-          "
+          className="rounded border px-4 py-2 font-medium disabled:opacity-50"
         >
-          {loading ? "Enregistrement..." : "Enregistrer"}
+          {loading
+            ? "Enregistrement..."
+            : "Enregistrer"}
         </button>
       </div>
 
-      {message && <p className="text-sm">{message}</p>}
+      {message && (
+        <p className="text-sm">
+          {message}
+        </p>
+      )}
     </form>
   );
 }
