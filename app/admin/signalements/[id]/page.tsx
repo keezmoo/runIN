@@ -96,6 +96,15 @@ type DetailMessageSignalement = {
   date_message_snapshot: string | null;
 };
 
+type ContexteMessage = {
+  message_id: string;
+  auteur_id: string;
+  auteur_nom: string;
+  contenu: string;
+  created_at: string;
+  est_message_signale: boolean;
+};
+
 function afficherDate(date: string | null) {
   if (!date) {
     return "—";
@@ -223,6 +232,8 @@ export default async function SignalementAdminPage({ params }: Props) {
 
   let detailMessage: DetailMessageSignalement | null = null;
 
+  let contexteMessage: ContexteMessage[] = [];
+
   // ------------------------------------------------------------
   // PROFIL SIGNALE
   // ------------------------------------------------------------
@@ -285,6 +296,7 @@ export default async function SignalementAdminPage({ params }: Props) {
   // ------------------------------------------------------------
 
   if (signalement.type_cible === "message") {
+    // Message ciblé
     const { data: messageData, error: messageError } = await supabase.rpc(
       "admin_detail_message_signalement",
       {
@@ -302,6 +314,25 @@ export default async function SignalementAdminPage({ params }: Props) {
     } else {
       detailMessage = (messageData?.[0] ??
         null) as DetailMessageSignalement | null;
+    }
+
+    // Contexte du message
+    const { data: contexteData, error: contexteError } = await supabase.rpc(
+      "admin_contexte_message_signalement",
+      {
+        p_signalement_id: signalement.signalement_id,
+      },
+    );
+
+    if (contexteError) {
+      console.error("Erreur contexte message signalé :", {
+        code: contexteError.code,
+        message: contexteError.message,
+        details: contexteError.details,
+        hint: contexteError.hint,
+      });
+    } else if (Array.isArray(contexteData)) {
+      contexteMessage = contexteData as unknown as ContexteMessage[];
     }
   }
 
@@ -557,7 +588,18 @@ export default async function SignalementAdminPage({ params }: Props) {
                   Contenu conservé au moment du signalement
                 </p>
 
-                <div className="whitespace-pre-wrap break-words rounded-lg border bg-gray-50 p-4 text-sm dark:bg-gray-950">
+                <div
+                  className="
+  whitespace-pre-wrap
+  break-words
+  rounded-lg
+  border
+  border-red-500/40
+  bg-red-500/5
+  p-4
+  text-sm
+"
+                >
                   {detailMessage.contenu_snapshot || "Contenu indisponible."}
                 </div>
               </div>
@@ -574,10 +616,55 @@ export default async function SignalementAdminPage({ params }: Props) {
           )}
         </section>
       )}
-      
+
+      {/* CONTEXTE DU MESSAGE */}
+
+      {signalement.type_cible === "message" && (
+        <section className="rounded-xl border p-5">
+          <h2 className="text-lg font-semibold">Contexte de la conversation</h2>
+
+          <p className="mt-1 text-sm text-gray-500">
+            Jusqu&apos;à 10 messages précédant le message signalé ont été
+            conservés au moment du signalement.
+          </p>
+
+          {contexteMessage.filter((message) => !message.est_message_signale)
+            .length > 0 ? (
+            <div className="mt-4 space-y-2">
+              {contexteMessage
+                .filter((message) => !message.est_message_signale)
+                .map((message) => (
+                  <div
+                    key={message.message_id}
+                    className="rounded-lg border p-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-sm font-medium">
+                        {message.auteur_nom}
+                      </p>
+
+                      <p className="text-xs text-gray-500">
+                        {afficherDate(message.created_at)}
+                      </p>
+                    </div>
+
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm">
+                      {message.contenu}
+                    </p>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-gray-500">
+              Aucun message précédent n&apos;est disponible.
+            </p>
+          )}
+        </section>
+      )}
+
       {/* =========================================================
     ACTION SUR LE CONTENU SIGNALE
-========================================================= */}
+    ========================================================= */}
 
       {signalement.type_cible === "profil" && detailUtilisateur && (
         <div className="space-y-2">

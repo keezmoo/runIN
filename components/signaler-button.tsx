@@ -6,13 +6,12 @@ import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   typeCible: "profil" | "sortie" | "message";
-
   cibleId: string;
-
   libelle: string;
+  affichage?: "inline" | "modal";
 };
 
-export default function SignalerButton({ typeCible, cibleId, libelle }: Props) {
+export default function SignalerButton({ typeCible, cibleId, libelle, affichage = "inline" }: Props) {
   const [ouvert, setOuvert] = useState(false);
 
   const [motif, setMotif] = useState("");
@@ -118,15 +117,9 @@ export default function SignalerButton({ typeCible, cibleId, libelle }: Props) {
     );
   }
 
-  return (
+const formulaire = (
+  <div className="rounded-xl border bg-background p-4">
     <div
-      className="
-                rounded-xl
-                border
-                p-4
-            "
-    >
-      <div
         className="
                     flex
                     items-center
@@ -248,6 +241,36 @@ export default function SignalerButton({ typeCible, cibleId, libelle }: Props) {
       </button>
 
       {message && <p className="mt-3 text-sm">{message}</p>}
+  </div>
+);
+
+if (affichage === "modal") {
+  return (
+    <div
+      className="
+        fixed
+        inset-0
+        z-50
+        flex
+        items-center
+        justify-center
+        bg-black/50
+        p-4
+      "
+      onClick={() => {
+        setOuvert(false);
+        setMessage("");
+      }}
+    >
+      <div
+        className="w-full max-w-md"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {formulaire}
+      </div>
     </div>
   );
+}
+
+return formulaire;
 }

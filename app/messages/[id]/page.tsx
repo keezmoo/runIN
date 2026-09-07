@@ -278,21 +278,23 @@ export default async function ConversationPage({ params }: PageProps) {
                       {message.contenu}
                     </p>
 
-                    <p className="mt-2 text-xs text-gray-500">
-                      {new Date(message.created_at).toLocaleString("fr-FR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                    {!estMoi && (
-                      <div className="mt-2">
+                    <div className="mt-2 flex items-center justify-end gap-2 text-xs text-gray-500">
+                      <span>
+                        {new Date(message.created_at).toLocaleString("fr-FR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </span>
+
+                      {!estMoi && (
                         <SignalerButton
                           typeCible="message"
                           cibleId={message.id}
-                          libelle="Signaler"
+                          libelle="⋯"
+                          affichage="modal"
                         />
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               );
