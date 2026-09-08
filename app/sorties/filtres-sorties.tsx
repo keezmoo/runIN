@@ -710,41 +710,152 @@ export default function FiltresSorties({
 
   return (
     <div className="mb-4 overflow-hidden rounded-xl border">
-      <button
-        type="button"
-        onClick={() => {
-          const prochainEtat = !filtresOuverts;
+      <div className="flex items-center">
+        {/* OUVRIR / FERMER LES FILTRES DE BASE */}
 
-          setFiltresOuverts(prochainEtat);
+        <button
+          type="button"
+          onClick={() => {
+            if (filtresOuverts) {
+              setFiltresOuverts(false);
+              setLocalisationOuverte(false);
 
-          if (!prochainEtat) {
-            setLocalisationOuverte(false);
-          }
-        }}
-        aria-expanded={filtresOuverts}
-        className="
-        flex
-        w-full
-        items-center
-        gap-2
-        px-4
-        py-3
-        text-left
-        text-sm
-        font-medium
-      "
-      >
-        <span
-          className={`
-          inline-block
-          transition-transform
-          ${filtresOuverts ? "rotate-90" : ""}
-        `}
+              return;
+            }
+
+            setNiveauFiltres(1);
+            setFiltresOuverts(true);
+          }}
+          aria-expanded={filtresOuverts}
+          className="
+      flex
+      min-w-0
+      flex-1
+      items-center
+      gap-2
+      px-4
+      py-3
+      text-left
+      font-medium
+    "
         >
-          &gt;
-        </span>
-        Filtres
-      </button>
+          <span
+            className={`
+        shrink-0
+        transition-transform
+        ${filtresOuverts ? "rotate-90" : ""}
+      `}
+            aria-hidden="true"
+          >
+            ›
+          </span>
+
+          <span>Filtres</span>
+        </button>
+
+        {/* NIVEAU INTERMÉDIAIRE */}
+
+        <button
+          type="button"
+          onClick={() => {
+            if (filtresOuverts && niveauFiltres === 2) {
+              setFiltresOuverts(false);
+              setLocalisationOuverte(false);
+
+              return;
+            }
+
+            setNiveauFiltres(2);
+            setFiltresOuverts(true);
+            setLocalisationOuverte(false);
+          }}
+          aria-label="Afficher les filtres intermédiaires"
+          aria-pressed={filtresOuverts && niveauFiltres === 2}
+          className={`
+      flex
+      h-11
+      w-11
+      shrink-0
+      items-center
+      justify-center
+      border-l
+      ${filtresOuverts && niveauFiltres === 2 ? "bg-gray-500/10" : ""}
+    `}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {/* 1 BARRE */}
+            <path d="M6 6h12" />
+
+            {/* CHEVRON */}
+            {filtresOuverts && niveauFiltres === 2 ? (
+              <path d="m8 11 4 4 4-4" />
+            ) : (
+              <path d="m10 10 4 4-4 4" />
+            )}
+          </svg>
+        </button>
+
+        {/* NIVEAU COMPLET */}
+
+        <button
+          type="button"
+          onClick={() => {
+            if (filtresOuverts && niveauFiltres === 3) {
+              setFiltresOuverts(false);
+              setLocalisationOuverte(false);
+
+              return;
+            }
+
+            setNiveauFiltres(3);
+            setFiltresOuverts(true);
+            setLocalisationOuverte(false);
+          }}
+          aria-label="Afficher tous les filtres"
+          aria-pressed={filtresOuverts && niveauFiltres === 3}
+          className={`
+      flex
+      h-11
+      w-11
+      shrink-0
+      items-center
+      justify-center
+      border-l
+      ${filtresOuverts && niveauFiltres === 3 ? "bg-gray-500/10" : ""}
+    `}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {/* 2 BARRES */}
+            <path d="M6 5h12" />
+            <path d="M6 9h12" />
+
+            {/* CHEVRON */}
+            {filtresOuverts && niveauFiltres === 3 ? (
+              <path d="m8 13 4 4 4-4" />
+            ) : (
+              <path d="m10 12 4 4-4 4" />
+            )}
+          </svg>
+        </button>
+      </div>
 
       {filtresOuverts && (
         <form
@@ -1370,30 +1481,6 @@ export default function FiltresSorties({
                 <span className="block">uniquement</span>
               </button>
             </div>
-            {/* CHEVRON */}
-
-            <button
-              type="button"
-              onClick={() => setNiveauFiltres(niveauFiltres === 1 ? 2 : 1)}
-              className="
-      flex
-      h-10
-      w-10
-      items-center
-      justify-center
-      rounded
-      text-xl
-      font-bold
-      leading-none
-    "
-              aria-label={
-                niveauFiltres === 1
-                  ? "Afficher les filtres sportifs"
-                  : "Réduire les filtres"
-              }
-            >
-              {niveauFiltres === 1 ? "▼" : "▲"}
-            </button>
 
             {/* BOUTONS DE DROITE */}
 
