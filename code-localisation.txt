@@ -1,11 +1,589 @@
+﻿===== app\sorties\selecteur-lieu.tsx =====
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+
+export type Localisation = {
+  latitude: number;
+  longitude: number;
+};
+
+type SelecteurLieuProps = {
+  lieu: string;
+  onLieuChange: (lieu: string) => void;
+  localisation: Localisation | null;
+  onLocalisationChange: (localisation: Localisation | null) => void;
+};
+
+export default function SelecteurLieu({
+  lieu,
+  onLieuChange,
+  localisation,
+  onLocalisationChange,
+}: SelecteurLieuProps) {
+  const [rechercheEnCours, setRechercheEnCours] = useState(false);
+  const [message, setMessage] = useState("");
+  const [nomTrouve, setNomTrouve] = useState("");
+
+  const conteneurRef = useRef<HTMLDivElement | null>(null);
+  const carteRef = useRef<LeafletMap | null>(null);
+  const marqueurRef = useRef<LeafletMarker | null>(null);
+
+  // ------------------------------------------------
+  // CARTE
+  // ------------------------------------------------
+
+  async function actualiserLieuDepuisCoordonnees(
+    nouvelleLocalisation: Localisation,
+  ) {
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(
+          nouvelleLocalisation.latitude,
+        )}&lon=${encodeURIComponent(nouvelleLocalisation.longitude)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !resultat.nom) {
+        setMessage(
+          resultat.error ??
+            "Impossible de dÃ©terminer le lieu correspondant Ã  cette position.",
+        );
+
+        return;
+      }
+
+      onLieuChange(resultat.nom);
+      setNomTrouve(resultat.nom);
+      setMessage("");
+    } catch {
+      setMessage("Impossible de mettre Ã  jour le nom du lieu.");
+    }
+  }
+
+  useEffect(() => {
+    let annule = false;
+
+    async function synchroniserCarte() {
+      if (!localisation) {
+        if (carteRef.current) {
+          carteRef.current.remove();
+          carteRef.current = null;
+          marqueurRef.current = null;
+        }
+
+        return;
+      }
+
+      const L = await import("leaflet");
+
+      if (annule || !conteneurRef.current) {
+        return;
+      }
+
+      // Carte dÃ©jÃ  crÃ©Ã©e : on dÃ©place simplement le point.
+      if (carteRef.current && marqueurRef.current) {
+        carteRef.current.setView(
+          [localisation.latitude, localisation.longitude],
+          carteRef.current.getZoom(),
+        );
+
+        marqueurRef.current.setLatLng([
+          localisation.latitude,
+          localisation.longitude,
+        ]);
+
+        carteRef.current.invalidateSize();
+
+        return;
+      }
+
+      const carte = L.map(conteneurRef.current, {
+        scrollWheelZoom: false,
+      }).setView([localisation.latitude, localisation.longitude], 16);
+
+      carteRef.current = carte;
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(carte);
+
+      // IcÃ´ne personnalisÃ©e :
+      // Ã©vite les problÃ¨mes d'images des marqueurs Leaflet avec Next.js.
+      const icone = L.divIcon({
+        className: "",
+        html: `
+          <div
+            style="
+              width: 22px;
+              height: 22px;
+              border-radius: 9999px;
+              background: #111;
+              border: 4px solid white;
+              box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            "
+          ></div>
+        `,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+
+      const marqueur = L.marker(
+        [localisation.latitude, localisation.longitude],
+        {
+          draggable: true,
+          icon: icone,
+        },
+      ).addTo(carte);
+
+      marqueurRef.current = marqueur;
+
+      // DÃ©placement du marqueur.
+      marqueur.on("dragend", () => {
+        const position = marqueur.getLatLng();
+
+        const nouvelleLocalisation = {
+          latitude: position.lat,
+          longitude: position.lng,
+        };
+
+        onLocalisationChange(nouvelleLocalisation);
+
+        void actualiserLieuDepuisCoordonnees(nouvelleLocalisation);
+      });
+
+      // Clic directement sur la carte.
+      carte.on("click", (evenement) => {
+        marqueur.setLatLng(evenement.latlng);
+
+        const nouvelleLocalisation = {
+          latitude: evenement.latlng.lat,
+          longitude: evenement.latlng.lng,
+        };
+
+        onLocalisationChange(nouvelleLocalisation);
+
+        void actualiserLieuDepuisCoordonnees(nouvelleLocalisation);
+      });
+
+      requestAnimationFrame(() => {
+        carte.invalidateSize();
+      });
+    }
+
+    void synchroniserCarte();
+
+    return () => {
+      annule = true;
+    };
+  }, [localisation, onLocalisationChange]);
+
+  useEffect(() => {
+    return () => {
+      if (carteRef.current) {
+        carteRef.current.remove();
+        carteRef.current = null;
+        marqueurRef.current = null;
+      }
+    };
+  }, []);
+
+  // ------------------------------------------------
+  // GÃ‰OCODAGE
+  // ------------------------------------------------
+
+  async function localiser() {
+    const recherche = lieu.trim();
+
+    setMessage("");
+    setNomTrouve("");
+
+    if (recherche.length < 2) {
+      setMessage("Indiquez d'abord un lieu.");
+      return;
+    }
+
+    setRechercheEnCours(true);
+
+    try {
+      const response = await fetch(
+        `/api/geocode?q=${encodeURIComponent(recherche)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        latitude?: number;
+        longitude?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setMessage(resultat.error ?? "Impossible de trouver ce lieu.");
+
+        onLocalisationChange(null);
+
+        return;
+      }
+
+      const latitude = Number(resultat.latitude);
+      const longitude = Number(resultat.longitude);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        setMessage("Les coordonnÃ©es retournÃ©es sont invalides.");
+        onLocalisationChange(null);
+        return;
+      }
+
+      onLocalisationChange({
+        latitude,
+        longitude,
+      });
+
+      setNomTrouve(resultat.nom ?? recherche);
+    } catch {
+      setMessage("Impossible de contacter le service de localisation.");
+      onLocalisationChange(null);
+    } finally {
+      setRechercheEnCours(false);
+    }
+  }
+
+  function modifierLieu(valeur: string) {
+    onLieuChange(valeur);
+
+    // Le texte ne correspond plus forcÃ©ment au point prÃ©cÃ©dent.
+    // On oblige donc Ã  relocaliser.
+    onLocalisationChange(null);
+
+    setNomTrouve("");
+    setMessage("");
+  }
+
+  return (
+    <div>
+      <label className="mb-1 block font-medium">Lieu de dÃ©part</label>
+
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={lieu}
+          onChange={(e) => modifierLieu(e.target.value)}
+          className="min-w-0 flex-1 rounded border p-2"
+          placeholder="Parking du Nivolet, ChambÃ©ry"
+        />
+
+        <button
+          type="button"
+          onClick={localiser}
+          disabled={rechercheEnCours}
+          className="
+            shrink-0
+            rounded
+            border
+            px-4
+            py-2
+            text-sm
+            font-medium
+            hover:bg-gray-50
+            disabled:opacity-50
+          "
+        >
+          {rechercheEnCours ? "Recherche..." : "Localiser"}
+        </button>
+      </div>
+
+      {message && <p className="mt-2 text-sm text-red-600">{message}</p>}
+
+      {nomTrouve && (
+        <p className="mt-2 text-xs text-gray-500">
+          Localisation trouvÃ©e : {nomTrouve}
+        </p>
+      )}
+
+      {localisation && (
+        <>
+          <div
+            ref={conteneurRef}
+            className="
+              mt-3
+              h-64
+              w-full
+              overflow-hidden
+              rounded
+              border
+            "
+          />
+
+          <p className="mt-2 text-xs text-gray-500">
+            Cliquez sur la carte ou dÃ©placez le point pour prÃ©ciser le lieu
+            exact du rendez-vous.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+===== app\sorties\carte-zone-recherche.tsx =====
+"use client";
+
+import { useEffect, useRef } from "react";
+
+import type { Circle, Map as LeafletMap, Marker } from "leaflet";
+
+type Props = {
+  latitude: number;
+  longitude: number;
+  rayonKm: number;
+
+  onCentreChange: (latitude: number, longitude: number) => void;
+};
+
+export default function CarteZoneRecherche({
+  latitude,
+  longitude,
+  rayonKm,
+  onCentreChange,
+}: Props) {
+  const conteneurRef = useRef<HTMLDivElement | null>(null);
+
+  const carteRef = useRef<LeafletMap | null>(null);
+
+  const marqueurRef = useRef<Marker | null>(null);
+
+  const cercleRef = useRef<Circle | null>(null);
+
+  const onCentreChangeRef = useRef(onCentreChange);
+
+  // ------------------------------------------------
+  // GARDE LE CALLBACK A JOUR
+  // ------------------------------------------------
+
+  useEffect(() => {
+    onCentreChangeRef.current = onCentreChange;
+  }, [onCentreChange]);
+
+  // ------------------------------------------------
+  // CREATION DE LA CARTE
+  // ------------------------------------------------
+
+  useEffect(() => {
+    let annule = false;
+
+    async function initialiser() {
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        !Number.isFinite(rayonKm)
+      ) {
+        return;
+      }
+
+      const L = await import("leaflet");
+
+      if (annule || !conteneurRef.current || carteRef.current) {
+        return;
+      }
+
+      // IMPORTANT :
+      // la carte reÃ§oit immÃ©diatement un centre
+      // et un niveau de zoom valides.
+      const carte = L.map(conteneurRef.current, {
+        scrollWheelZoom: false,
+      }).setView([latitude, longitude], 12);
+
+      carteRef.current = carte;
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(carte);
+
+      // ------------------------------------------------
+      // MARQUEUR
+      // ------------------------------------------------
+
+      const icone = L.divIcon({
+        className: "",
+        html: `
+          <div
+            style="
+              width: 20px;
+              height: 20px;
+              border-radius: 9999px;
+              background: #111;
+              border: 4px solid white;
+              box-shadow: 0 1px 5px rgba(0,0,0,0.45);
+            "
+          ></div>
+        `,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+      });
+
+      const marqueur = L.marker([latitude, longitude], {
+        draggable: true,
+        icon: icone,
+      }).addTo(carte);
+
+      marqueurRef.current = marqueur;
+
+      // ------------------------------------------------
+      // CERCLE DE RECHERCHE
+      // ------------------------------------------------
+
+      const cercle = L.circle([latitude, longitude], {
+        radius: rayonKm * 1000,
+        weight: 2,
+        fillOpacity: 0.08,
+      }).addTo(carte);
+
+      cercleRef.current = cercle;
+
+      // ------------------------------------------------
+      // DEPLACEMENT DU MARQUEUR
+      // ------------------------------------------------
+
+      marqueur.on("dragend", () => {
+        const position = marqueur.getLatLng();
+
+        cercle.setLatLng(position);
+
+        onCentreChangeRef.current(position.lat, position.lng);
+      });
+
+      // ------------------------------------------------
+      // CLIC SUR LA CARTE
+      // ------------------------------------------------
+
+      carte.on("click", (evenement) => {
+        marqueur.setLatLng(evenement.latlng);
+
+        cercle.setLatLng(evenement.latlng);
+
+        onCentreChangeRef.current(evenement.latlng.lat, evenement.latlng.lng);
+      });
+
+      // ------------------------------------------------
+      // CADRAGE SUR LE RAYON
+      // ------------------------------------------------
+
+      const boundsRecherche = L.latLng(latitude, longitude).toBounds(
+        rayonKm * 2000,
+      );
+
+      carte.fitBounds(boundsRecherche, {
+        padding: [20, 20],
+      });
+
+      requestAnimationFrame(() => {
+        carte.invalidateSize();
+      });
+    }
+
+    void initialiser();
+
+    return () => {
+      annule = true;
+
+      if (carteRef.current) {
+        carteRef.current.remove();
+
+        carteRef.current = null;
+        marqueurRef.current = null;
+        cercleRef.current = null;
+      }
+    };
+
+    // CrÃ©ation uniquement au montage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ------------------------------------------------
+  // MISE A JOUR CENTRE + RAYON
+  // ------------------------------------------------
+
+  useEffect(() => {
+    async function synchroniser() {
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        !Number.isFinite(rayonKm)
+      ) {
+        return;
+      }
+
+      const carte = carteRef.current;
+
+      const marqueur = marqueurRef.current;
+
+      const cercle = cercleRef.current;
+
+      if (!carte || !marqueur || !cercle) {
+        return;
+      }
+
+      const L = await import("leaflet");
+
+      const position: [number, number] = [latitude, longitude];
+
+      marqueur.setLatLng(position);
+
+      cercle.setLatLng(position);
+
+      cercle.setRadius(rayonKm * 1000);
+
+      // On recalcule le cadrage directement
+      // Ã  partir du centre et du rayon.
+      const boundsRecherche = L.latLng(latitude, longitude).toBounds(
+        rayonKm * 2000,
+      );
+
+      carte.fitBounds(boundsRecherche, {
+        padding: [20, 20],
+      });
+
+      requestAnimationFrame(() => {
+        carte.invalidateSize();
+      });
+    }
+
+    void synchroniser();
+  }, [latitude, longitude, rayonKm]);
+
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
+  return (
+    <div
+      ref={conteneurRef}
+      className="
+        h-56
+        w-full
+        overflow-hidden
+        rounded-lg
+        border
+        sm:h-64
+      "
+    />
+  );
+}
+
+===== app\sorties\filtres-sorties.tsx =====
+"use client";
+
+import { FormEvent, useRef, useState } from "react";
+import CarteZoneRecherche from "./carte-zone-recherche";
 import { useRouter, useSearchParams } from "next/navigation";
-
-import SelecteurLieu, { type Localisation } from "./selecteur-lieu";
-
-import SelecteurRayon, { normaliserRayon } from "./selecteur-rayon";
 
 type TypeSortie = "" | "route" | "trail";
 
@@ -18,6 +596,24 @@ type FiltresSortiesProps = {
   latitudeActuelle: number;
   longitudeActuelle: number;
 };
+
+const RAYONS_KM = [1, 2, 3, 5, 10, 15, 20] as const;
+
+function indexRayonLePlusProche(valeur: number) {
+  let meilleurIndex = 0;
+
+  for (let index = 1; index < RAYONS_KM.length; index++) {
+    const distanceActuelle = Math.abs(RAYONS_KM[index] - valeur);
+
+    const meilleureDistance = Math.abs(RAYONS_KM[meilleurIndex] - valeur);
+
+    if (distanceActuelle < meilleureDistance) {
+      meilleurIndex = index;
+    }
+  }
+
+  return meilleurIndex;
+}
 
 function secondesVersAllure(secondesTexte: string | null) {
   if (!secondesTexte) {
@@ -71,8 +667,22 @@ export default function FiltresSorties({
   longitudeActuelle,
 }: FiltresSortiesProps) {
   const router = useRouter();
-
+  const requeteReverseId = useRef(0);
   const searchParams = useSearchParams();
+
+  const [localisationOuverte, setLocalisationOuverte] = useState(false);
+
+  const [rechercheLieuEnCours, setRechercheLieuEnCours] = useState(false);
+
+  const [localisationValidee, setLocalisationValidee] = useState(true);
+
+  const [messageLocalisation, setMessageLocalisation] = useState("");
+
+  const [lieuValide, setLieuValide] = useState(lieuActuel);
+
+  const [latitude, setLatitude] = useState(latitudeActuelle);
+
+  const [longitude, setLongitude] = useState(longitudeActuelle);
 
   const [filtresOuverts, setFiltresOuverts] = useState(false);
 
@@ -110,21 +720,13 @@ export default function FiltresSorties({
 
   const [lieu, setLieu] = useState(lieuActuel);
 
-  const [localisation, setLocalisation] = useState<Localisation | null>(() => {
-    const latitude = Number(latitudeActuelle);
-    const longitude = Number(longitudeActuelle);
+  const rayonInitial = Math.min(20, Math.max(1, Number(rayonActuel) || 10));
 
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      return null;
-    }
+  const [rayonIndex, setRayonIndex] = useState(
+    indexRayonLePlusProche(rayonInitial),
+  );
 
-    return {
-      latitude,
-      longitude,
-    };
-  });
-
-  const [rayon, setRayon] = useState(normaliserRayon(rayonActuel));
+  const rayon = RAYONS_KM[rayonIndex];
   // ------------------------------------------------
   // FILTRES SPORTIFS
   // ------------------------------------------------
@@ -263,26 +865,18 @@ export default function FiltresSorties({
     // LOCALISATION
     // ------------------------------------------------
 
-    if (lieu.trim().length < 2) {
-      setMessage("Indiquez un lieu de recherche.");
-
-      return;
-    }
-
-    if (!localisation) {
+    if (!localisationValidee) {
       setMessage("Localisez le lieu saisi avant de lancer la recherche.");
 
       return;
     }
 
-    if (
-      !Number.isFinite(localisation.latitude) ||
-      !Number.isFinite(localisation.longitude)
-    ) {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
       setMessage("Le centre de recherche est invalide.");
 
       return;
     }
+
     // ------------------------------------------------
     // DISTANCE
     // ------------------------------------------------
@@ -292,7 +886,7 @@ export default function FiltresSorties({
     const distanceMaxNombre = nombreDepuisChamp(distanceMax);
 
     if (Number.isNaN(distanceMinNombre) || Number.isNaN(distanceMaxNombre)) {
-      setMessage("La distance indiquée n'est pas valide.");
+      setMessage("La distance indiquÃ©e n'est pas valide.");
 
       return;
     }
@@ -303,7 +897,7 @@ export default function FiltresSorties({
       distanceMinNombre > distanceMaxNombre
     ) {
       setMessage(
-        "La distance minimale ne peut pas dépasser la distance maximale.",
+        "La distance minimale ne peut pas dÃ©passer la distance maximale.",
       );
 
       return;
@@ -323,7 +917,7 @@ export default function FiltresSorties({
       deniveleMaxNombre = nombreDepuisChamp(deniveleMax);
 
       if (Number.isNaN(deniveleMinNombre) || Number.isNaN(deniveleMaxNombre)) {
-        setMessage("Le dénivelé indiqué n'est pas valide.");
+        setMessage("Le dÃ©nivelÃ© indiquÃ© n'est pas valide.");
 
         return;
       }
@@ -333,7 +927,7 @@ export default function FiltresSorties({
         deniveleMaxNombre !== null &&
         deniveleMinNombre > deniveleMaxNombre
       ) {
-        setMessage("Le dénivelé minimum ne peut pas dépasser le maximum.");
+        setMessage("Le dÃ©nivelÃ© minimum ne peut pas dÃ©passer le maximum.");
 
         return;
       }
@@ -353,7 +947,7 @@ export default function FiltresSorties({
       allureMaxSecondes = allureVersSecondes(allureMax);
 
       if (Number.isNaN(allureMinSecondes) || Number.isNaN(allureMaxSecondes)) {
-        setMessage("L'allure doit être indiquée sous la forme 5:30.");
+        setMessage("L'allure doit Ãªtre indiquÃ©e sous la forme 5:30.");
 
         return;
       }
@@ -363,7 +957,7 @@ export default function FiltresSorties({
         allureMaxSecondes !== null &&
         allureMinSecondes > allureMaxSecondes
       ) {
-        setMessage("L'allure minimale ne peut pas dépasser l'allure maximale.");
+        setMessage("L'allure minimale ne peut pas dÃ©passer l'allure maximale.");
 
         return;
       }
@@ -378,7 +972,7 @@ export default function FiltresSorties({
     const dureeMaxNombre = nombreDepuisChamp(dureeMax);
 
     if (Number.isNaN(dureeMinNombre) || Number.isNaN(dureeMaxNombre)) {
-      setMessage("La durée indiquée n'est pas valide.");
+      setMessage("La durÃ©e indiquÃ©e n'est pas valide.");
 
       return;
     }
@@ -388,7 +982,7 @@ export default function FiltresSorties({
       dureeMaxNombre !== null &&
       dureeMinNombre > dureeMaxNombre
     ) {
-      setMessage("La durée minimale ne peut pas dépasser la durée maximale.");
+      setMessage("La durÃ©e minimale ne peut pas dÃ©passer la durÃ©e maximale.");
 
       return;
     }
@@ -399,7 +993,7 @@ export default function FiltresSorties({
 
     setLoading(true);
 
-    // On conserve les paramètres qui ne font pas
+    // On conserve les paramÃ¨tres qui ne font pas
     // partie des filtres, notamment la navigation
     // de date.
     const params = new URLSearchParams(searchParams.toString());
@@ -434,13 +1028,13 @@ export default function FiltresSorties({
     // LOCALISATION
     // ------------------------------------------------
 
-    params.set("lieu", lieu.trim());
+    params.set("lieu", lieuValide);
 
     params.set("rayon", String(rayon));
 
-    params.set("lat", String(localisation.latitude));
+    params.set("lat", String(latitude));
 
-    params.set("lon", String(localisation.longitude));
+    params.set("lon", String(longitude));
 
     // ------------------------------------------------
     // TYPE DE SORTIE
@@ -557,6 +1151,139 @@ export default function FiltresSorties({
     setLoading(false);
   }
 
+  function modifierLieu(valeur: string) {
+    setLieu(valeur);
+
+    // Le texte saisi ne correspond plus
+    // forcÃ©ment au centre actuellement enregistrÃ©.
+    setLocalisationValidee(false);
+
+    setMessageLocalisation("");
+  }
+
+  async function localiserLieu() {
+    const recherche = lieu.trim();
+
+    setMessageLocalisation("");
+
+    if (recherche.length < 2) {
+      setMessageLocalisation("Indiquez un lieu de recherche.");
+
+      return;
+    }
+
+    setRechercheLieuEnCours(true);
+
+    try {
+      const response = await fetch(
+        `/api/geocode?q=${encodeURIComponent(recherche)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        latitude?: number;
+        longitude?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setMessageLocalisation(
+          resultat.error ?? "Impossible de trouver ce lieu.",
+        );
+
+        return;
+      }
+
+      const nouvelleLatitude = Number(resultat.latitude);
+
+      const nouvelleLongitude = Number(resultat.longitude);
+
+      if (
+        !Number.isFinite(nouvelleLatitude) ||
+        !Number.isFinite(nouvelleLongitude)
+      ) {
+        setMessageLocalisation("Les coordonnÃ©es retournÃ©es sont invalides.");
+
+        return;
+      }
+
+      const nouveauNom =
+        typeof resultat.nom === "string" && resultat.nom.trim()
+          ? resultat.nom.trim()
+          : recherche;
+
+      setLatitude(nouvelleLatitude);
+      setLongitude(nouvelleLongitude);
+
+      setLieu(nouveauNom);
+      setLieuValide(nouveauNom);
+
+      setLocalisationValidee(true);
+    } catch (erreur) {
+      console.error("Erreur localisation :", erreur);
+
+      setMessageLocalisation(
+        "Impossible de contacter le service de localisation.",
+      );
+    } finally {
+      setRechercheLieuEnCours(false);
+    }
+  }
+
+  async function changerCentreCarte(
+    nouvelleLatitude: number,
+    nouvelleLongitude: number,
+  ) {
+    // Le centre est modifiÃ© immÃ©diatement.
+    setLatitude(nouvelleLatitude);
+    setLongitude(nouvelleLongitude);
+
+    setLocalisationValidee(true);
+    setMessageLocalisation("");
+
+    // Tant que le reverse geocoding n'a pas rÃ©pondu,
+    // on ne conserve pas un ancien nom devenu faux.
+    setLieu("Position personnalisÃ©e");
+    setLieuValide("Position personnalisÃ©e");
+
+    const idRequete = ++requeteReverseId.current;
+
+    try {
+      const response = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(
+          nouvelleLatitude,
+        )}&lon=${encodeURIComponent(nouvelleLongitude)}`,
+      );
+
+      const resultat = (await response.json()) as {
+        nom?: string;
+        latitude?: number;
+        longitude?: number;
+        error?: string;
+      };
+
+      // Une autre position a Ã©tÃ© choisie entre-temps :
+      // on ignore cette ancienne rÃ©ponse.
+      if (idRequete !== requeteReverseId.current) {
+        return;
+      }
+
+      if (!response.ok) {
+        console.error("Erreur gÃ©ocodage inverse :", resultat.error);
+
+        return;
+      }
+
+      if (typeof resultat.nom === "string" && resultat.nom.trim()) {
+        const nouveauNom = resultat.nom.trim();
+
+        setLieu(nouveauNom);
+        setLieuValide(nouveauNom);
+      }
+    } catch (erreur) {
+      console.error("Erreur gÃ©ocodage inverse :", erreur);
+    }
+  }
 
   // ------------------------------------------------
   // AFFICHAGE
@@ -572,6 +1299,7 @@ export default function FiltresSorties({
           onClick={() => {
             if (filtresOuverts) {
               setFiltresOuverts(false);
+              setLocalisationOuverte(false);
 
               return;
             }
@@ -600,27 +1328,29 @@ export default function FiltresSorties({
       `}
             aria-hidden="true"
           >
-            ›
+            â€º
           </span>
 
           <span>Filtres</span>
         </button>
 
-        {/* NIVEAU INTERMÉDIAIRE */}
+        {/* NIVEAU INTERMÃ‰DIAIRE */}
 
         <button
           type="button"
           onClick={() => {
             if (filtresOuverts && niveauFiltres === 2) {
               setFiltresOuverts(false);
+              setLocalisationOuverte(false);
 
               return;
             }
 
             setNiveauFiltres(2);
             setFiltresOuverts(true);
+            setLocalisationOuverte(false);
           }}
-          aria-label="Afficher les filtres intermédiaires"
+          aria-label="Afficher les filtres intermÃ©diaires"
           aria-pressed={filtresOuverts && niveauFiltres === 2}
           className={`
       flex
@@ -662,12 +1392,14 @@ export default function FiltresSorties({
           onClick={() => {
             if (filtresOuverts && niveauFiltres === 3) {
               setFiltresOuverts(false);
+              setLocalisationOuverte(false);
 
               return;
             }
 
             setNiveauFiltres(3);
             setFiltresOuverts(true);
+            setLocalisationOuverte(false);
           }}
           aria-label="Afficher tous les filtres"
           aria-pressed={filtresOuverts && niveauFiltres === 3}
@@ -755,40 +1487,260 @@ export default function FiltresSorties({
             </button>
           </div>
 
-{/* LOCALISATION */}
+          {/* LOCALISATION */}
 
-<SelecteurLieu
-  lieu={lieu}
-  onLieuChange={setLieu}
-  localisation={localisation}
-  onLocalisationChange={setLocalisation}
-  libelle="Lieu de recherche"
-  placeholder="Chambéry"
-  resumeSupplementaire={
-    <>
-      {" · "}
-      {rayon} km
-    </>
-  }
-  contenuSupplementaire={
-    <SelecteurRayon
-      rayonKm={rayon}
-      onRayonChange={setRayon}
-    />
-  }
-  rayonCarteKm={rayon}
-  aideCarte="
-    Cliquez sur la carte ou déplacez le point
-    pour modifier le centre de la recherche.
+          <div
+            className="
+    overflow-hidden
+    rounded-xl
+    border
   "
-/>
+          >
+            {/* ETAT REPLIE */}
+
+            <button
+              type="button"
+              onClick={() => setLocalisationOuverte((ouverte) => !ouverte)}
+              aria-expanded={localisationOuverte}
+              className="
+      flex
+      w-full
+      items-center
+      justify-between
+      gap-3
+      px-4
+      py-3
+      text-left
+    "
+            >
+              <div
+                className="
+        flex
+        min-w-0
+        items-center
+        gap-2
+      "
+              >
+                {/* PIN */}
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-5 w-5 shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+
+                <span className="truncate font-medium">
+                  {lieuValide || "Ajouter une localisation"}
+                  {" Â· "}
+                  {rayon} km
+                </span>
+              </div>
+
+              <span
+                className={`
+        shrink-0
+        text-lg
+        transition-transform
+        ${localisationOuverte ? "rotate-180" : ""}
+      `}
+              >
+                âŒ„
+              </span>
+            </button>
+
+            {/* ETAT DEPLIE */}
+
+            {localisationOuverte && (
+              <div
+                className="
+        space-y-4
+        border-t
+        p-4
+      "
+              >
+                {/* RECHERCHE DU LIEU */}
+
+                <div>
+                  <label
+                    htmlFor="lieu-recherche"
+                    className="
+            mb-1
+            block
+            text-sm
+            font-medium
+          "
+                  >
+                    Lieu de recherche
+                  </label>
+
+                  <div className="flex gap-2">
+                    <input
+                      id="lieu-recherche"
+                      type="text"
+                      value={lieu}
+                      onChange={(event) => modifierLieu(event.target.value)}
+                      placeholder="ChambÃ©ry"
+                      className="
+              min-w-0
+              flex-1
+              rounded-lg
+              border
+              p-2
+            "
+                    />
+
+                    <button
+                      type="button"
+                      onClick={localiserLieu}
+                      disabled={rechercheLieuEnCours}
+                      className="
+              shrink-0
+              rounded-lg
+              border
+              px-3
+              py-2
+              text-sm
+              font-medium
+              disabled:opacity-50
+            "
+                    >
+                      {rechercheLieuEnCours ? "Recherche..." : "Localiser"}
+                    </button>
+                  </div>
+
+                  {!localisationValidee && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Cliquez sur Â« Localiser Â» pour positionner ce lieu.
+                    </p>
+                  )}
+
+                  {messageLocalisation && (
+                    <p className="mt-2 text-sm text-red-500">
+                      {messageLocalisation}
+                    </p>
+                  )}
+                </div>
+
+                {/* RAYON */}
+
+                <div>
+                  <div
+                    className="
+            mb-1
+            flex
+            items-center
+            justify-between
+            text-sm
+          "
+                  >
+                    <span className="font-medium">Rayon de recherche</span>
+
+                    <span className="font-medium">{rayon} km</span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min={0}
+                    max={RAYONS_KM.length - 1}
+                    step={1}
+                    value={rayonIndex}
+                    onChange={(event) =>
+                      setRayonIndex(Number(event.target.value))
+                    }
+                    className="w-full"
+                  />
+
+                  <div
+                    className="
+            -mt-1
+            grid
+            grid-cols-7
+            text-center
+          "
+                  >
+                    {RAYONS_KM.map((valeur, index) => (
+                      <button
+                        key={valeur}
+                        type="button"
+                        onClick={() => setRayonIndex(index)}
+                        className={`
+                  text-[10px]
+                  ${rayon === valeur ? "font-semibold" : "text-gray-500"}
+                `}
+                      >
+                        {valeur}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CARTE */}
+
+                <div>
+                  {Number.isFinite(latitude) && Number.isFinite(longitude) ? (
+                    <CarteZoneRecherche
+                      latitude={latitude}
+                      longitude={longitude}
+                      rayonKm={rayon}
+                      onCentreChange={changerCentreCarte}
+                    />
+                  ) : (
+                    <div className="rounded-lg border p-4 text-sm text-gray-500">
+                      Localisez un lieu pour afficher la carte.
+                    </div>
+                  )}
+
+                  <p className="mt-2 text-xs text-gray-500">
+                    Cliquez sur la carte ou dÃ©placez le point pour modifier le
+                    centre de la recherche.
+                  </p>
+                </div>
+
+                {/* VALIDATION */}
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!localisationValidee) {
+                        setMessageLocalisation(
+                          "Localisez d'abord le lieu saisi.",
+                        );
+
+                        return;
+                      }
+
+                      setLocalisationOuverte(false);
+                    }}
+                    className="
+            rounded-lg
+            border
+            px-4
+            py-2
+            text-sm
+            font-medium
+          "
+                  >
+                    Valider la localisation
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* NIVEAU SPORTIF */}
 
           {niveauFiltres >= 2 && (
             <div className="space-y-4 border-t pt-4">
               {niveauFiltres === 3 && (
-                <h3 className="font-semibold">Caractéristiques sportives</h3>
+                <h3 className="font-semibold">CaractÃ©ristiques sportives</h3>
               )}
 
               {/* DISTANCE */}
@@ -858,7 +1810,7 @@ export default function FiltresSorties({
               {typeSortie === "trail" && (
                 <div>
                   <label className="mb-2 block text-sm font-medium">
-                    Dénivelé positif
+                    DÃ©nivelÃ© positif
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -885,17 +1837,17 @@ export default function FiltresSorties({
                 </div>
               )}
 
-              {/* INTENSITÉ */}
+              {/* INTENSITÃ‰ */}
 
               <div>
                 <label className="mb-2 block text-sm font-medium">
-                  Intensité
+                  IntensitÃ©
                 </label>
 
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     ["tranquille", "Tranquille"],
-                    ["moderee", "Modérée"],
+                    ["moderee", "ModÃ©rÃ©e"],
                     ["soutenue", "Soutenue"],
                   ].map(([valeur, texte]) => (
                     <button
@@ -923,13 +1875,13 @@ export default function FiltresSorties({
           {niveauFiltres === 3 && (
             <div className="space-y-5">
               <div className="border-t pt-4">
-                <h3 className="mb-4 font-semibold">Filtres complémentaires</h3>
+                <h3 className="mb-4 font-semibold">Filtres complÃ©mentaires</h3>
 
-                {/* TYPE D'ENTRAÎNEMENT */}
+                {/* TYPE D'ENTRAÃŽNEMENT */}
 
                 <div>
                   <label className="mb-2 block text-sm font-medium">
-                    Type d&apos;entraînement
+                    Type d&apos;entraÃ®nement
                   </label>
 
                   <select
@@ -949,21 +1901,21 @@ export default function FiltresSorties({
 
                     <option value="tempo_seuil">Tempo / seuil</option>
 
-                    <option value="fractionne">Fractionné</option>
+                    <option value="fractionne">FractionnÃ©</option>
 
-                    <option value="cotes">Côtes</option>
+                    <option value="cotes">CÃ´tes</option>
 
-                    <option value="recuperation">Récupération</option>
+                    <option value="recuperation">RÃ©cupÃ©ration</option>
 
                     <option value="libre">Libre</option>
                   </select>
                 </div>
 
-                {/* DURÉE */}
+                {/* DURÃ‰E */}
 
                 <div>
                   <label className="mb-2 block text-sm font-medium">
-                    Durée estimée
+                    DurÃ©e estimÃ©e
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -996,7 +1948,7 @@ export default function FiltresSorties({
                 {/* GENRES */}
 
                 <div className="mb-4">
-                  <p className="mb-2 text-sm font-medium">Genres autorisés</p>
+                  <p className="mb-2 text-sm font-medium">Genres autorisÃ©s</p>
 
                   <div className="flex flex-wrap gap-4">
                     <label className="flex items-center gap-2">
@@ -1048,7 +2000,7 @@ export default function FiltresSorties({
                   </select>
                 </div>
 
-                {/* SORTIES COMPLÈTES */}
+                {/* SORTIES COMPLÃˆTES */}
 
                 <label className="flex items-center gap-2">
                   <input
@@ -1058,7 +2010,7 @@ export default function FiltresSorties({
                       setMasquerCompletes(event.target.checked)
                     }
                   />
-                  Masquer les sorties complètes
+                  Masquer les sorties complÃ¨tes
                 </label>
               </div>
             </div>
@@ -1127,7 +2079,7 @@ export default function FiltresSorties({
           text-sm
         "
                 >
-                  Réinitialiser
+                  RÃ©initialiser
                 </button>
               )}
 

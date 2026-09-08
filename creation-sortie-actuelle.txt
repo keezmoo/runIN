@@ -1,3 +1,48 @@
+﻿===== FICHIERS =====
+C:\Developpement\runIN\app\sorties\nouvelle\page.tsx
+C:\Developpement\runIN\app\sorties\nouvelle\sortie-form.tsx
+
+===== C:\Developpement\runIN\app\sorties\nouvelle\page.tsx =====
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+
+import SortieForm from "./sortie-form";
+
+export default async function NouvelleSortiePage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const { data: profil, error: profilError } = await supabase
+    .from("profiles")
+    .select("sexe")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profilError || !profil) {
+    redirect("/profil");
+  }
+
+  return (
+    <main className="mx-auto max-w-2xl p-6">
+      {/* Titre */}
+      <h1 className="mb-6 text-2xl font-bold">CrÃ©er une sortie</h1>
+
+      {/* Formulaire */}
+      <SortieForm
+        sexeOrganisateur={profil.sexe as "homme" | "femme" | "autre"}
+      />
+    </main>
+  );
+}
+
+===== C:\Developpement\runIN\app\sorties\nouvelle\sortie-form.tsx =====
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,26 +60,17 @@ type Genre = "homme" | "femme" | "autre";
 
 type SortieFormProps = {
   sexeOrganisateur: Genre;
-  lieuInitial: string;
-  localisationInitiale: Localisation;
 };
 
-export default function SortieForm({
-  sexeOrganisateur,
-  lieuInitial,
-  localisationInitiale,
-}: SortieFormProps) {
+export default function SortieForm({ sexeOrganisateur }: SortieFormProps) {
   const router = useRouter();
   const [titre, setTitre] = useState("");
   const [nombreMax, setNombreMax] = useState("2");
 
-  // Date + heure sélectionnées par l'utilisateur
+  // Date + heure sÃ©lectionnÃ©es par l'utilisateur
   const [dateHeure, setDateHeure] = useState("");
-  const [lieuDepart, setLieuDepart] = useState(lieuInitial);
-
-  const [localisation, setLocalisation] = useState<Localisation | null>(
-    localisationInitiale,
-  );
+  const [lieuDepart, setLieuDepart] = useState("");
+  const [localisation, setLocalisation] = useState<Localisation | null>(null);
   const [typeSortie, setTypeSortie] = useState("route");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -81,21 +117,21 @@ export default function SortieForm({
   async function creerSortie() {
     setMessage("");
 
-    // Vérification du titre
+    // VÃ©rification du titre
     if (titre.trim().length < 3) {
-      setMessage("Le titre doit contenir au moins 3 caractères.");
+      setMessage("Le titre doit contenir au moins 3 caractÃ¨res.");
       return;
     }
 
-    // Vérification du nombre de participants
+    // VÃ©rification du nombre de participants
     const nombre = Number(nombreMax);
 
     if (nombre < 2 || nombre > 25) {
-      setMessage("Le nombre de participants doit être compris entre 2 et 25.");
+      setMessage("Le nombre de participants doit Ãªtre compris entre 2 et 25.");
       return;
     }
 
-    // Vérification de la date
+    // VÃ©rification de la date
     if (!dateHeure) {
       setMessage("Veuillez choisir une date et une heure.");
       return;
@@ -104,24 +140,24 @@ export default function SortieForm({
     const dateDepart = new Date(dateHeure);
 
     if (Number.isNaN(dateDepart.getTime()) || dateDepart <= new Date()) {
-      setMessage("La date et l'heure de départ doivent être dans le futur.");
+      setMessage("La date et l'heure de dÃ©part doivent Ãªtre dans le futur.");
       return;
     }
 
     if (lieuDepart.trim().length < 2) {
-      setMessage("Veuillez indiquer un lieu de départ.");
+      setMessage("Veuillez indiquer un lieu de dÃ©part.");
       return;
     }
 
     if (!localisation) {
       setMessage(
-        "Localisez le lieu de départ et vérifiez sa position sur la carte.",
+        "Localisez le lieu de dÃ©part et vÃ©rifiez sa position sur la carte.",
       );
       return;
     }
 
     // ------------------------------------------------
-    // DONNÉES SPORTIVES
+    // DONNÃ‰ES SPORTIVES
     // ------------------------------------------------
 
     const validationSportive = validerDonneesSportives({
@@ -143,7 +179,7 @@ export default function SortieForm({
       validationSportive;
 
     if (genresAutorises.length === 0) {
-      setMessage("Sélectionnez au moins un genre autorisé à participer.");
+      setMessage("SÃ©lectionnez au moins un genre autorisÃ© Ã  participer.");
 
       return;
     }
@@ -201,7 +237,7 @@ export default function SortieForm({
     if (error) {
       if (error.message.includes("NOMBRE_PARTICIPANTS_INVALIDE")) {
         setMessage(
-          "Le nombre de participants doit être compris entre 2 et 25.",
+          "Le nombre de participants doit Ãªtre compris entre 2 et 25.",
         );
         setLoading(false);
         return;
@@ -209,7 +245,7 @@ export default function SortieForm({
 
       if (error.message.includes("GENRE_ORGANISATEUR_REQUIS")) {
         setMessage(
-          "Vous devez autoriser votre propre genre à participer à la sortie.",
+          "Vous devez autoriser votre propre genre Ã  participer Ã  la sortie.",
         );
 
         setLoading(false);
@@ -217,20 +253,20 @@ export default function SortieForm({
       }
 
       if (error.message.includes("GENRES_AUTORISES_INVALIDES")) {
-        setMessage("La sélection des participants autorisés n'est pas valide.");
+        setMessage("La sÃ©lection des participants autorisÃ©s n'est pas valide.");
 
         setLoading(false);
         return;
       }
 
-      console.error("Erreur création sortie :", error);
+      console.error("Erreur crÃ©ation sortie :", error);
 
-      setMessage(`Impossible de créer la sortie : ${error.message}`);
+      setMessage(`Impossible de crÃ©er la sortie : ${error.message}`);
 
       setLoading(false);
       return;
 
-      setMessage("Impossible de créer la sortie.");
+      setMessage("Impossible de crÃ©er la sortie.");
 
       setLoading(false);
       return;
@@ -253,11 +289,11 @@ export default function SortieForm({
 
       if (minutes >= 60) {
         setMessage(
-          "Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans environ 1 heure.",
+          "Vous avez crÃ©Ã© trop de sorties en peu de temps. Nouvelle crÃ©ation possible dans environ 1 heure.",
         );
       } else {
         setMessage(
-          `Vous avez créé trop de sorties en peu de temps. Nouvelle création possible dans ${minutes} min.`,
+          `Vous avez crÃ©Ã© trop de sorties en peu de temps. Nouvelle crÃ©ation possible dans ${minutes} min.`,
         );
       }
 
@@ -267,11 +303,11 @@ export default function SortieForm({
     }
 
     // ------------------------------------------------
-    // SORTIE CRÉÉE
+    // SORTIE CRÃ‰Ã‰E
     // ------------------------------------------------
 
     if (resultat?.statut !== "CREEE" || !resultat.sortie_id) {
-      setMessage("La sortie n'a pas pu être créée.");
+      setMessage("La sortie n'a pas pu Ãªtre crÃ©Ã©e.");
 
       setLoading(false);
 
@@ -373,7 +409,7 @@ export default function SortieForm({
 
         <div>
           <label className="mb-1 block font-medium">
-            Date et heure de départ
+            Date et heure de dÃ©part
           </label>
 
           <input
@@ -387,19 +423,19 @@ export default function SortieForm({
       </section>
 
       {/* ==================================================
-        ENTRAÎNEMENT
+        ENTRAÃŽNEMENT
     ================================================== */}
 
       <section className="space-y-5">
         <div className="border-b pb-2">
-          <h2 className="text-lg font-semibold">Entraînement</h2>
+          <h2 className="text-lg font-semibold">EntraÃ®nement</h2>
         </div>
 
-        {/* TYPE D'ENTRAÎNEMENT */}
+        {/* TYPE D'ENTRAÃŽNEMENT */}
 
         <div>
           <label className="mb-1 block font-medium">
-            Type d&apos;entraînement
+            Type d&apos;entraÃ®nement
           </label>
 
           <select
@@ -442,7 +478,7 @@ export default function SortieForm({
 
           {typeSortie === "trail" && (
             <div>
-              <label className="mb-1 block font-medium">Dénivelé positif</label>
+              <label className="mb-1 block font-medium">DÃ©nivelÃ© positif</label>
 
               <div className="flex items-center gap-2">
                 <input
@@ -475,12 +511,12 @@ export default function SortieForm({
                 hover:text-current
               "
               >
-                + Ajouter du dénivelé
+                + Ajouter du dÃ©nivelÃ©
               </button>
             ) : (
               <div>
                 <label className="mb-1 block font-medium">
-                  Dénivelé positif
+                  DÃ©nivelÃ© positif
                   <span className="ml-1 text-sm font-normal text-gray-500">
                     (facultatif)
                   </span>
@@ -503,10 +539,10 @@ export default function SortieForm({
           </div>
         )}
 
-        {/* INTENSITÉ */}
+        {/* INTENSITÃ‰ */}
 
         <div>
-          <p className="mb-2 font-medium">Intensité</p>
+          <p className="mb-2 font-medium">IntensitÃ©</p>
 
           <div className="grid grid-cols-3 gap-2">
             {INTENSITES.map((item) => (
@@ -540,7 +576,7 @@ export default function SortieForm({
         {typeSortie === "route" && (
           <div>
             <label className="mb-1 block font-medium">
-              Allure moyenne prévue
+              Allure moyenne prÃ©vue
             </label>
 
             <div className="flex items-center gap-2">
@@ -574,7 +610,7 @@ export default function SortieForm({
           </div>
         )}
 
-        {/* DURÉE FACULTATIVE */}
+        {/* DURÃ‰E FACULTATIVE */}
 
         {!dureeVisible && dureeHeures === "" && dureeMinutes === "" ? (
           <button
@@ -587,19 +623,19 @@ export default function SortieForm({
             hover:text-current
           "
           >
-            + Ajouter une durée estimée
+            + Ajouter une durÃ©e estimÃ©e
           </button>
         ) : (
           <div>
             <label className="mb-1 block font-medium">
-              Durée totale estimée
+              DurÃ©e totale estimÃ©e
               <span className="ml-1 text-sm font-normal text-gray-500">
                 (facultatif)
               </span>
             </label>
 
             <p className="mb-2 text-xs text-gray-500">
-              Temps global prévu, pauses et arrêts compris.
+              Temps global prÃ©vu, pauses et arrÃªts compris.
             </p>
 
             <div className="flex items-center gap-2">
@@ -661,7 +697,7 @@ export default function SortieForm({
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
               rows={4}
-              placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
+              placeholder="DÃ©cris la sortie, le parcours, l'objectif de l'entraÃ®nement, les Ã©ventuelles pauses..."
               className="w-full rounded border p-2"
             />
 
@@ -698,15 +734,15 @@ export default function SortieForm({
           />
 
           <p className="mt-1 text-xs text-gray-500">
-            Vous êtes compris dans ce nombre.
+            Vous Ãªtes compris dans ce nombre.
           </p>
         </div>
 
-        {/* PARTICIPANTS AUTORISÉS */}
+        {/* PARTICIPANTS AUTORISÃ‰S */}
 
         <div>
           <label className="mb-2 block font-medium">
-            Participants autorisés
+            Participants autorisÃ©s
           </label>
 
           <div className="flex flex-wrap gap-4">
@@ -793,7 +829,7 @@ export default function SortieForm({
                 <p className="font-medium">Inscription automatique</p>
 
                 <p className="text-sm text-gray-500">
-                  La personne rejoint immédiatement la sortie.
+                  La personne rejoint immÃ©diatement la sortie.
                 </p>
               </div>
             </label>
@@ -834,7 +870,7 @@ export default function SortieForm({
       </section>
 
       {/* ==================================================
-        CRÉATION
+        CRÃ‰ATION
     ================================================== */}
 
       <div className="space-y-3">
@@ -860,7 +896,7 @@ export default function SortieForm({
           disabled:opacity-50
         "
         >
-          {loading ? "Création..." : "Créer la sortie"}
+          {loading ? "CrÃ©ation..." : "CrÃ©er la sortie"}
         </button>
       </div>
     </div>

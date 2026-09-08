@@ -14,6 +14,10 @@ export default async function NouvelleSortiePage() {
     redirect("/auth/login");
   }
 
+  // ------------------------------------------------
+  // PROFIL
+  // ------------------------------------------------
+
   const { data: profil, error: profilError } = await supabase
     .from("profiles")
     .select("sexe")
@@ -24,14 +28,50 @@ export default async function NouvelleSortiePage() {
     redirect("/profil");
   }
 
+  // ------------------------------------------------
+  // LOCALISATION PAR DEFAUT
+  // ------------------------------------------------
+
+  const { data: filtreProfilData, error: filtreProfilError } =
+    await supabase.rpc("mon_filtre_geographique");
+
+  const filtreProfil = filtreProfilData?.[0] ?? null;
+
+  if (filtreProfilError || !filtreProfil) {
+    redirect("/profil");
+  }
+
+  const lieuInitial =
+    typeof filtreProfil.lieu_recherche === "string"
+      ? filtreProfil.lieu_recherche.trim()
+      : "";
+
+  const latitudeInitiale = Number(filtreProfil.latitude);
+  const longitudeInitiale = Number(filtreProfil.longitude);
+
+  if (
+    lieuInitial.length < 2 ||
+    !Number.isFinite(latitudeInitiale) ||
+    !Number.isFinite(longitudeInitiale)
+  ) {
+    redirect("/profil");
+  }
+
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
   return (
     <main className="mx-auto max-w-2xl p-6">
-      {/* Titre */}
       <h1 className="mb-6 text-2xl font-bold">Créer une sortie</h1>
 
-      {/* Formulaire */}
       <SortieForm
         sexeOrganisateur={profil.sexe as "homme" | "femme" | "autre"}
+        lieuInitial={lieuInitial}
+        localisationInitiale={{
+          latitude: latitudeInitiale,
+          longitude: longitudeInitiale,
+        }}
       />
     </main>
   );
