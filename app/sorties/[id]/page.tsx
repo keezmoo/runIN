@@ -41,42 +41,50 @@ export default async function DetailSortiePage({ params }: PageProps) {
     redirect("/auth/login");
   }
 
+  const [
+    profilUtilisateurResultat,
+    sortieResultat,
+    utilisateursIndisponiblesResultat,
+  ] = await Promise.all([
+    supabase.from("profiles").select("sexe").eq("id", user.id).single(),
+
+    supabase
+      .from("sorties")
+      .select(
+        `
+        id,
+        titre,
+        organisateur_id,
+        nombre_max_participants,
+        date_heure_depart,
+        lieu_depart,
+        type_sortie,
+        mode_inscription,
+        type_entrainement,
+        distance_km,
+        denivele_positif_m,
+        duree_estimee_minutes,
+        intensite,
+        allure_secondes_km,
+        description,
+        genres_autorises,
+        statut
+      `,
+      )
+      .eq("id", id)
+      .maybeSingle(),
+
+    supabase.rpc("mes_utilisateurs_indisponibles"),
+  ]);
+
   const { data: profilUtilisateur, error: profilUtilisateurError } =
-    await supabase.from("profiles").select("sexe").eq("id", user.id).single();
+    profilUtilisateurResultat;
 
   if (profilUtilisateurError || !profilUtilisateur) {
     redirect("/profil");
   }
 
-  // ------------------------------------------------
-  // SORTIE
-  // ------------------------------------------------
-
-  const { data: sortie, error: sortieError } = await supabase
-    .from("sorties")
-    .select(
-      `
-    id,
-    titre,
-    organisateur_id,
-    nombre_max_participants,
-    date_heure_depart,
-    lieu_depart,
-    type_sortie,
-    mode_inscription,
-    type_entrainement,
-    distance_km,
-    denivele_positif_m,
-    duree_estimee_minutes,
-    intensite,
-    allure_secondes_km,
-    description,
-    genres_autorises,
-    statut
-`,
-    )
-    .eq("id", id)
-    .maybeSingle();
+  const { data: sortie, error: sortieError } = sortieResultat;
 
   if (sortieError) {
     return (
@@ -90,14 +98,10 @@ export default async function DetailSortiePage({ params }: PageProps) {
     notFound();
   }
 
-  // ------------------------------------------------
-  // UTILISATEURS INDISPONIBLES
-  // ------------------------------------------------
-
   const {
     data: utilisateursIndisponiblesData,
     error: utilisateursIndisponiblesError,
-  } = await supabase.rpc("mes_utilisateurs_indisponibles");
+  } = utilisateursIndisponiblesResultat;
 
   if (utilisateursIndisponiblesError) {
     return (
@@ -127,38 +131,93 @@ export default async function DetailSortiePage({ params }: PageProps) {
     profilUtilisateur.sexe,
   );
 
+  const estOrganisateur = sortie.organisateur_id === user.id;
+
   // ------------------------------------------------
-  // COORDONNÉES DU POINT DE DÉPART
+  // DONNÉES LIÉES À LA SORTIE
+  // Chargées en parallèle pour éviter les allers-retours séquentiels.
   // ------------------------------------------------
 
-  const { data: coordonneesData, error: coordonneesError } = await supabase.rpc(
-    "coordonnees_sortie",
+  const demandesRecuesPromise = estOrganisateur
+    ? supabase
+        .from("demandes_participation")
+        .select("id, utilisateur_id")
+        .eq("sortie_id", sortie.id)
+        .eq("statut", "en_attente")
+        .order("created_at", {
+          ascending: true,
+        })
+    : Promise.resolve({
+        data: [] as {
+          id: string;
+          utilisateur_id: string;
+        }[],
+        error: null,
+      });
+
+  const [
+    { data: coordonneesData, error: coordonneesError },
+    { data: participations, error: participationsError },
+    { count: nombreDemandesInteraction, error: demandesInteractionError },
     {
-      p_sortie_id: sortie.id,
+      count: nombreConversationsInteraction,
+      error: conversationsInteractionError,
     },
-  );
+    { data: demandeParticipation, error: demandeParticipationError },
+    { data: nombreDemandesEnAttente, error: nombreDemandesEnAttenteError },
+    { data: exclusionSortie, error: exclusionSortieError },
+    { data: demandesRecuesData, error: demandesRecuesError },
+  ] = await Promise.all([
+    supabase.rpc("coordonnees_sortie", {
+      p_sortie_id: sortie.id,
+    }),
+
+    supabase
+      .from("participations")
+      .select("utilisateur_id")
+      .eq("sortie_id", sortie.id),
+
+    supabase
+      .from("demandes_participation")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("sortie_id", sortie.id),
+
+    supabase
+      .from("conversations_sortie")
+      .select("id", {
+        count: "exact",
+        head: true,
+      })
+      .eq("sortie_id", sortie.id),
+
+    supabase
+      .from("demandes_participation")
+      .select("id")
+      .eq("sortie_id", sortie.id)
+      .eq("utilisateur_id", user.id)
+      .eq("statut", "en_attente")
+      .maybeSingle(),
+
+    supabase.rpc("nombre_demandes_en_attente_sortie", {
+      p_sortie_id: sortie.id,
+    }),
+
+    supabase
+      .from("exclusions_sortie")
+      .select("sortie_id")
+      .eq("sortie_id", sortie.id)
+      .eq("utilisateur_id", user.id)
+      .maybeSingle(),
+
+    demandesRecuesPromise,
+  ]);
 
   if (coordonneesError) {
     console.error("Erreur chargement coordonnées :", coordonneesError);
   }
-
-  const coordonnees = coordonneesData?.[0] ?? null;
-
-  const latitude = coordonnees ? Number(coordonnees.latitude) : NaN;
-
-  const longitude = coordonnees ? Number(coordonnees.longitude) : NaN;
-
-  const coordonneesValides =
-    Number.isFinite(latitude) && Number.isFinite(longitude);
-
-  // ------------------------------------------------
-  // PARTICIPATIONS
-  // ------------------------------------------------
-
-  const { data: participations, error: participationsError } = await supabase
-    .from("participations")
-    .select("utilisateur_id")
-    .eq("sortie_id", sortie.id);
 
   if (participationsError) {
     return (
@@ -168,51 +227,6 @@ export default async function DetailSortiePage({ params }: PageProps) {
     );
   }
 
-  const listeParticipations = participations ?? [];
-
-  // ------------------------------------------------
-  // INTERACTIONS AVEC LA SORTIE
-  // ------------------------------------------------
-
-  const { count: nombreDemandesInteraction, error: demandesInteractionError } =
-    await supabase
-      .from("demandes_participation")
-      .select("id", {
-        count: "exact",
-        head: true,
-      })
-      .eq("sortie_id", sortie.id);
-
-  const {
-    count: nombreConversationsInteraction,
-    error: conversationsInteractionError,
-  } = await supabase
-    .from("conversations_sortie")
-    .select("id", {
-      count: "exact",
-      head: true,
-    })
-    .eq("sortie_id", sortie.id);
-
-  const aDesInteractions =
-    listeParticipations.length > 0 ||
-    (nombreDemandesInteraction ?? 0) > 0 ||
-    (nombreConversationsInteraction ?? 0) > 0 ||
-    Boolean(demandesInteractionError || conversationsInteractionError);
-
-  // ------------------------------------------------
-  // DEMANDE DE PARTICIPATION DE L'UTILISATEUR
-  // ------------------------------------------------
-
-  const { data: demandeParticipation, error: demandeParticipationError } =
-    await supabase
-      .from("demandes_participation")
-      .select("id")
-      .eq("sortie_id", sortie.id)
-      .eq("utilisateur_id", user.id)
-      .eq("statut", "en_attente")
-      .maybeSingle();
-
   if (demandeParticipationError) {
     return (
       <main className="mx-auto max-w-2xl p-6">
@@ -220,15 +234,6 @@ export default async function DetailSortiePage({ params }: PageProps) {
       </main>
     );
   }
-
-  // ------------------------------------------------
-  // NOMBRE DE DEMANDES EN ATTENTE
-  // ------------------------------------------------
-
-  const { data: nombreDemandesEnAttente, error: nombreDemandesEnAttenteError } =
-    await supabase.rpc("nombre_demandes_en_attente_sortie", {
-      p_sortie_id: sortie.id,
-    });
 
   if (nombreDemandesEnAttenteError) {
     return (
@@ -238,19 +243,6 @@ export default async function DetailSortiePage({ params }: PageProps) {
     );
   }
 
-  const totalDemandesEnAttente = nombreDemandesEnAttente ?? 0;
-
-  // ------------------------------------------------
-  // UTILISATEUR RETIRÉ PAR L'ORGANISATEUR ?
-  // ------------------------------------------------
-
-  const { data: exclusionSortie, error: exclusionSortieError } = await supabase
-    .from("exclusions_sortie")
-    .select("sortie_id")
-    .eq("sortie_id", sortie.id)
-    .eq("utilisateur_id", user.id)
-    .maybeSingle();
-
   if (exclusionSortieError) {
     return (
       <main className="mx-auto max-w-2xl p-6">
@@ -259,7 +251,35 @@ export default async function DetailSortiePage({ params }: PageProps) {
     );
   }
 
+  if (demandesRecuesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des demandes.</p>
+      </main>
+    );
+  }
+
+  const coordonnees = coordonneesData?.[0] ?? null;
+
+  const latitude = coordonnees ? Number(coordonnees.latitude) : NaN;
+  const longitude = coordonnees ? Number(coordonnees.longitude) : NaN;
+
+  const coordonneesValides =
+    Number.isFinite(latitude) && Number.isFinite(longitude);
+
+  const listeParticipations = participations ?? [];
+
+  const aDesInteractions =
+    listeParticipations.length > 0 ||
+    (nombreDemandesInteraction ?? 0) > 0 ||
+    (nombreConversationsInteraction ?? 0) > 0 ||
+    Boolean(demandesInteractionError || conversationsInteractionError);
+
+  const totalDemandesEnAttente = nombreDemandesEnAttente ?? 0;
+
   const estExcluDeLaSortie = Boolean(exclusionSortie);
+
+  const demandesRecues = demandesRecuesData ?? [];
 
   // ------------------------------------------------
   // PROFILS
@@ -267,23 +287,44 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
   // L'organisateur compte comme premier participant,
   // même s'il n'est pas dans la table participations.
-
   const idsProfils = [
     sortie.organisateur_id,
     ...listeParticipations.map((participation) => participation.utilisateur_id),
   ];
 
-  // Évite les doublons éventuels.
   const idsProfilsUniques = [...new Set(idsProfils)];
 
   const idsProfilsACharger = idsProfilsUniques.filter(
     (profilId) => profilId === user.id || !idsIndisponibles.has(profilId),
   );
 
-  const { data: profils, error: profilsError } = await supabase
-    .from("profiles")
-    .select("id, nom, age, sexe")
-    .in("id", idsProfilsACharger);
+  const idsDemandes = demandesRecues
+    .map((demande) => demande.utilisateur_id)
+    .filter((utilisateurId) => !idsIndisponibles.has(utilisateurId));
+
+  const profilsDemandesPromise =
+    idsDemandes.length > 0
+      ? supabase.from("profiles").select("id, nom, age").in("id", idsDemandes)
+      : Promise.resolve({
+          data: [] as {
+            id: string;
+            nom: string;
+            age: number;
+          }[],
+          error: null,
+        });
+
+  const [
+    { data: profils, error: profilsError },
+    { data: profilsDemandesData, error: profilsDemandesError },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, nom, age, sexe")
+      .in("id", idsProfilsACharger),
+
+    profilsDemandesPromise,
+  ]);
 
   if (profilsError) {
     return (
@@ -293,7 +334,17 @@ export default async function DetailSortiePage({ params }: PageProps) {
     );
   }
 
+  if (profilsDemandesError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des profils.</p>
+      </main>
+    );
+  }
+
   const listeProfils = profils ?? [];
+
+  const profilsDemandes = profilsDemandesData ?? [];
 
   const organisateur =
     listeProfils.find((profil) => profil.id === sortie.organisateur_id) ?? null;
@@ -307,70 +358,6 @@ export default async function DetailSortiePage({ params }: PageProps) {
   const dejaParticipant = listeParticipations.some(
     (participation) => participation.utilisateur_id === user.id,
   );
-
-  const estOrganisateur = sortie.organisateur_id === user.id;
-
-  // ------------------------------------------------
-  // DEMANDES REÇUES PAR L'ORGANISATEUR
-  // ------------------------------------------------
-
-  let demandesRecues: {
-    id: string;
-    utilisateur_id: string;
-  }[] = [];
-
-  if (estOrganisateur) {
-    const { data, error } = await supabase
-      .from("demandes_participation")
-      .select("id, utilisateur_id")
-      .eq("sortie_id", sortie.id)
-      .eq("statut", "en_attente")
-      .order("created_at", {
-        ascending: true,
-      });
-
-    if (error) {
-      return (
-        <main className="mx-auto max-w-2xl p-6">
-          <p>Erreur lors du chargement des demandes.</p>
-        </main>
-      );
-    }
-
-    demandesRecues = data ?? [];
-  }
-
-  // ------------------------------------------------
-  // PROFILS DES PERSONNES AYANT FAIT UNE DEMANDE
-  // ------------------------------------------------
-
-  let profilsDemandes: {
-    id: string;
-    nom: string;
-    age: number;
-  }[] = [];
-
-  if (demandesRecues.length > 0) {
-    const idsDemandes = demandesRecues
-      .map((demande) => demande.utilisateur_id)
-      .filter((utilisateurId) => !idsIndisponibles.has(utilisateurId));
-
-    const { data, error: profilsDemandesError } = await supabase
-      .from("profiles")
-      .select("id, nom, age")
-      .in("id", idsDemandes);
-
-    if (profilsDemandesError) {
-      return (
-        <main className="mx-auto max-w-2xl p-6">
-          <p>Erreur lors du chargement des profils.</p>
-        </main>
-      );
-    }
-
-    profilsDemandes = data ?? [];
-  }
-
   // ------------------------------------------------
   // SORTIE COMPLÈTE ?
   // ------------------------------------------------

@@ -420,26 +420,48 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     ...new Set(listeSortiesVisibles.map((sortie) => sortie.organisateur_id)),
   ];
   // ------------------------------------------------
-  // PARTICIPATIONS
+  // PARTICIPATIONS + PROFILS DES ORGANISATEURS
   // ------------------------------------------------
 
-  let participations: {
-    sortie_id: string;
-    utilisateur_id: string;
-  }[] = [];
+  const participationsPromise =
+    idsSorties.length > 0
+      ? supabase
+          .from("participations")
+          .select("sortie_id, utilisateur_id")
+          .in("sortie_id", idsSorties)
+      : Promise.resolve({
+          data: [] as {
+            sortie_id: string;
+            utilisateur_id: string;
+          }[],
+          error: null,
+        });
 
-  let participationsError = null;
+  const profilsOrganisateursPromise =
+    idsOrganisateurs.length > 0
+      ? supabase.from("profiles").select("id, nom").in("id", idsOrganisateurs)
+      : Promise.resolve({
+          data: [] as {
+            id: string;
+            nom: string;
+          }[],
+          error: null,
+        });
 
-  if (idsSorties.length > 0) {
-    const { data, error } = await supabase
-      .from("participations")
-      .select("sortie_id, utilisateur_id")
-      .in("sortie_id", idsSorties);
+  const [
+    { data: participationsData, error: participationsError },
+    { data: profilsOrganisateursData, error: profilsOrganisateursError },
+  ] = await Promise.all([participationsPromise, profilsOrganisateursPromise]);
 
-    participations = data ?? [];
-
-    participationsError = error;
+  if (participationsError || profilsOrganisateursError) {
+    return (
+      <main className="mx-auto max-w-2xl p-6">
+        <p>Erreur lors du chargement des sorties.</p>
+      </main>
+    );
   }
+
+  const participations = participationsData ?? [];
 
   const idsParticipantsSuivisSet = new Set<string>();
 
@@ -474,39 +496,41 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
   const idsParticipantsSuivis = [...idsParticipantsSuivisSet];
 
-  // ------------------------------------------------
-  // PROFILS
-  // ------------------------------------------------
+  const idsOrganisateursSet = new Set(idsOrganisateurs);
 
-  const idsProfilsACharger = [
-    ...new Set([...idsOrganisateurs, ...idsParticipantsSuivis]),
-  ];
+  const idsParticipantsSuivisACharger = idsParticipantsSuivis.filter(
+    (idParticipant) => !idsOrganisateursSet.has(idParticipant),
+  );
 
-  let profils: {
+  let profilsParticipantsSuivis: {
     id: string;
     nom: string;
   }[] = [];
 
-  let profilsError = null;
+  let profilsParticipantsSuivisError = null;
 
-  if (idsProfilsACharger.length > 0) {
+  if (idsParticipantsSuivisACharger.length > 0) {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, nom")
-      .in("id", idsProfilsACharger);
+      .in("id", idsParticipantsSuivisACharger);
 
-    profils = data ?? [];
-    profilsError = error;
+    profilsParticipantsSuivis = data ?? [];
+    profilsParticipantsSuivisError = error;
   }
 
-  if (participationsError || profilsError) {
+  if (profilsParticipantsSuivisError) {
     return (
       <main className="mx-auto max-w-2xl p-6">
         <p>Erreur lors du chargement des sorties.</p>
       </main>
     );
   }
-  const listeProfils = profils;
+
+  const listeProfils = [
+    ...(profilsOrganisateursData ?? []),
+    ...profilsParticipantsSuivis,
+  ];
 
   let listeSorties = masquerCompletes
     ? listeSortiesVisibles.filter((sortie) => {
