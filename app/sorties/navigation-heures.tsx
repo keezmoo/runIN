@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const HEURES = Array.from({ length: 24 }, (_, index) => index);
 
@@ -33,7 +33,7 @@ export default function NavigationHeures() {
   // JOUR ACTUELLEMENT AFFICHÉ
   // ------------------------------------------------
 
-  function trouverJourActif(conteneur: HTMLElement) {
+const trouverJourActif = useCallback((conteneur: HTMLElement) => {
     // ------------------------------------------------
     // PRIORITÉ AU JOUR SOULIGNÉ
     // ------------------------------------------------
@@ -65,7 +65,7 @@ export default function NavigationHeures() {
     }
 
     return premiereVisible.closest<HTMLElement>("[data-jour-sorties]");
-  }
+  }, [jourActif]);
 
   // ------------------------------------------------
   // ALLER À UNE HEURE
@@ -173,7 +173,7 @@ export default function NavigationHeures() {
     return () => {
       conteneur.removeEventListener("scroll", mettreAJour);
     };
-  }, [jourActif]);
+  }, [trouverJourActif]);
 
   // ------------------------------------------------
   // AFFICHAGE

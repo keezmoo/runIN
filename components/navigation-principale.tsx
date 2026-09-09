@@ -264,7 +264,7 @@ export default function NavigationPrincipale() {
   }, []);
 
   // ------------------------------------------------
-  // ACTUALISATION AU CHANGEMENT DE PAGE
+  // CHARGEMENT INITIAL DES COMPTEURS
   // ------------------------------------------------
 
   useEffect(() => {
@@ -272,15 +272,42 @@ export default function NavigationPrincipale() {
       return;
     }
 
-    chargerMessagesNonLus();
-    chargerNotificationsNonLues();
-  }, [
-    pathname,
-    estPageAuth,
-    chargerMessagesNonLus,
-    chargerNotificationsNonLues,
-  ]);
+    let actif = true;
 
+    async function chargerCompteursInitiaux() {
+      const supabase = createClient();
+
+      const [messagesResultat, notificationsResultat] = await Promise.all([
+        supabase.rpc("nombre_messages_non_lus_visibles"),
+        supabase.rpc("nombre_notifications_non_lues_visibles"),
+      ]);
+
+      if (!actif) {
+        return;
+      }
+
+      if (messagesResultat.error) {
+        console.error("Erreur compteur messages :", messagesResultat.error);
+      } else {
+        setNombreMessagesNonLus(Number(messagesResultat.data ?? 0));
+      }
+
+      if (notificationsResultat.error) {
+        console.error(
+          "Erreur compteur notifications :",
+          notificationsResultat.error,
+        );
+      } else {
+        setNombreNotificationsNonLues(Number(notificationsResultat.data ?? 0));
+      }
+    }
+
+    void chargerCompteursInitiaux();
+
+    return () => {
+      actif = false;
+    };
+  }, [estPageAuth]);
   // ------------------------------------------------
   // ÉVÉNEMENT INTERNE NOTIFICATIONS
   // ------------------------------------------------

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 
 type FacteurTotp = {
@@ -10,11 +10,14 @@ type FacteurTotp = {
 };
 
 export default function MfaParametres() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  const supabase = useMemo(
+    () =>
+      createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      ),
+    [],
   );
-
   const [facteurActif, setFacteurActif] = useState<FacteurTotp | null>(null);
 
   const [chargement, setChargement] = useState(true);
@@ -62,8 +65,35 @@ export default function MfaParametres() {
   }
 
   useEffect(() => {
-    chargerFacteurs();
-  }, []);
+    let actif = true;
+
+    async function chargerFacteursInitiaux() {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+
+      if (!actif) {
+        return;
+      }
+
+      if (error) {
+        console.error("Erreur chargement MFA :", error);
+        setErreur("Impossible de charger les paramètres MFA.");
+        setChargement(false);
+        return;
+      }
+
+      const facteur =
+        data.totp.find((item) => item.status === "verified") ?? null;
+
+      setFacteurActif(facteur);
+      setChargement(false);
+    }
+
+    void chargerFacteursInitiaux();
+
+    return () => {
+      actif = false;
+    };
+  }, [supabase]);
 
   async function commencerActivation() {
     setErreur("");
@@ -433,6 +463,7 @@ export default function MfaParametres() {
                         p-3
                     "
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCode} alt="QR code MFA" width={200} height={200} />
         </div>
       )}

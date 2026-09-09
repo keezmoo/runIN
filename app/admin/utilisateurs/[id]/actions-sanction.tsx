@@ -23,7 +23,6 @@ export default function ActionsSanction({
   sanctionActiveId,
   sanctionActiveType,
   roleConnecte,
-  estCompteCourant,
 }: Props) {
   const router = useRouter();
 

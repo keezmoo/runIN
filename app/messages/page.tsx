@@ -166,7 +166,8 @@ export default async function MessagesPage() {
   // CONVERSATIONS ENCORE ACTIVES
   // ------------------------------------------------
 
-  const maintenant = Date.now();
+  // Heure serveur volontairement évaluée pour cette requête.
+  const maintenant = Date.now(); // eslint-disable-line react-hooks/purity
 
   const conversationsActives = conversations.filter((conversation) => {
     const sortie = sortiesParId.get(conversation.sortie_id);

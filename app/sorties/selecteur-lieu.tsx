@@ -66,6 +66,9 @@ export default function SelecteurLieu({
       Number.isFinite(localisation.latitude) &&
       Number.isFinite(localisation.longitude)
     ) {
+      // Synchronisation volontaire du brouillon cartographique
+      // lorsqu'une nouvelle localisation valide arrive du parent.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalisationCarte(localisation);
     }
   }, [localisation]);

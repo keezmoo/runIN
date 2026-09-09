@@ -36,19 +36,15 @@ function IconeProfil() {
 export default function MenuProfil({ actif = false }: MenuProfilProps) {
   const pathname = usePathname();
 
-  const [ouvert, setOuvert] = useState(false);
+  const [cheminMenuOuvert, setCheminMenuOuvert] = useState<string | null>(null);
+
+  const ouvert = cheminMenuOuvert === pathname;
 
   const [estAdministrateur, setEstAdministrateur] = useState(false);
 
   const [roleCharge, setRoleCharge] = useState(false);
 
   const conteneurRef = useRef<HTMLDivElement>(null);
-
-  // Fermer le menu
-  // lorsqu'on change de page
-  useEffect(() => {
-    setOuvert(false);
-  }, [pathname]);
 
   // Fermer si clic
   // en dehors du menu
@@ -58,7 +54,7 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
         conteneurRef.current &&
         !conteneurRef.current.contains(event.target as Node)
       ) {
-        setOuvert(false);
+        setCheminMenuOuvert(null);
       }
     }
 
@@ -75,7 +71,7 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
   useEffect(() => {
     function fermerAvecEchap(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOuvert(false);
+        setCheminMenuOuvert(null);
       }
     }
 
@@ -131,7 +127,11 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
         type="button"
         aria-label="Menu du profil"
         aria-expanded={ouvert}
-        onClick={() => setOuvert((valeur) => !valeur)}
+        onClick={() =>
+          setCheminMenuOuvert((cheminActuel) =>
+            cheminActuel === pathname ? null : pathname,
+          )
+        }
         className={`
           flex
           h-10

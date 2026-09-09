@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { maintenantDatetimeLocal } from "@/lib/date-utils";
@@ -60,11 +60,7 @@ export default function SortieForm({
     "femme",
     "autre",
   ]);
-  const [dateHeureMin, setDateHeureMin] = useState("");
-
-  useEffect(() => {
-    setDateHeureMin(maintenantDatetimeLocal());
-  }, []);
+const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
   function basculerGenre(genre: Genre) {
     if (genre === sexeOrganisateur) {
       return;

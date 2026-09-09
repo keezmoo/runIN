@@ -382,8 +382,11 @@ export default async function DetailSortiePage({ params }: PageProps) {
     sortie.nombre_max_participants - nombreActuel,
   );
 
+  // Heure serveur volontairement évaluée une seule fois pour cette requête.
+  const maintenant = Date.now(); // eslint-disable-line react-hooks/purity
+
   const sortiePassee =
-    new Date(sortie.date_heure_depart).getTime() <= Date.now();
+    new Date(sortie.date_heure_depart).getTime() <= maintenant;
   // ------------------------------------------------
   // DATE
   // ------------------------------------------------
@@ -462,12 +465,12 @@ export default async function DetailSortiePage({ params }: PageProps) {
   const peutContacterOrganisateur =
     !estOrganisateur &&
     sortie.statut === "planifiee" &&
-    new Date(sortie.date_heure_depart).getTime() > Date.now();
+    new Date(sortie.date_heure_depart).getTime() > maintenant;
 
   const peutContacterParticipants =
     estOrganisateur &&
     sortie.statut === "planifiee" &&
-    new Date(sortie.date_heure_depart).getTime() > Date.now();
+    new Date(sortie.date_heure_depart).getTime() > maintenant;
 
   // ------------------------------------------------
   // AFFICHAGE

@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Fichiers temporaires de diagnostic
+/code-localisation.txt
+/creation-sortie-actuelle.txt

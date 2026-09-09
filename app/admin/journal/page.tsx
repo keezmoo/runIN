@@ -338,14 +338,14 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
           </option>
 
           <option value="prise_en_charge_signalement">
-            Prise en charge d'un signalement
+            Prise en charge d&apos;un signalement
           </option>
 
           <option value="traitement_signalement">
-            Traitement d'un signalement
+            Traitement d&apos;un signalement
           </option>
 
-          <option value="rejet_signalement">Rejet d'un signalement</option>
+          <option value="rejet_signalement">Rejet d&apos;un signalement</option>
         </select>
 
         <button

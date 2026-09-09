@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -43,11 +43,6 @@ export default function ActionsRole({
 
   const [message, setMessage] = useState("");
 
-  // Si la fiche est rafraîchie après modification,
-  // on synchronise le select avec la nouvelle valeur.
-  useEffect(() => {
-    setNouveauRole(roleActuel);
-  }, [roleActuel]);
 
   async function enregistrer() {
     if (

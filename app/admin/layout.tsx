@@ -26,9 +26,7 @@ export default async function AdminLayout({
   // ADMINISTRATEUR
   // ------------------------------------------------
 
-  const { data: role, error: roleError } = await supabase.rpc(
-    "mon_role_application",
-  );
+  const { data: role } = await supabase.rpc("mon_role_application");
 
   if (role !== "administrateur" && role !== "moderateur") {
     redirect("/sorties");

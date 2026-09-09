@@ -528,22 +528,6 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
     });
   }
 
-  const sortiesCarte = listeSorties
-    .map((sortie) => ({
-      id: sortie.id,
-      titre: sortie.titre,
-      lieu_depart: sortie.lieu_depart,
-      type_sortie: sortie.type_sortie,
-      date_heure_depart: sortie.date_heure_depart,
-
-      latitude: Number(sortie.latitude),
-      longitude: Number(sortie.longitude),
-    }))
-    .filter(
-      (sortie) =>
-        Number.isFinite(sortie.latitude) && Number.isFinite(sortie.longitude),
-    );
-
   const profilsParId = new Map(
     listeProfils.map((profil) => [profil.id, profil]),
   );
