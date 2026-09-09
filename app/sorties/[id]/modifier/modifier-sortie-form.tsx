@@ -279,6 +279,12 @@ export default function ModifierSortieForm({
     router.refresh();
   }
 
+  function empecherModificationMolette(
+    event: React.WheelEvent<HTMLInputElement>,
+  ) {
+    event.currentTarget.blur();
+  }
+
   return (
     <div className="space-y-5">
       <div>
@@ -306,6 +312,7 @@ export default function ModifierSortieForm({
           type="datetime-local"
           value={dateHeure}
           onChange={(e) => setDateHeure(e.target.value)}
+          step={300}
           min={maintenantDatetimeLocal()}
           className="w-full rounded border p-2"
         />
@@ -358,6 +365,7 @@ export default function ModifierSortieForm({
               onChange={(e) => setDistanceKm(e.target.value)}
               className="w-full rounded border p-2"
               required
+              onWheel={empecherModificationMolette}
             />
 
             <span>km</span>
@@ -384,6 +392,7 @@ export default function ModifierSortieForm({
               value={denivelePositif}
               onChange={(e) => setDenivelePositif(e.target.value)}
               className="w-full rounded border p-2"
+              onWheel={empecherModificationMolette}
             />
 
             <span>m D+</span>
@@ -403,6 +412,7 @@ export default function ModifierSortieForm({
             value={dureeHeures}
             onChange={(e) => setDureeHeures(e.target.value)}
             className="w-20 rounded border p-2"
+            onWheel={empecherModificationMolette}
           />
 
           <span>h</span>
@@ -416,6 +426,7 @@ export default function ModifierSortieForm({
             value={dureeMinutes}
             onChange={(e) => setDureeMinutes(e.target.value)}
             className="w-20 rounded border p-2"
+            onWheel={empecherModificationMolette}
           />
 
           <span>min</span>
@@ -463,6 +474,7 @@ export default function ModifierSortieForm({
             value={allureMinutes}
             onChange={(e) => setAllureMinutes(e.target.value)}
             className="w-20 rounded border p-2"
+            onWheel={empecherModificationMolette}
           />
 
           <span>:</span>
@@ -476,6 +488,7 @@ export default function ModifierSortieForm({
             value={allureSecondes}
             onChange={(e) => setAllureSecondes(e.target.value)}
             className="w-20 rounded border p-2"
+            onWheel={empecherModificationMolette}
           />
 
           <span>/ km</span>
@@ -519,6 +532,7 @@ export default function ModifierSortieForm({
           value={nombreMaxParticipants}
           onChange={(e) => setNombreMaxParticipants(e.target.value)}
           className="w-full rounded border p-2"
+          onWheel={empecherModificationMolette}
         />
 
         <p className="mt-1 text-sm text-gray-500">

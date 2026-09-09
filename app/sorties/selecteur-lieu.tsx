@@ -139,7 +139,7 @@ export default function SelecteurLieu({
       }
 
       const carte = L.map(conteneurRef.current, {
-        scrollWheelZoom: false,
+        scrollWheelZoom: true,
       }).setView(
         [localisationInitiale.latitude, localisationInitiale.longitude],
         rayonCarteKm === undefined ? 16 : 12,

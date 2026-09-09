@@ -60,7 +60,7 @@ export default function SortieForm({
     "femme",
     "autre",
   ]);
-const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
+  const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
   function basculerGenre(genre: Genre) {
     if (genre === sexeOrganisateur) {
       return;
@@ -277,6 +277,12 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
     router.replace(`/sorties/${resultat.sortie_id}`);
   }
 
+  function empecherModificationMolette(
+    event: React.WheelEvent<HTMLInputElement>,
+  ) {
+    event.currentTarget.blur();
+  }
+
   return (
     <div className="space-y-8">
       {/* ==================================================
@@ -375,6 +381,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
           <input
             type="datetime-local"
             value={dateHeure}
+            step={300}
             onChange={(e) => setDateHeure(e.target.value)}
             min={dateHeureMin || undefined}
             className="w-full rounded border p-2"
@@ -430,6 +437,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                 onChange={(e) => setDistanceKm(e.target.value)}
                 className="w-full rounded border p-2"
                 required
+                onWheel={empecherModificationMolette}
               />
 
               <span className="shrink-0">km</span>
@@ -448,6 +456,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                   value={denivelePositif}
                   onChange={(e) => setDenivelePositif(e.target.value)}
                   className="w-full rounded border p-2"
+                  onWheel={empecherModificationMolette}
                 />
 
                 <span className="shrink-0">m D+</span>
@@ -490,6 +499,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                     value={denivelePositif}
                     onChange={(e) => setDenivelePositif(e.target.value)}
                     className="w-full rounded border p-2"
+                    onWheel={empecherModificationMolette}
                   />
 
                   <span className="shrink-0">m D+</span>
@@ -548,6 +558,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                 value={allureMinutes}
                 onChange={(e) => setAllureMinutes(e.target.value)}
                 className="w-20 rounded border p-2"
+                onWheel={empecherModificationMolette}
               />
 
               <span>:</span>
@@ -561,6 +572,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                 value={allureSecondes}
                 onChange={(e) => setAllureSecondes(e.target.value)}
                 className="w-20 rounded border p-2"
+                onWheel={empecherModificationMolette}
               />
 
               <span>/ km</span>
@@ -607,6 +619,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                 value={dureeHeures}
                 onChange={(e) => setDureeHeures(e.target.value)}
                 className="w-20 rounded border p-2"
+                onWheel={empecherModificationMolette}
               />
 
               <span>h</span>
@@ -620,6 +633,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
                 value={dureeMinutes}
                 onChange={(e) => setDureeMinutes(e.target.value)}
                 className="w-20 rounded border p-2"
+                onWheel={empecherModificationMolette}
               />
 
               <span>min</span>
@@ -691,6 +705,7 @@ const [dateHeureMin] = useState(() => maintenantDatetimeLocal());
             className="w-full rounded border p-2"
             min="2"
             max="25"
+            onWheel={empecherModificationMolette}
           />
 
           <p className="mt-1 text-xs text-gray-500">

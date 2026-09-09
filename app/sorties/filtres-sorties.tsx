@@ -557,7 +557,15 @@ export default function FiltresSorties({
     setLoading(false);
   }
 
+  // ------------------------------------------------
+  // La souris ne scroll pas sur les champ de valeurs
+  // ------------------------------------------------
 
+function empecherModificationMolette(
+  event: React.WheelEvent<HTMLInputElement>,
+) {
+  event.currentTarget.blur();
+}
   // ------------------------------------------------
   // AFFICHAGE
   // ------------------------------------------------
@@ -807,6 +815,7 @@ export default function FiltresSorties({
                     value={distanceMin}
                     onChange={(event) => setDistanceMin(event.target.value)}
                     className="rounded border p-2"
+                    onWheel={empecherModificationMolette}
                   />
 
                   <input
@@ -817,6 +826,7 @@ export default function FiltresSorties({
                     value={distanceMax}
                     onChange={(event) => setDistanceMax(event.target.value)}
                     className="rounded border p-2"
+                    onWheel={empecherModificationMolette}
                   />
                 </div>
               </div>
@@ -870,6 +880,7 @@ export default function FiltresSorties({
                       value={deniveleMin}
                       onChange={(event) => setDeniveleMin(event.target.value)}
                       className="rounded border p-2"
+                      onWheel={empecherModificationMolette}
                     />
 
                     <input
@@ -880,6 +891,7 @@ export default function FiltresSorties({
                       value={deniveleMax}
                       onChange={(event) => setDeniveleMax(event.target.value)}
                       className="rounded border p-2"
+                      onWheel={empecherModificationMolette}
                     />
                   </div>
                 </div>
@@ -974,6 +986,7 @@ export default function FiltresSorties({
                       value={dureeMin}
                       onChange={(event) => setDureeMin(event.target.value)}
                       className="rounded border p-2"
+                      onWheel={empecherModificationMolette}
                     />
 
                     <input
@@ -983,6 +996,7 @@ export default function FiltresSorties({
                       value={dureeMax}
                       onChange={(event) => setDureeMax(event.target.value)}
                       className="rounded border p-2"
+                      onWheel={empecherModificationMolette}
                     />
                   </div>
                 </div>
