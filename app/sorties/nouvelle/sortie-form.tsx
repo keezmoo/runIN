@@ -381,7 +381,6 @@ export default function SortieForm({
           <input
             type="datetime-local"
             value={dateHeure}
-            step={300}
             onChange={(e) => setDateHeure(e.target.value)}
             min={dateHeureMin || undefined}
             className="w-full rounded border p-2"

@@ -312,7 +312,6 @@ export default function ModifierSortieForm({
           type="datetime-local"
           value={dateHeure}
           onChange={(e) => setDateHeure(e.target.value)}
-          step={300}
           min={maintenantDatetimeLocal()}
           className="w-full rounded border p-2"
         />

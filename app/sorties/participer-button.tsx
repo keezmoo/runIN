@@ -563,8 +563,8 @@ export default function ParticiperButton({
                 : "Vous venez de quitter cette sortie. "}
 
               {modeInscription === "validation"
-                ? `Nouvelle demande possible dans ${secondesCooldown} s.`
-                : `Réinscription possible dans ${secondesCooldown} s.`}
+                ? `Nouvelle demande possible dans 30s.`
+                : `Réinscription possible dans 30s.`}
             </p>
           )}
         </div>

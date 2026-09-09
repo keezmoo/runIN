@@ -53,7 +53,7 @@ export default function SupprimerSortieButton({
             return;
         }
 
-        router.refresh();
+        router.replace("/sorties");
     }
 
     return (
