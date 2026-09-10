@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type ParticiperButtonProps = {
@@ -415,7 +415,7 @@ export default function ParticiperButton({
           l&apos;organisateur.
         </p>
 
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Vous ne pouvez pas vous inscrire à cette sortie.
         </p>
       </div>
@@ -431,23 +431,15 @@ export default function ParticiperButton({
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">Je participe</span>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={actionParticipation}
           disabled={loading}
-          className="
-          rounded
-          border
-          border-white/50
-          px-3
-          py-2
-          text-sm
-          text-white
-          disabled:opacity-40
-        "
         >
           {loading ? "..." : "Quitter"}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -461,23 +453,15 @@ export default function ParticiperButton({
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium">Demande envoyée</span>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={actionParticipation}
           disabled={loading}
-          className="
-          rounded
-          border
-          border-white/50
-          px-3
-          py-2
-          text-sm
-          text-white
-          disabled:opacity-40
-        "
         >
           {loading ? "..." : "Annuler"}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -523,27 +507,17 @@ export default function ParticiperButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        size="sm"
         onClick={actionParticipation}
         disabled={boutonDesactive}
-        className="
-  rounded
-  border
-  border-white/50
-  bg-black
-  px-3
-  py-2
-  text-sm
-  text-white
-  disabled:opacity-40
-"
       >
         {texteBouton}
-      </button>
+      </Button>
 
       {demandeActive && !dejaParticipant && (
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           En attente de validation par l&apos;organisateur.
         </p>
       )}
@@ -551,13 +525,13 @@ export default function ParticiperButton({
       {secondesCooldown > 0 && tenteNouvelleInscription && (
         <div className="mt-2 text-sm">
           {blocageAntiSpam ? (
-            <p className="text-red-500">
+            <p className="text-destructive">
               Trop d&apos;actions rapprochées. Vous pourrez de nouveau
               participer à cette sortie dans{" "}
               {formaterDureeCooldown(secondesCooldown)}.
             </p>
           ) : (
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               {modeInscription === "validation"
                 ? "Vous venez d'annuler votre demande. "
                 : "Vous venez de quitter cette sortie. "}
@@ -570,7 +544,7 @@ export default function ParticiperButton({
         </div>
       )}
 
-      {message && <p className="mt-2 text-sm">{message}</p>}
+      {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
     </div>
   );
 }

@@ -2,10 +2,15 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
 import SelecteurLieu, { type Localisation } from "./selecteur-lieu";
-
 import SelecteurRayon, { normaliserRayon } from "./selecteur-rayon";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { ToggleButton } from "@/components/ui/toggle-button";
+import { FilterDrawer } from "@/components/ui/filter-drawer";
+import { SlidersHorizontal } from "lucide-react";
 
 type TypeSortie = "" | "route" | "trail";
 
@@ -75,30 +80,6 @@ export default function FiltresSorties({
   const searchParams = useSearchParams();
 
   const [filtresOuverts, setFiltresOuverts] = useState(false);
-
-  // ------------------------------------------------
-  // NIVEAU D'AFFICHAGE
-  // ------------------------------------------------
-
-  const niveauInitial: 1 | 2 | 3 =
-    searchParams.has("typeEntrainement") ||
-    searchParams.has("dureeMin") ||
-    searchParams.has("dureeMax") ||
-    searchParams.has("genres") ||
-    searchParams.has("modeInscription") ||
-    searchParams.has("masquerCompletes")
-      ? 3
-      : searchParams.has("distanceMin") ||
-          searchParams.has("distanceMax") ||
-          searchParams.has("deniveleMin") ||
-          searchParams.has("deniveleMax") ||
-          searchParams.has("allureMin") ||
-          searchParams.has("allureMax") ||
-          searchParams.has("intensite")
-        ? 2
-        : 1;
-
-  const [niveauFiltres, setNiveauFiltres] = useState<1 | 2 | 3>(niveauInitial);
 
   // ------------------------------------------------
   // FILTRES PRINCIPAUX
@@ -222,8 +203,6 @@ export default function FiltresSorties({
   }
 
   function reinitialiserFiltres() {
-    setTypeSortie("");
-
     setDistanceMin("");
     setDistanceMax("");
 
@@ -245,7 +224,6 @@ export default function FiltresSorties({
     setModeInscription("");
 
     setMasquerCompletes(true);
-    setAvecSuivis(false);
 
     setMessage("");
   }
@@ -552,6 +530,8 @@ export default function FiltresSorties({
     // NAVIGATION
     // ------------------------------------------------
 
+    setFiltresOuverts(false);
+
     router.push(`/sorties?${params.toString()}`);
 
     setLoading(false);
@@ -561,611 +541,395 @@ export default function FiltresSorties({
   // La souris ne scroll pas sur les champ de valeurs
   // ------------------------------------------------
 
-function empecherModificationMolette(
-  event: React.WheelEvent<HTMLInputElement>,
-) {
-  event.currentTarget.blur();
-}
+  function empecherModificationMolette(
+    event: React.WheelEvent<HTMLInputElement>,
+  ) {
+    event.currentTarget.blur();
+  }
   // ------------------------------------------------
   // AFFICHAGE
   // ------------------------------------------------
 
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border">
-      <div className="flex items-center">
-        {/* OUVRIR / FERMER LES FILTRES DE BASE */}
+    <form onSubmit={rechercher} className="relative mb-4 space-y-3">
+      {/* ==================================================
+        FILTRES PRINCIPAUX — TOUJOURS VISIBLES
+    ================================================== */}
 
-        <button
-          type="button"
-          onClick={() => {
-            if (filtresOuverts) {
-              setFiltresOuverts(false);
+      <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+        <div className="flex items-center gap-3">
+          {/* TYPE DE TERRAIN */}
 
-              return;
-            }
-
-            setNiveauFiltres(1);
-            setFiltresOuverts(true);
-          }}
-          aria-expanded={filtresOuverts}
-          className="
-      flex
-      min-w-0
-      flex-1
-      items-center
-      gap-2
-      px-4
-      py-3
-      text-left
-      font-medium
-    "
-        >
-          <span
-            className={`
-        shrink-0
-        transition-transform
-        ${filtresOuverts ? "rotate-90" : ""}
-      `}
-            aria-hidden="true"
-          >
-            ›
-          </span>
-
-          <span>Filtres</span>
-        </button>
-
-        {/* NIVEAU INTERMÉDIAIRE */}
-
-        <button
-          type="button"
-          onClick={() => {
-            if (filtresOuverts && niveauFiltres === 2) {
-              setFiltresOuverts(false);
-
-              return;
-            }
-
-            setNiveauFiltres(2);
-            setFiltresOuverts(true);
-          }}
-          aria-label="Afficher les filtres intermédiaires"
-          aria-pressed={filtresOuverts && niveauFiltres === 2}
-          className={`
-      flex
-      h-11
-      w-11
-      shrink-0
-      items-center
-      justify-center
-      border-l
-      ${filtresOuverts && niveauFiltres === 2 ? "bg-gray-500/10" : ""}
-    `}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            {/* 1 BARRE */}
-            <path d="M6 6h12" />
-
-            {/* CHEVRON */}
-            {filtresOuverts && niveauFiltres === 2 ? (
-              <path d="m8 11 4 4 4-4" />
-            ) : (
-              <path d="m10 10 4 4-4 4" />
-            )}
-          </svg>
-        </button>
-
-        {/* NIVEAU COMPLET */}
-
-        <button
-          type="button"
-          onClick={() => {
-            if (filtresOuverts && niveauFiltres === 3) {
-              setFiltresOuverts(false);
-
-              return;
-            }
-
-            setNiveauFiltres(3);
-            setFiltresOuverts(true);
-          }}
-          aria-label="Afficher tous les filtres"
-          aria-pressed={filtresOuverts && niveauFiltres === 3}
-          className={`
-      flex
-      h-11
-      w-11
-      shrink-0
-      items-center
-      justify-center
-      border-l
-      ${filtresOuverts && niveauFiltres === 3 ? "bg-gray-500/10" : ""}
-    `}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-6 w-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            {/* 2 BARRES */}
-            <path d="M6 5h12" />
-            <path d="M6 9h12" />
-
-            {/* CHEVRON */}
-            {filtresOuverts && niveauFiltres === 3 ? (
-              <path d="m8 13 4 4 4-4" />
-            ) : (
-              <path d="m10 12 4 4-4 4" />
-            )}
-          </svg>
-        </button>
-      </div>
-
-      {filtresOuverts && (
-        <form
-          onSubmit={rechercher}
-          className="
-      space-y-4
-      border-t
-      p-4
-    "
-        >
-          {/* SPORT */}
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
+          <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
+            <ToggleButton
               type="button"
+              pressed={typeSortie === ""}
               onClick={() => choisirType("")}
-              className={
-                typeSortie === ""
-                  ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
-                  : "rounded border px-3 py-2"
-              }
             >
               Tous
-            </button>
+            </ToggleButton>
 
-            <button
+            <ToggleButton
               type="button"
+              pressed={typeSortie === "route"}
               onClick={() => choisirType("route")}
-              className={
-                typeSortie === "route"
-                  ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
-                  : "rounded border px-3 py-2"
-              }
             >
               Route
-            </button>
+            </ToggleButton>
 
-            <button
+            <ToggleButton
               type="button"
+              pressed={typeSortie === "trail"}
               onClick={() => choisirType("trail")}
-              className={
-                typeSortie === "trail"
-                  ? "rounded border-2 border-[#8ED8B6] px-3 py-2 font-semibold"
-                  : "rounded border px-3 py-2"
-              }
             >
               Trail
-            </button>
+            </ToggleButton>
           </div>
 
-{/* LOCALISATION */}
+          {/* CONTACTS */}
 
-<SelecteurLieu
-  lieu={lieu}
-  onLieuChange={setLieu}
-  localisation={localisation}
-  onLocalisationChange={setLocalisation}
-  libelle="Lieu de recherche"
-  placeholder="Chambéry"
-  resumeSupplementaire={
-    <>
-      {" · "}
-      {rayon} km
-    </>
-  }
-  contenuSupplementaire={
-    <SelecteurRayon
-      rayonKm={rayon}
-      onRayonChange={setRayon}
-    />
-  }
-  rayonCarteKm={rayon}
-  aideCarte="
-    Cliquez sur la carte ou déplacez le point
-    pour modifier le centre de la recherche.
-  "
-/>
+          <div className="shrink-0 border-l border-border pl-3">
+            <ToggleButton
+              type="button"
+              pressed={avecSuivis}
+              onClick={() => setAvecSuivis((valeur) => !valeur)}
+              aria-label="Mes contacts uniquement"
+              className="min-h-10"
+            >
+              <span className="sm:hidden">Contacts</span>
 
-          {/* NIVEAU SPORTIF */}
+              <span className="hidden sm:inline">Mes contacts uniquement</span>
+            </ToggleButton>
+          </div>
+        </div>
 
-          {niveauFiltres >= 2 && (
-            <div className="space-y-4 border-t pt-4">
-              {niveauFiltres === 3 && (
-                <h3 className="font-semibold">Caractéristiques sportives</h3>
-              )}
+        {/* LOCALISATION + RAYON */}
 
-              {/* DISTANCE */}
+        <SelecteurLieu
+          lieu={lieu}
+          onLieuChange={setLieu}
+          localisation={localisation}
+          onLocalisationChange={setLocalisation}
+          libelle="Lieu de recherche"
+          placeholder="Chambéry"
+          resumeSupplementaire={
+            <>
+              {" · "}
+              {rayon} km
+            </>
+          }
+          contenuSupplementaire={
+            <SelecteurRayon rayonKm={rayon} onRayonChange={setRayon} />
+          }
+          rayonCarteKm={rayon}
+          aideCarte="
+          Cliquez sur la carte ou déplacez le point
+          pour modifier le centre de la recherche.
+        "
+        />
 
+        {/* COMMANDES PRINCIPALES */}
+
+        <div className="flex items-center justify-end">
+          <Button type="submit" disabled={loading} className="min-w-28">
+            {loading ? "Recherche..." : "Rechercher"}
+          </Button>
+        </div>
+      </div>
+
+      {/* ==================================================
+        FILTRES AVANCÉS
+    ================================================== */}
+
+      <FilterDrawer
+        open={filtresOuverts}
+        onOpenChange={setFiltresOuverts}
+        title="Filtres avancés"
+        footer={
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={reinitialiserFiltres}
+              disabled={loading}
+            >
+              Réinitialiser
+            </Button>
+
+            <Button type="submit" disabled={loading} className="min-w-28">
+              {loading ? "Recherche..." : "Appliquer"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {/* ==================================================
+            CARACTÉRISTIQUES SPORTIVES
+        ================================================== */}
+
+          <div className="space-y-4">
+            {/* DISTANCE */}
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">Distance</label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Min. km"
+                  value={distanceMin}
+                  onChange={(event) => setDistanceMin(event.target.value)}
+                  onWheel={empecherModificationMolette}
+                />
+
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  placeholder="Max. km"
+                  value={distanceMax}
+                  onChange={(event) => setDistanceMax(event.target.value)}
+                  onWheel={empecherModificationMolette}
+                />
+              </div>
+            </div>
+
+            {/* ROUTE : ALLURE */}
+
+            {typeSortie === "route" && (
+              <div>
+                <label className="mb-2 block text-sm font-medium">Allure</label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Min. 4:30"
+                    value={allureMin}
+                    onChange={(event) => setAllureMin(event.target.value)}
+                  />
+
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Max. 6:00"
+                    value={allureMax}
+                    onChange={(event) => setAllureMax(event.target.value)}
+                  />
+                </div>
+
+                <p className="mt-1 text-xs text-muted-foreground">min/km</p>
+              </div>
+            )}
+
+            {/* TRAIL : DÉNIVELÉ */}
+
+            {typeSortie === "trail" && (
               <div>
                 <label className="mb-2 block text-sm font-medium">
-                  Distance
+                  Dénivelé positif
                 </label>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <input
+                  <Input
                     type="number"
                     min="0"
-                    step="0.1"
-                    placeholder="Min. km"
-                    value={distanceMin}
-                    onChange={(event) => setDistanceMin(event.target.value)}
-                    className="rounded border p-2"
+                    step="50"
+                    placeholder="Min. D+"
+                    value={deniveleMin}
+                    onChange={(event) => setDeniveleMin(event.target.value)}
                     onWheel={empecherModificationMolette}
                   />
 
-                  <input
+                  <Input
                     type="number"
                     min="0"
-                    step="0.1"
-                    placeholder="Max. km"
-                    value={distanceMax}
-                    onChange={(event) => setDistanceMax(event.target.value)}
-                    className="rounded border p-2"
+                    step="50"
+                    placeholder="Max. D+"
+                    value={deniveleMax}
+                    onChange={(event) => setDeniveleMax(event.target.value)}
                     onWheel={empecherModificationMolette}
                   />
                 </div>
               </div>
+            )}
 
-              {/* ROUTE : ALLURE */}
+            {/* INTENSITÉ */}
 
-              {typeSortie === "route" && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Allure
-                  </label>
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Intensité
+              </label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Min. 4:30"
-                      value={allureMin}
-                      onChange={(event) => setAllureMin(event.target.value)}
-                      className="rounded border p-2"
-                    />
-
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Max. 6:00"
-                      value={allureMax}
-                      onChange={(event) => setAllureMax(event.target.value)}
-                      className="rounded border p-2"
-                    />
-                  </div>
-
-                  <p className="mt-1 text-xs text-gray-500">min/km</p>
-                </div>
-              )}
-
-              {/* TRAIL : D+ */}
-
-              {typeSortie === "trail" && (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Dénivelé positif
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      min="0"
-                      step="50"
-                      placeholder="Min. D+"
-                      value={deniveleMin}
-                      onChange={(event) => setDeniveleMin(event.target.value)}
-                      className="rounded border p-2"
-                      onWheel={empecherModificationMolette}
-                    />
-
-                    <input
-                      type="number"
-                      min="0"
-                      step="50"
-                      placeholder="Max. D+"
-                      value={deniveleMax}
-                      onChange={(event) => setDeniveleMax(event.target.value)}
-                      className="rounded border p-2"
-                      onWheel={empecherModificationMolette}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* INTENSITÉ */}
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Intensité
-                </label>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    ["tranquille", "Tranquille"],
-                    ["moderee", "Modérée"],
-                    ["soutenue", "Soutenue"],
-                  ].map(([valeur, texte]) => (
-                    <button
-                      key={valeur}
-                      type="button"
-                      onClick={() =>
-                        setIntensite(
-                          intensite === valeur ? "" : (valeur as Intensite),
-                        )
-                      }
-                      className={
-                        intensite === valeur
-                          ? "rounded border-2 border-[#8ED8B6] px-2 py-2 text-sm font-semibold"
-                          : "rounded border px-2 py-2 text-sm"
-                      }
-                    >
-                      {texte}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {niveauFiltres === 3 && (
-            <div className="space-y-5">
-              <div className="border-t pt-4">
-                <h3 className="mb-4 font-semibold">Filtres complémentaires</h3>
-
-                {/* TYPE D'ENTRAÎNEMENT */}
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Type d&apos;entraînement
-                  </label>
-
-                  <select
-                    value={typeEntrainement}
-                    onChange={(event) =>
-                      setTypeEntrainement(event.target.value)
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  ["tranquille", "Tranquille"],
+                  ["moderee", "Modérée"],
+                  ["soutenue", "Soutenue"],
+                ].map(([valeur, texte]) => (
+                  <ToggleButton
+                    key={valeur}
+                    type="button"
+                    pressed={intensite === valeur}
+                    onClick={() =>
+                      setIntensite(
+                        intensite === valeur ? "" : (valeur as Intensite),
+                      )
                     }
-                    className="w-full rounded border p-2"
+                    size="sm"
                   >
-                    <option value="">Tous</option>
-
-                    <option value="endurance_fondamentale">
-                      Endurance fondamentale
-                    </option>
-
-                    <option value="sortie_longue">Sortie longue</option>
-
-                    <option value="tempo_seuil">Tempo / seuil</option>
-
-                    <option value="fractionne">Fractionné</option>
-
-                    <option value="cotes">Côtes</option>
-
-                    <option value="recuperation">Récupération</option>
-
-                    <option value="libre">Libre</option>
-                  </select>
-                </div>
-
-                {/* DURÉE */}
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Durée estimée
-                  </label>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Min. minutes"
-                      value={dureeMin}
-                      onChange={(event) => setDureeMin(event.target.value)}
-                      className="rounded border p-2"
-                      onWheel={empecherModificationMolette}
-                    />
-
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Max. minutes"
-                      value={dureeMax}
-                      onChange={(event) => setDureeMax(event.target.value)}
-                      className="rounded border p-2"
-                      onWheel={empecherModificationMolette}
-                    />
-                  </div>
-                </div>
+                    {texte}
+                  </ToggleButton>
+                ))}
               </div>
-
-              {/* PARTICIPATION */}
-
-              <div className="border-t pt-4">
-                <h4 className="mb-3 font-semibold">Participation</h4>
-
-                {/* GENRES */}
-
-                <div className="mb-4">
-                  <p className="mb-2 text-sm font-medium">Genres autorisés</p>
-
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={genres.includes("homme")}
-                        onChange={() => basculerGenre("homme")}
-                      />
-                      Homme
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={genres.includes("femme")}
-                        onChange={() => basculerGenre("femme")}
-                      />
-                      Femme
-                    </label>
-
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={genres.includes("autre")}
-                        onChange={() => basculerGenre("autre")}
-                      />
-                      Autre
-                    </label>
-                  </div>
-                </div>
-
-                {/* MODE D'INSCRIPTION */}
-
-                <div className="mb-4">
-                  <p className="mb-2 text-sm font-medium">
-                    Mode d&apos;inscription
-                  </p>
-
-                  <select
-                    value={modeInscription}
-                    onChange={(event) => setModeInscription(event.target.value)}
-                    className="w-full rounded border p-2"
-                  >
-                    <option value="">Tous</option>
-
-                    <option value="automatique">Validation automatique</option>
-
-                    <option value="validation">Sur acceptation</option>
-                  </select>
-                </div>
-
-                {/* SORTIES COMPLÈTES */}
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={masquerCompletes}
-                    onChange={(event) =>
-                      setMasquerCompletes(event.target.checked)
-                    }
-                  />
-                  Masquer les sorties complètes
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* COMMANDES */}
-
-          <div
-            className="
-    grid
-    grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]
-    items-center
-    gap-2
-    pt-2
-  "
-          >
-            {/* MES CONTACTS */}
-
-            <div className="flex justify-start">
-              <button
-                type="button"
-                onClick={() => setAvecSuivis((valeur) => !valeur)}
-                aria-pressed={avecSuivis}
-                className={
-                  avecSuivis
-                    ? `
-            w-28
-            rounded
-            border-2
-            border-[#8ED8B6]
-            px-2
-            py-1.5
-            text-xs
-            font-semibold
-            leading-tight
-          `
-                    : `
-            w-28
-            rounded
-            border
-            px-2
-            py-1.5
-            text-xs
-            leading-tight
-          `
-                }
-              >
-                Mes contacts
-                <span className="block">uniquement</span>
-              </button>
-            </div>
-
-            {/* BOUTONS DE DROITE */}
-
-            <div className="flex justify-end gap-2">
-              {niveauFiltres !== 1 && (
-                <button
-                  type="button"
-                  onClick={reinitialiserFiltres}
-                  disabled={loading}
-                  className="
-          rounded
-          border
-          px-3
-          py-2
-          text-sm
-        "
-                >
-                  Réinitialiser
-                </button>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="
-        w-28
-        rounded
-        border
-        px-3
-        py-2
-        text-sm
-        font-medium
-      "
-              >
-                {loading ? "Recherche..." : "Rechercher"}
-              </button>
             </div>
           </div>
 
-          {message && <p className="text-sm">{message}</p>}
-        </form>
-      )}
-    </div>
+          {/* ==================================================
+            FILTRES COMPLÉMENTAIRES
+        ================================================== */}
+
+          <div className="space-y-4 border-t border-border pt-4">
+            <h3 className="font-semibold">Filtres complémentaires</h3>
+
+            {/* TYPE D'ENTRAÎNEMENT */}
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Type d&apos;entraînement
+              </label>
+
+              <Select
+                value={typeEntrainement}
+                onChange={(event) => setTypeEntrainement(event.target.value)}
+              >
+                <option value="">Tous</option>
+
+                <option value="endurance_fondamentale">
+                  Endurance fondamentale
+                </option>
+
+                <option value="sortie_longue">Sortie longue</option>
+
+                <option value="tempo_seuil">Tempo / seuil</option>
+
+                <option value="fractionne">Fractionné</option>
+
+                <option value="cotes">Côtes</option>
+
+                <option value="recuperation">Récupération</option>
+
+                <option value="libre">Libre</option>
+              </Select>
+            </div>
+
+            {/* DURÉE */}
+
+            <div>
+              <label className="mb-2 block text-sm font-medium">
+                Durée estimée
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="Min. minutes"
+                  value={dureeMin}
+                  onChange={(event) => setDureeMin(event.target.value)}
+                  onWheel={empecherModificationMolette}
+                />
+
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="Max. minutes"
+                  value={dureeMax}
+                  onChange={(event) => setDureeMax(event.target.value)}
+                  onWheel={empecherModificationMolette}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ==================================================
+            PARTICIPATION
+        ================================================== */}
+
+          <div className="space-y-4 border-t border-border pt-4">
+            <h3 className="font-semibold">Participation</h3>
+
+            {/* GENRES */}
+
+            <div>
+              <p className="mb-2 text-sm font-medium">Genres autorisés</p>
+
+              <div className="flex flex-wrap gap-x-6 gap-y-3">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    checked={genres.includes("homme")}
+                    onCheckedChange={() => basculerGenre("homme")}
+                  />
+                  Homme
+                </label>
+
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    checked={genres.includes("femme")}
+                    onCheckedChange={() => basculerGenre("femme")}
+                  />
+                  Femme
+                </label>
+
+                <label className="flex cursor-pointer items-center gap-2">
+                  <Checkbox
+                    checked={genres.includes("autre")}
+                    onCheckedChange={() => basculerGenre("autre")}
+                  />
+                  Autre
+                </label>
+              </div>
+            </div>
+
+            {/* MODE D'INSCRIPTION */}
+
+            <div>
+              <p className="mb-2 text-sm font-medium">
+                Mode d&apos;inscription
+              </p>
+
+              <Select
+                value={modeInscription}
+                onChange={(event) => setModeInscription(event.target.value)}
+              >
+                <option value="">Tous</option>
+
+                <option value="automatique">Validation automatique</option>
+
+                <option value="validation">Sur acceptation</option>
+              </Select>
+            </div>
+
+            {/* SORTIES COMPLÈTES */}
+
+            <label className="flex cursor-pointer items-center gap-2">
+              <Checkbox
+                checked={masquerCompletes}
+                onCheckedChange={(checked) =>
+                  setMasquerCompletes(checked === true)
+                }
+              />
+              Masquer les sorties complètes
+            </label>
+          </div>
+        </div>
+      </FilterDrawer>
+
+      {/* MESSAGE */}
+
+      {message && <p className="text-sm text-destructive">{message}</p>}
+    </form>
   );
 }

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { afficherDuree, afficherTypeEntrainement } from "@/lib/sortie-utils";
 import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default async function MesSortiesPage() {
   const supabase = await createClient();
@@ -345,171 +347,119 @@ export default async function MesSortiesPage() {
     const nombreDemandes = nombreDemandesParSortie[sortie.id] ?? 0;
 
     return (
-      <Link
+      <Card
         key={sortie.id}
-        href={`/sorties/${sortie.id}`}
-        className="
-    relative
-    block
-    overflow-hidden
-    rounded
-    border
-    px-4
-    py-3
-    transition
-    hover:bg-gray-500/5
-
-    after:absolute
-    after:bottom-0
-    after:left-0
-    after:h-[3px]
-    after:w-full
-    after:origin-left
-    after:scale-x-0
-    after:bg-[#8ED8B6]
-    after:transition-transform
-    after:duration-200
-
-    hover:after:scale-x-100
-  "
+        className={
+          sortie.statut === "annulee"
+            ? "overflow-hidden opacity-70"
+            : "overflow-hidden"
+        }
       >
-        <div
+        <Link
+          href={`/sorties/${sortie.id}`}
           className="
-          flex
-          items-start
-          justify-between
-          gap-4
-        "
+        block
+        p-4
+        transition-colors
+        hover:bg-accent/50
+        focus-visible:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-inset
+        focus-visible:ring-ring
+      "
         >
-          <div className="min-w-0">
-            {/* TITRE */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              {/* TITRE + TYPE */}
 
-            <h3 className="font-semibold">{sortie.titre}</h3>
+              <div className="flex min-w-0 items-center gap-2">
+                <h3 className="truncate font-semibold">{sortie.titre}</h3>
 
-            {/* TYPE + ENTRAÎNEMENT */}
+                <Badge variant="secondary" className="shrink-0 font-medium">
+                  {sortie.type_sortie === "trail" ? "Trail" : "Route"}
+                </Badge>
+              </div>
 
-            <p className="mt-0.5 text-sm font-medium">
-              {sortie.type_sortie === "trail" ? "Trail" : "Route"}
+              {/* TYPE D'ENTRAÎNEMENT */}
 
               {sortie.type_entrainement && (
-                <>
-                  {" · "}
+                <p className="mt-1 text-sm font-medium">
                   {afficherTypeEntrainement(sortie.type_entrainement)}
-                </>
+                </p>
               )}
-            </p>
 
-            {/* DISTANCE + D+ + DURÉE */}
+              {/* DISTANCE + D+ + DURÉE */}
 
-            {(sortie.distance_km !== null ||
-              sortie.denivele_positif_m !== null ||
-              sortie.duree_estimee_minutes !== null) && (
-              <p className="mt-0.5 text-sm text-gray-500">
-                {sortie.distance_km !== null && (
+              {(sortie.distance_km !== null ||
+                sortie.denivele_positif_m !== null ||
+                sortie.duree_estimee_minutes !== null) && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {sortie.distance_km !== null && (
+                    <>
+                      {Number(sortie.distance_km).toLocaleString("fr-FR", {
+                        maximumFractionDigits: 1,
+                      })}{" "}
+                      km
+                    </>
+                  )}
+
+                  {sortie.denivele_positif_m !== null && (
+                    <>
+                      {sortie.distance_km !== null && " · "}
+                      {sortie.denivele_positif_m} m D+
+                    </>
+                  )}
+
+                  {sortie.duree_estimee_minutes !== null && (
+                    <>
+                      {(sortie.distance_km !== null ||
+                        sortie.denivele_positif_m !== null) &&
+                        " · "}
+
+                      {afficherDuree(sortie.duree_estimee_minutes)}
+                    </>
+                  )}
+                </p>
+              )}
+
+              {/* DATE + LIEU */}
+
+              <p className="mt-2 text-sm text-muted-foreground">
+                {formatDateLongue(dateKey)}
+                {" · "}
+                <span className="font-medium text-foreground">
+                  {formatHeure(sortie.date_heure_depart)}
+                </span>
+
+                {sortie.lieu_depart && (
                   <>
-                    {Number(sortie.distance_km).toLocaleString("fr-FR", {
-                      maximumFractionDigits: 1,
-                    })}{" "}
-                    km
-                  </>
-                )}
-
-                {sortie.denivele_positif_m !== null && (
-                  <>
-                    {sortie.distance_km !== null && " · "}
-                    {sortie.denivele_positif_m} m D+
-                  </>
-                )}
-
-                {sortie.duree_estimee_minutes !== null && (
-                  <>
-                    {(sortie.distance_km !== null ||
-                      sortie.denivele_positif_m !== null) &&
-                      " · "}
-
-                    {afficherDuree(sortie.duree_estimee_minutes)}
+                    {" · "}
+                    {sortie.lieu_depart}
                   </>
                 )}
               </p>
-            )}
+            </div>
 
-            {/* DATE + LIEU */}
+            {/* ÉTATS */}
 
-            <p className="mt-1 text-sm">
-              {formatDateLongue(dateKey)}
-              {" · "}
-              <strong>{formatHeure(sortie.date_heure_depart)}</strong>
-
-              {sortie.lieu_depart && (
-                <>
-                  {" · "}
-                  {sortie.lieu_depart}
-                </>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              {sortie.statut === "annulee" && (
+                <Badge variant="destructive">Annulée</Badge>
               )}
-            </p>
+
+              {demandeEnAttente && <Badge variant="outline">En attente</Badge>}
+
+              {estOrganisateur && nombreDemandes > 0 && (
+                <Badge>
+                  {nombreDemandes === 1
+                    ? "1 demande"
+                    : `${nombreDemandes} demandes`}
+                </Badge>
+              )}
+            </div>
           </div>
-
-          {/* ÉTAT / INFORMATIONS */}
-
-          <div
-            className="
-            flex
-            shrink-0
-            flex-col
-            items-end
-            gap-1
-          "
-          >
-            {sortie.statut === "annulee" && (
-              <span
-                className="
-                rounded-full
-                border
-                px-2
-                py-0.5
-                text-xs
-                font-medium
-              "
-              >
-                Annulée
-              </span>
-            )}
-
-            {demandeEnAttente && (
-              <span
-                className="
-                rounded-full
-                border
-                px-2
-                py-0.5
-                text-xs
-                font-medium
-              "
-              >
-                En attente
-              </span>
-            )}
-
-            {estOrganisateur && nombreDemandes > 0 && (
-              <span
-                className="
-                  rounded-full
-                  bg-[#8ED8B6]
-                  px-2
-                  py-0.5
-                  text-xs
-                  font-medium
-                  text-black
-                "
-              >
-                {nombreDemandes === 1
-                  ? "1 demande"
-                  : `${nombreDemandes} demandes`}
-              </span>
-            )}
-          </div>
-        </div>
-      </Link>
+        </Link>
+      </Card>
     );
   }
 
@@ -520,7 +470,7 @@ export default async function MesSortiesPage() {
   return (
     <main className="mx-auto max-w-2xl p-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Mes sorties</h1>
+        <h1 className="text-2xl font-semibold">Mes sorties</h1>
       </div>
 
       {/* ==================================================
@@ -528,10 +478,10 @@ export default async function MesSortiesPage() {
     ================================================== */}
 
       <section className="mb-10">
-        <h2 className="mb-6 text-xl font-semibold">À venir</h2>
+        <h2 className="mb-5 text-lg font-semibold">À venir</h2>
 
         {!aDesSortiesAVenir ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Vous n&apos;avez aucune sortie à venir.
           </p>
         ) : (
@@ -586,15 +536,15 @@ export default async function MesSortiesPage() {
     ================================================== */}
 
       {(nombreSortiesAnnulees > 0 || nombreSortiesHistorique > 0) && (
-        <section className="border-t pt-5">
-          <h2 className="mb-2 text-sm font-semibold text-gray-500">
+        <section className="border-t border-border pt-5">
+          <h2 className="mb-2 text-sm font-semibold text-muted-foreground">
             Autres sorties
           </h2>
 
           {/* SORTIES ANNULÉES */}
 
           {nombreSortiesAnnulees > 0 && (
-            <details className="border-b py-4">
+            <details className="border-b border-border py-4">
               <summary
                 className="
                 cursor-pointer
@@ -602,7 +552,7 @@ export default async function MesSortiesPage() {
               "
               >
                 Sorties annulées{" "}
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   ({nombreSortiesAnnulees})
                 </span>
               </summary>
@@ -650,7 +600,7 @@ export default async function MesSortiesPage() {
               "
               >
                 Historique{" "}
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-muted-foreground">
                   ({nombreSortiesHistorique})
                 </span>
               </summary>

@@ -34,13 +34,17 @@ export default function SelecteurRayon({
   onRayonChange,
 }: SelecteurRayonProps) {
   const rayonNormalise = normaliserRayon(rayonKm);
+
   const index = RAYONS_KM.findIndex((rayon) => rayon === rayonNormalise);
 
   return (
     <div>
-      <div className="mb-1 flex items-center justify-between text-sm">
+      <div className="mb-2 flex items-center justify-between text-sm">
         <span className="font-medium">Rayon de recherche</span>
-        <span className="font-medium">{rayonNormalise} km</span>
+
+        <span className="font-semibold text-primary-strong">
+          {rayonNormalise} km
+        </span>
       </div>
 
       <input
@@ -51,9 +55,11 @@ export default function SelecteurRayon({
         value={index}
         onChange={(event) => {
           const nouvelIndex = Number(event.target.value);
+
           onRayonChange(RAYONS_KM[nouvelIndex]);
         }}
-        className="w-full"
+        className="rayon-slider w-full"
+        aria-label="Rayon de recherche en kilomètres"
       />
 
       <div className="-mt-1 grid grid-cols-7 text-center">
@@ -63,8 +69,16 @@ export default function SelecteurRayon({
             type="button"
             onClick={() => onRayonChange(rayon)}
             className={`
+              py-1
               text-[10px]
-              ${rayon === rayonNormalise ? "font-semibold" : "text-gray-500"}
+              transition-colors
+              focus-visible:outline-none
+              focus-visible:text-primary-strong
+              ${
+                rayon === rayonNormalise
+                  ? "font-semibold text-primary-strong"
+                  : "text-muted-foreground hover:text-foreground"
+              }
             `}
           >
             {rayon}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
@@ -71,23 +71,17 @@ export default function ContacterParticipantButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={contacter}
         disabled={chargement}
-        className="
-                    rounded
-                    border
-                    px-3
-                    py-2
-                    text-sm
-                    disabled:opacity-50
-                "
       >
         {chargement ? "Ouverture..." : "Contacter"}
-      </button>
+      </Button>
 
-      {erreur && <p className="mt-2 text-sm">{erreur}</p>}
+      {erreur && <p className="mt-2 text-sm text-destructive">{erreur}</p>}
     </div>
   );
 }

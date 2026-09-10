@@ -2,7 +2,7 @@ export const formControlClassName = [
   "w-full",
   "rounded-md",
   "border border-input",
-  "bg-background text-foreground",
+  "bg-card text-foreground",
   "shadow-sm",
   "transition-colors",
   "placeholder:text-muted-foreground",

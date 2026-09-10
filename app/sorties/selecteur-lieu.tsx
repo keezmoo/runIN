@@ -6,6 +6,8 @@ import type {
   Map as LeafletMap,
   Marker as LeafletMarker,
 } from "leaflet";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export type Localisation = {
   latitude: number;
@@ -409,12 +411,21 @@ export default function SelecteurLieu({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border">
+    <div className="overflow-hidden rounded-xl border border-border">
       <button
         type="button"
         onClick={() => setOuverte((valeur) => !valeur)}
         aria-expanded={ouverte}
-        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+        className="
+  flex w-full items-center justify-between gap-3
+  px-4 py-3 text-left
+  transition-colors
+  hover:bg-accent
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-inset
+  focus-visible:ring-ring
+"
       >
         <div className="flex min-w-0 items-center gap-2">
           <svg
@@ -455,31 +466,34 @@ export default function SelecteurLieu({
             <label className="mb-1 block text-sm font-medium">{libelle}</label>
 
             <div className="flex gap-2">
-              <input
+              <Input
                 type="text"
                 value={lieu}
                 onChange={(event) => modifierLieu(event.target.value)}
                 placeholder={placeholder}
-                className="min-w-0 flex-1 rounded-lg border p-2"
+                className="min-w-0 flex-1"
               />
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={localiser}
                 disabled={rechercheEnCours}
-                className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50"
+                className="shrink-0 bg-card"
               >
                 {rechercheEnCours ? "Recherche..." : "Localiser"}
-              </button>
+              </Button>
             </div>
 
             {!localisation && (
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Cliquez sur « Localiser » ou choisissez un point sur la carte.
               </p>
             )}
 
-            {message && <p className="mt-2 text-sm text-red-500">{message}</p>}
+            {message && (
+              <p className="mt-2 text-sm text-destructive">{message}</p>
+            )}
           </div>
 
           {contenuSupplementaire}
@@ -488,25 +502,21 @@ export default function SelecteurLieu({
             {localisationCarte ? (
               <div
                 ref={conteneurRef}
-                className="h-56 w-full overflow-hidden rounded-lg border sm:h-64"
+                className="h-56 w-full overflow-hidden rounded-lg border border-border sm:h-64"
               />
             ) : (
-              <div className="rounded-lg border p-4 text-sm text-gray-500">
+              <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                 Localisez un lieu pour afficher la carte.
               </div>
             )}
 
-            <p className="mt-2 text-xs text-gray-500">{aideCarte}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{aideCarte}</p>
           </div>
 
           <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={validerEtFermer}
-              className="rounded-lg border px-4 py-2 text-sm font-medium"
-            >
+            <Button type="button" onClick={validerEtFermer}>
               Valider la localisation
-            </button>
+            </Button>
           </div>
         </div>
       )}

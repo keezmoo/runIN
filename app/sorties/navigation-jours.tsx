@@ -1,497 +1,306 @@
 "use client";
 
-import {
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
-
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Jour = {
-    date: string;
-    disponible: boolean;
+  date: string;
+  disponible: boolean;
 };
-
 
 type NavigationJoursProps = {
-    jours: Jour[];
-    dateInitiale: string;
+  jours: Jour[];
+  dateInitiale: string;
 };
 
-
-function convertirDate(
-    date: string
-) {
-    // Midi évite les problèmes de changement
-    // de jour liés aux fuseaux horaires.
-    return new Date(
-        `${date}T12:00:00`
-    );
+function convertirDate(date: string) {
+  // Midi évite les problèmes de changement
+  // de jour liés aux fuseaux horaires.
+  return new Date(`${date}T12:00:00`);
 }
 
-
-function capitaliser(
-    texte: string
-) {
-    return (
-        texte.charAt(0).toUpperCase() +
-        texte.slice(1)
-    );
+function capitaliser(texte: string) {
+  return texte.charAt(0).toUpperCase() + texte.slice(1);
 }
-
 
 export default function NavigationJours({
-    jours,
-    dateInitiale,
+  jours,
+  dateInitiale,
 }: NavigationJoursProps) {
+  const [dateActive, setDateActive] = useState(dateInitiale);
 
-    const [
-        dateActive,
-        setDateActive,
-    ] = useState(
-        dateInitiale
+  const dateActiveRef = useRef(dateInitiale);
+
+  function changerJourActif(nouvelleDate: string) {
+    if (dateActiveRef.current === nouvelleDate) {
+      return;
+    }
+
+    dateActiveRef.current = nouvelleDate;
+
+    setDateActive(nouvelleDate);
+
+    window.dispatchEvent(
+      new CustomEvent("runin:jour-actif", {
+        detail: {
+          date: nouvelleDate,
+        },
+      }),
+    );
+  }
+
+  const inputDateRef = useRef<HTMLInputElement>(null);
+  const aujourdHui = new Date().toLocaleDateString("sv-SE");
+
+  // ------------------------------------------------
+  // JOUR ACTIF SELON LE SCROLL
+  // ------------------------------------------------
+
+  useEffect(() => {
+    const conteneur = document.getElementById("liste-sorties-scroll");
+
+    if (!conteneur) {
+      return;
+    }
+
+    function mettreAJourJourActif() {
+      const lignes = Array.from(
+        conteneur!.querySelectorAll<HTMLElement>("[data-minute-depart]"),
+      );
+
+      const conteneurRect = conteneur!.getBoundingClientRect();
+
+      // Première ligne encore visible dans la liste
+      const premiereLigneVisible = lignes.find(
+        (ligne) => ligne.getBoundingClientRect().bottom > conteneurRect.top + 2,
+      );
+
+      if (!premiereLigneVisible) {
+        return;
+      }
+
+      const section = premiereLigneVisible.closest<HTMLElement>(
+        "[data-jour-sorties]",
+      );
+
+      const nouvelleDate = section?.dataset.jourSorties;
+
+      if (!nouvelleDate) {
+        return;
+      }
+
+      changerJourActif(nouvelleDate);
+    }
+
+    mettreAJourJourActif();
+
+    conteneur.addEventListener("scroll", mettreAJourJourActif, {
+      passive: true,
+    });
+
+    return () => {
+      conteneur.removeEventListener("scroll", mettreAJourJourActif);
+    };
+  }, []);
+
+  // ------------------------------------------------
+  // MOIS DU JOUR SÉLECTIONNÉ
+  // ------------------------------------------------
+
+  const moisAffiche = useMemo(() => {
+    if (!dateActive) {
+      return "";
+    }
+
+    return capitaliser(
+      convertirDate(dateActive).toLocaleDateString("fr-FR", {
+        month: "long",
+        year: "numeric",
+      }),
+    );
+  }, [dateActive]);
+
+  const afficherRetourAujourdhui = !jours.some(
+    (jour) => jour.date === aujourdHui,
+  );
+
+  function revenirAujourdhui() {
+    const url = new URL(window.location.href);
+
+    // On retire uniquement la date.
+    // Les autres filtres restent conservés.
+    url.searchParams.delete("date");
+
+    window.location.assign(url.toString());
+  }
+  // ------------------------------------------------
+  // ALLER À UN JOUR
+  // ------------------------------------------------
+
+  function allerAuJour(date: string) {
+    const conteneur = document.getElementById("liste-sorties-scroll");
+
+    if (!conteneur) {
+      return;
+    }
+
+    // ------------------------------------------------
+    // JOUR À AFFICHER
+    // ------------------------------------------------
+    //
+    // Si le jour sélectionné contient une sortie :
+    // on utilise ce jour.
+    //
+    // Sinon :
+    // on cherche le prochain jour contenant
+    // une sortie parmi les 7 jours affichés.
+    // ------------------------------------------------
+
+    const jourCible = jours.find(
+      (jour) => jour.date >= date && jour.disponible,
     );
 
-    const dateActiveRef =
-        useRef(dateInitiale);
-
-    function changerJourActif(
-        nouvelleDate: string
-    ) {
-
-        if (
-            dateActiveRef.current ===
-            nouvelleDate
-        ) {
-            return;
-        }
-
-        dateActiveRef.current =
-            nouvelleDate;
-
-        setDateActive(
-            nouvelleDate
-        );
-
-        window.dispatchEvent(
-            new CustomEvent(
-                "runin:jour-actif",
-                {
-                    detail: {
-                        date:
-                            nouvelleDate,
-                    },
-                }
-            )
-        );
+    if (!jourCible) {
+      return;
     }
 
-    const inputDateRef =
-        useRef<HTMLInputElement>(
-            null
-        );
-    const aujourdHui =
-        new Date()
-            .toLocaleDateString(
-                "sv-SE"
-            );
+    const section = document.getElementById(`jour-${jourCible.date}`);
 
-    // ------------------------------------------------
-    // JOUR ACTIF SELON LE SCROLL
-    // ------------------------------------------------
-
-    useEffect(() => {
-
-        const conteneur =
-            document.getElementById(
-                "liste-sorties-scroll"
-            );
-
-        if (!conteneur) {
-            return;
-        }
-
-
-        function mettreAJourJourActif() {
-
-            const lignes =
-                Array.from(
-                    conteneur!.querySelectorAll<HTMLElement>(
-                        "[data-minute-depart]"
-                    )
-                );
-
-            const conteneurRect =
-                conteneur!.getBoundingClientRect();
-
-
-            // Première ligne encore visible dans la liste
-            const premiereLigneVisible =
-                lignes.find(
-                    (ligne) =>
-                        ligne
-                            .getBoundingClientRect()
-                            .bottom >
-                        conteneurRect.top + 2
-                );
-
-            if (!premiereLigneVisible) {
-                return;
-            }
-
-
-            const section =
-                premiereLigneVisible.closest<HTMLElement>(
-                    "[data-jour-sorties]"
-                );
-
-            const nouvelleDate =
-                section?.dataset.jourSorties;
-
-            if (!nouvelleDate) {
-                return;
-            }
-
-
-            changerJourActif(
-                nouvelleDate
-            );
-        }
-
-
-        mettreAJourJourActif();
-
-
-        conteneur.addEventListener(
-            "scroll",
-            mettreAJourJourActif,
-            {
-                passive: true,
-            }
-        );
-
-
-        return () => {
-
-            conteneur.removeEventListener(
-                "scroll",
-                mettreAJourJourActif
-            );
-
-        };
-
-    }, []);
-
-    // ------------------------------------------------
-    // MOIS DU JOUR SÉLECTIONNÉ
-    // ------------------------------------------------
-
-    const moisAffiche =
-        useMemo(() => {
-
-            if (!dateActive) {
-                return "";
-            }
-
-            return capitaliser(
-                convertirDate(
-                    dateActive
-                ).toLocaleDateString(
-                    "fr-FR",
-                    {
-                        month: "long",
-                        year: "numeric",
-                    }
-                )
-            );
-
-        }, [dateActive]);
-
-
-    const afficherRetourAujourdhui =
-        !jours.some(
-            (jour) =>
-                jour.date === aujourdHui
-        );
-
-    function revenirAujourdhui() {
-
-        const url =
-            new URL(
-                window.location.href
-            );
-
-        // On retire uniquement la date.
-        // Les autres filtres restent conservés.
-        url.searchParams.delete(
-            "date"
-        );
-
-        window.location.assign(
-            url.toString()
-        );
-    }
-    // ------------------------------------------------
-    // ALLER À UN JOUR
-    // ------------------------------------------------
-
-    function allerAuJour(
-        date: string
-    ) {
-
-        const conteneur =
-            document.getElementById(
-                "liste-sorties-scroll"
-            );
-
-        if (!conteneur) {
-            return;
-        }
-
-
-        // ------------------------------------------------
-        // JOUR À AFFICHER
-        // ------------------------------------------------
-        //
-        // Si le jour sélectionné contient une sortie :
-        // on utilise ce jour.
-        //
-        // Sinon :
-        // on cherche le prochain jour contenant
-        // une sortie parmi les 7 jours affichés.
-        // ------------------------------------------------
-
-        const jourCible =
-            jours.find(
-                (jour) =>
-                    jour.date >= date &&
-                    jour.disponible
-            );
-
-        if (!jourCible) {
-            return;
-        }
-
-
-        const section =
-            document.getElementById(
-                `jour-${jourCible.date}`
-            );
-
-        if (!section) {
-            return;
-        }
-
-
-        // Le trait et la navigation horaire
-        // utilisent maintenant le vrai jour affiché.
-
-        changerJourActif(
-            jourCible.date
-        );
-
-
-        // ------------------------------------------------
-        // SCROLL
-        // ------------------------------------------------
-
-        const conteneurRect =
-            conteneur.getBoundingClientRect();
-
-        const sectionRect =
-            section.getBoundingClientRect();
-
-
-        conteneur.scrollTo({
-            top:
-                conteneur.scrollTop +
-                sectionRect.top -
-                conteneurRect.top,
-            behavior: "smooth",
-        });
+    if (!section) {
+      return;
     }
 
+    // Le trait et la navigation horaire
+    // utilisent maintenant le vrai jour affiché.
+
+    changerJourActif(jourCible.date);
+
     // ------------------------------------------------
-    // AUTRE DATE
+    // SCROLL
     // ------------------------------------------------
 
-    function ouvrirCalendrier() {
+    const conteneurRect = conteneur.getBoundingClientRect();
 
-        const input =
-            inputDateRef.current;
+    const sectionRect = section.getBoundingClientRect();
 
-        if (!input) {
-            return;
-        }
+    conteneur.scrollTo({
+      top: conteneur.scrollTop + sectionRect.top - conteneurRect.top,
+      behavior: "smooth",
+    });
+  }
 
-        if (input.showPicker) {
-            input.showPicker();
-        } else {
-            input.click();
-        }
+  // ------------------------------------------------
+  // AUTRE DATE
+  // ------------------------------------------------
+
+  function ouvrirCalendrier() {
+    const input = inputDateRef.current;
+
+    if (!input) {
+      return;
     }
 
+    if (input.showPicker) {
+      input.showPicker();
+    } else {
+      input.click();
+    }
+  }
 
-    function choisirAutreDate(
-        date: string
-    ) {
-
-        if (
-            !date ||
-            date < aujourdHui
-        ) {
-            return;
-        }
-
-        const url =
-            new URL(
-                window.location.href
-            );
-
-        url.searchParams.set(
-            "date",
-            date
-        );
-
-        window.location.assign(
-            url.toString()
-        );
+  function choisirAutreDate(date: string) {
+    if (!date || date < aujourdHui) {
+      return;
     }
 
+    const url = new URL(window.location.href);
 
-    // ------------------------------------------------
-    // AFFICHAGE
-    // ------------------------------------------------
+    url.searchParams.set("date", date);
 
-    return (
+    window.location.assign(url.toString());
+  }
 
-        <section className="mb-4 shrink-0">
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
 
-            {/* MOIS + AUTRE DATE */}
+  return (
+    <section className="mb-4 shrink-0">
+      {/* MOIS + AUTRE DATE */}
 
-            <div
-                className="
+      <div
+        className="
                     mb-2
                     flex
                     items-center
                     justify-between
                 "
+      >
+        <p className="text-sm font-medium">{moisAffiche}</p>
+
+        <div className="flex items-center gap-4">
+          {afficherRetourAujourdhui && (
+            <button
+              type="button"
+              onClick={revenirAujourdhui}
+              className="
+                text-sm
+                text-muted-foreground
+                hover:underline
+            "
             >
+              Aujourd&apos;hui
+            </button>
+          )}
 
-                <p className="text-sm font-medium">
-                    {moisAffiche}
-                </p>
-
-                <div className="flex items-center gap-4">
-
-                    {afficherRetourAujourdhui && (
-
-                        <button
-                            type="button"
-                            onClick={
-                                revenirAujourdhui
-                            }
-                            className="
+          <div className="relative">
+            <button
+              type="button"
+              onClick={ouvrirCalendrier}
+              className="
                 text-sm
-                text-gray-500
+                text-muted-foreground
                 hover:underline
             "
-                        >
-                            Aujourd&apos;hui
-                        </button>
+            >
+              Autre date
+            </button>
 
-                    )}
-
-
-                    <div className="relative">
-
-                        <button
-                            type="button"
-                            onClick={
-                                ouvrirCalendrier
-                            }
-                            className="
-                text-sm
-                text-gray-500
-                hover:underline
-            "
-                        >
-                            Autre date
-                        </button>
-
-                        <input
-                            ref={inputDateRef}
-                            type="date"
-                            min={aujourdHui}
-                            className="
+            <input
+              ref={inputDateRef}
+              type="date"
+              min={aujourdHui}
+              className="
                 pointer-events-none
                 absolute
                 h-0
                 w-0
                 opacity-0
             "
-                            onChange={(event) =>
-                                choisirAutreDate(
-                                    event.target.value
-                                )
-                            }
-                        />
+              onChange={(event) => choisirAutreDate(event.target.value)}
+            />
+          </div>
+        </div>
+      </div>
 
-                    </div>
+      {/* JOURS */}
 
-                </div>
+      <div className="grid grid-cols-7 border-b border-border">
+        {jours.slice(0, 7).map((jour) => {
+          const actif = jour.date === dateActive;
 
-            </div>
+          const date = convertirDate(jour.date);
 
+          const nomJour = date.toLocaleDateString("fr-FR", {
+            weekday: "short",
+          });
 
-            {/* JOURS */}
+          const numero = date.getDate();
 
-            <div
-                className="
-                    grid
-                    grid-cols-7
-                    border-b
-                "
-            >
-
-                {jours.slice(
-                    0,
-                    7
-                ).map((jour) => {
-
-                    const actif =
-                        jour.date ===
-                        dateActive;
-
-                    const date =
-                        convertirDate(
-                            jour.date
-                        );
-
-                    const nomJour =
-                        date.toLocaleDateString(
-                            "fr-FR",
-                            {
-                                weekday: "short",
-                            }
-                        );
-
-                    const numero =
-                        date.getDate();
-
-
-                    return (
-
-                        <button
-                            key={jour.date}
-                            type="button"
-                            onClick={() =>
-                                allerAuJour(
-                                    jour.date
-                                )
-                            }
-                            className={`
+          return (
+            <button
+              key={jour.date}
+              type="button"
+              onClick={() => allerAuJour(jour.date)}
+              className={`
                                 relative
                                 flex
                                 flex-col
@@ -500,54 +309,42 @@ export default function NavigationJours({
                                 text-sm
                                 border-b-2
 
-                                ${actif
-                                    ? "border-current font-semibold"
-                                    : "border-transparent"
-                                }
+${
+  actif
+    ? "border-primary-strong font-semibold text-foreground"
+    : "border-transparent hover:bg-accent/50"
+}
                             `}
-                        >
-
-                            <span
-                                className="
+            >
+              <span
+                className="
                                     text-xs
-                                    text-gray-500
+                                    text-muted-foreground
                                 "
-                            >
-                                {nomJour}
-                            </span>
+              >
+                {nomJour}
+              </span>
 
-                            <span className="mt-1">
-                                {numero}
-                            </span>
+              <span className="mt-1">{numero}</span>
 
+              {/* JOUR AVEC SORTIE */}
 
-                            {/* JOUR AVEC SORTIE */}
-
-                            {jour.disponible && (
-
-                                <span
-                                    className="
+              {jour.disponible && (
+                <span
+                  className="
                                         absolute
                                         bottom-0.5
                                         h-1
                                         w-1
                                         rounded-full
-                                        bg-current
-                                        opacity-50
+bg-primary-strong
                                     "
-                                />
-
-                            )}
-
-                        </button>
-
-                    );
-
-                })}
-
-            </div>
-
-        </section>
-
-    );
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
 }

@@ -17,6 +17,9 @@ import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
 import ContacterParticipantButton from "./contacter-participant-button";
 import CarteSortie from "./carte-sortie";
 import SignalerButton from "@/components/signaler-button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type PageProps = {
   params: Promise<{
@@ -469,14 +472,12 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
       <header className="mb-8">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-full border px-3 py-1 text-sm font-medium">
+          <Badge variant="secondary">
             {sortie.type_sortie === "trail" ? "Trail" : "Route"}
-          </span>
+          </Badge>
 
           {sortie.statut === "annulee" && (
-            <span className="rounded-full border px-3 py-1 text-sm font-semibold">
-              Sortie annulée
-            </span>
+            <Badge variant="destructive">Sortie annulée</Badge>
           )}
         </div>
 
@@ -487,12 +488,9 @@ export default async function DetailSortiePage({ params }: PageProps) {
             sortie.statut === "planifiee" &&
             !sortiePassee && (
               <div className="flex shrink-0 gap-2">
-                <Link
-                  href={`/sorties/${sortie.id}/modifier`}
-                  className="rounded border px-4 py-2"
-                >
-                  Modifier
-                </Link>
+                <Button asChild variant="outline">
+                  <Link href={`/sorties/${sortie.id}/modifier`}>Modifier</Link>
+                </Button>
 
                 {aDesInteractions ? (
                   <AnnulerSortieButton
@@ -513,11 +511,11 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
         {organisateur && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Organisée par{" "}
               <Link
                 href={`/membres/${organisateur.id}`}
-                className="font-medium text-gray-300 hover:underline"
+                className="font-medium text-foreground hover:underline"
               >
                 {organisateur.nom}
               </Link>
@@ -527,9 +525,9 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
         {/* DATE + LIEU */}
 
-        <div className="mt-5 grid gap-4 rounded border p-4 sm:grid-cols-2">
+        <Card className="mt-5 grid gap-4 p-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm text-gray-500">Date et heure</p>
+            <p className="text-sm text-muted-foreground">Date et heure</p>
 
             <p className="mt-1 font-medium">
               {formatDateLongue(dateKey)}
@@ -539,11 +537,11 @@ export default async function DetailSortiePage({ params }: PageProps) {
           </div>
 
           <div>
-            <p className="text-sm text-gray-500">Lieu de départ</p>
+            <p className="text-sm text-muted-foreground">Lieu de départ</p>
 
             <p className="mt-1 font-medium">{sortie.lieu_depart}</p>
           </div>
-        </div>
+        </Card>
       </header>
 
       {/* CARTE */}
@@ -562,7 +560,9 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
       {typeEntrainementAffiche && (
         <section className="mb-5">
-          <p className="text-sm text-gray-500">Type d&apos;entraînement</p>
+          <p className="text-sm text-muted-foreground">
+            Type d&apos;entraînement
+          </p>
 
           <p className="mt-1 text-lg font-semibold">
             {typeEntrainementAffiche}
@@ -572,7 +572,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
       {/* PARTICIPANTS AUTORISÉS */}
       <div>
-        <p className="text-sm text-gray-500">Participants autorisés</p>
+        <p className="text-sm text-muted-foreground">Participants autorisés</p>
 
         <p>{genresAutorisesAffiches}</p>
       </div>
@@ -580,14 +580,14 @@ export default async function DetailSortiePage({ params }: PageProps) {
       {/* CARACTÉRISTIQUES */}
 
       <section className="mb-8">
-        <div className="overflow-x-auto rounded border">
+        <Card className="overflow-x-auto">
           <table className="w-full min-w-max text-center">
-            <thead className="border-b">
+            <thead className="border-b border-border bg-muted/40">
               <tr>
                 {caracteristiques.map((caracteristique) => (
                   <th
                     key={caracteristique.label}
-                    className="px-4 py-3 text-sm font-normal text-gray-500"
+                    className="px-4 py-3 text-sm font-normal text-muted-foreground"
                   >
                     {caracteristique.label}
                   </th>
@@ -608,7 +608,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
               </tr>
             </tbody>
           </table>
-        </div>
+        </Card>
       </section>
 
       {sortie.description && sortie.description.trim() !== "" && (
@@ -636,11 +636,11 @@ export default async function DetailSortiePage({ params }: PageProps) {
               {demandesRecues.map((demande) => {
                 if (idsIndisponibles.has(demande.utilisateur_id)) {
                   return (
-                    <div key={demande.id} className="rounded border p-4">
-                      <p className="font-medium text-gray-500">
+                    <Card key={demande.id} className="p-4">
+                      <p className="font-medium text-muted-foreground">
                         Profil indisponible
                       </p>
-                    </div>
+                    </Card>
                   );
                 }
 
@@ -653,7 +653,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
                 }
 
                 return (
-                  <div key={demande.id} className="rounded border p-4">
+                  <Card key={demande.id} className="p-4">
                     <Link
                       href={`/membres/${profil.id}`}
                       className="font-medium"
@@ -661,7 +661,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
                       {profil.nom}
                     </Link>
 
-                    <p className="mb-3 text-sm text-gray-500">
+                    <p className="mb-3 text-sm text-muted-foreground">
                       {profil.age} ans
                     </p>
 
@@ -670,7 +670,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
                       sortieId={sortie.id}
                       utilisateurId={profil.id}
                     />
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -689,24 +689,13 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
             if (profilIndisponible) {
               return (
-                <div
-                  key={profilId}
-                  className="
-        flex
-        items-center
-        justify-between
-        gap-3
-        rounded
-        border
-        p-3
-      "
-                >
+                <Card key={profilId} className="p-4">
                   <div>
-                    <p className="font-medium text-gray-500">
+                    <p className="font-medium text-muted-foreground">
                       Profil indisponible
                     </p>
                   </div>
-                </div>
+                </Card>
               );
             }
 
@@ -719,17 +708,9 @@ export default async function DetailSortiePage({ params }: PageProps) {
             const estOrganisateurListe = profil.id === sortie.organisateur_id;
 
             return (
-              <div
+              <Card
                 key={profil.id}
-                className="
-                            flex
-                            items-center
-                            justify-between
-                            gap-3
-                            rounded
-                            border
-                            p-3
-                        "
+                className="flex items-center justify-between gap-3 p-3"
               >
                 {/* PROFIL DU PARTICIPANT */}
 
@@ -742,13 +723,17 @@ export default async function DetailSortiePage({ params }: PageProps) {
                 >
                   <p className="font-medium">{profil.nom}</p>
 
-                  <p className="text-sm text-gray-500">{profil.age} ans</p>
+                  <p className="text-sm text-muted-foreground">
+                    {profil.age} ans
+                  </p>
                 </Link>
 
                 {/* ORGANISATEUR */}
 
                 {estOrganisateurListe && (
-                  <span className="text-sm text-gray-500">Organisateur</span>
+                  <span className="text-sm text-muted-foreground">
+                    Organisateur
+                  </span>
                 )}
 
                 {!estOrganisateurListe && peutContacterParticipants && (
@@ -765,7 +750,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
                     />
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -777,16 +762,16 @@ export default async function DetailSortiePage({ params }: PageProps) {
         sortie.mode_inscription === "validation" &&
         sortie.statut === "planifiee" &&
         !sortiePassee && (
-          <section className="mb-8 rounded border p-4">
+          <Card className="mb-8 p-4">
             <p className="font-medium">Votre demande est en attente.</p>
 
             {complet ? (
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-muted-foreground">
                 La sortie est actuellement complète. Votre demande reste active
                 si une place se libère.
               </p>
             ) : (
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {nombrePlacesDisponibles}{" "}
                 {nombrePlacesDisponibles === 1
                   ? "place disponible"
@@ -795,13 +780,13 @@ export default async function DetailSortiePage({ params }: PageProps) {
               </p>
             )}
 
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               {totalDemandesEnAttente}{" "}
               {totalDemandesEnAttente === 1
                 ? "demande en attente."
                 : "demandes en attente."}
             </p>
-          </section>
+          </Card>
         )}
 
       {!estOrganisateur && (
@@ -825,33 +810,14 @@ export default async function DetailSortiePage({ params }: PageProps) {
       {/* BANDEAU D'ACTION FIXE */}
 
       <div
-        className="
-        fixed
-        inset-x-0
-        bottom-0
-        z-50
-        border-t
-       bg-black
-text-white
-        shadow-lg
-    "
+        className=" fixed inset-x-0 bottom-0 z-50 border-t border-border
+        bg-card text-card-foreground shadow-lg "
       >
-        <div
-          className="
-            mx-auto
-            flex
-            max-w-2xl
-            items-center
-            justify-between
-            gap-4
-            px-4
-            py-3
-        "
-        >
+        <Card className="flex items-center justify-between gap-3 p-3">
           {/* NOMBRE DE PARTICIPANTS */}
 
           <div className="shrink-0">
-            <p className="text-sm text-gray-300">Participants</p>
+            <p className="text-sm text-muted-foreground">Participants</p>
 
             <p className="font-semibold">
               {nombreActuel} / {sortie.nombre_max_participants}
@@ -862,11 +828,15 @@ text-white
 
           <div className="flex flex-1 items-center justify-end gap-2">
             {sortie.statut === "annulee" ? (
-              <span className="font-medium text-gray-500">Sortie annulée</span>
+              <span className="font-medium text-muted-foreground">
+                Sortie annulée
+              </span>
             ) : sortiePassee ? (
-              <span className="font-medium text-gray-500">Sortie terminée</span>
+              <span className="font-medium text-muted-foreground">
+                Sortie terminée
+              </span>
             ) : estExcluDeLaSortie ? (
-              <span className="font-medium text-red-500">
+              <span className="font-medium text-destructive">
                 Participation impossible
               </span>
             ) : (
@@ -888,7 +858,7 @@ text-white
               </>
             )}
           </div>
-        </div>
+        </Card>
       </div>
     </main>
   );

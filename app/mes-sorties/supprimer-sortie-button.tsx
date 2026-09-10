@@ -2,78 +2,64 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type SupprimerSortieButtonProps = {
-    sortieId: string;
-    titre: string;
+  sortieId: string;
+  titre: string;
 };
 
 export default function SupprimerSortieButton({
-    sortieId,
-    titre,
+  sortieId,
+  titre,
 }: SupprimerSortieButtonProps) {
-    const supabase = createClient();
-    const router = useRouter();
+  const supabase = createClient();
+  const router = useRouter();
 
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-    async function supprimerSortie() {
-        const confirmation = window.confirm(
-            `Supprimer définitivement la sortie "${titre}" ?`
-        );
+  async function supprimerSortie() {
+    const confirmation = window.confirm(
+      `Supprimer définitivement la sortie "${titre}" ?`,
+    );
 
-        if (!confirmation) {
-            return;
-        }
-
-        setLoading(true);
-        setMessage("");
-
-        const { error } = await supabase.rpc(
-            "supprimer_sortie_sans_interaction",
-            {
-                p_sortie_id: sortieId,
-            }
-        );
-
-        if (error) {
-            console.error(
-                "Erreur suppression :",
-                error
-            );
-
-            setMessage(
-                "Impossible de supprimer la sortie."
-            );
-
-            setLoading(false);
-            return;
-        }
-
-        router.replace("/sorties");
+    if (!confirmation) {
+      return;
     }
 
-    return (
-        <div>
-            <button
-                type="button"
-                onClick={supprimerSortie}
-                disabled={loading}
-                className="rounded border px-4 py-2 disabled:opacity-40"
-            >
-                {loading
-                    ? "Suppression..."
-                    : "Supprimer définitivement"}
-            </button>
+    setLoading(true);
+    setMessage("");
 
-            {message && (
-                <p className="mt-2 text-sm">
-                    {message}
-                </p>
-            )}
-        </div>
-    );
+    const { error } = await supabase.rpc("supprimer_sortie_sans_interaction", {
+      p_sortie_id: sortieId,
+    });
+
+    if (error) {
+      console.error("Erreur suppression :", error);
+
+      setMessage("Impossible de supprimer la sortie.");
+
+      setLoading(false);
+      return;
+    }
+
+    router.replace("/sorties");
+  }
+
+  return (
+    <div>
+      <Button
+        type="button"
+        variant="destructive"
+        onClick={supprimerSortie}
+        disabled={loading}
+      >
+        {loading ? "Suppression..." : "Supprimer définitivement"}
+      </Button>
+
+      {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
+    </div>
+  );
 }

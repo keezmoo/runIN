@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleButton } from "@/components/ui/toggle-button";
+import { ChoiceCard } from "@/components/ui/choice-card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Genre = "homme" | "femme" | "autre";
 
@@ -664,7 +666,7 @@ export default function SortieForm({
             Participants autorisés
           </label>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
             <label
               className={
                 sexeOrganisateur === "femme"
@@ -672,11 +674,10 @@ export default function SortieForm({
                   : "flex items-center gap-2"
               }
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={genresAutorises.includes("femme")}
                 disabled={sexeOrganisateur === "femme"}
-                onChange={() => basculerGenre("femme")}
+                onCheckedChange={() => basculerGenre("femme")}
               />
               Femmes
             </label>
@@ -688,11 +689,10 @@ export default function SortieForm({
                   : "flex items-center gap-2"
               }
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={genresAutorises.includes("homme")}
                 disabled={sexeOrganisateur === "homme"}
-                onChange={() => basculerGenre("homme")}
+                onCheckedChange={() => basculerGenre("homme")}
               />
               Hommes
             </label>
@@ -704,11 +704,10 @@ export default function SortieForm({
                   : "flex items-center gap-2"
               }
             >
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={genresAutorises.includes("autre")}
                 disabled={sexeOrganisateur === "autre"}
-                onChange={() => basculerGenre("autre")}
+                onCheckedChange={() => basculerGenre("autre")}
               />
               Autre
             </label>
@@ -723,67 +722,23 @@ export default function SortieForm({
           </label>
 
           <div className="space-y-2">
-            <label
-              className={`
-              flex
-              cursor-pointer
-              gap-3
-              rounded-lg
-              border
-              p-3
-              transition
+            <ChoiceCard
+              name="modeInscription"
+              value="automatique"
+              checked={modeInscription === "automatique"}
+              onChange={setModeInscription}
+              title="Inscription automatique"
+              description="Toute personne qui clique sur Participer rejoint immédiatement la sortie."
+            />
 
-              ${modeInscription === "automatique" ? "border-primary-strong bg-primary/10" : ""}
-            `}
-            >
-              <input
-                type="radio"
-                name="modeInscription"
-                value="automatique"
-                checked={modeInscription === "automatique"}
-                onChange={(e) => setModeInscription(e.target.value)}
-              />
-
-              <div>
-                <p className="font-medium">Inscription automatique</p>
-
-                <p className="text-sm text-gray-500">
-                  La personne rejoint immédiatement la sortie.
-                </p>
-              </div>
-            </label>
-
-            <label
-              className={`
-              flex
-              cursor-pointer
-              gap-3
-              rounded-lg
-              border
-              p-3
-              transition
-
-              ${modeInscription === "validation" ? "border-primary-strong bg-primary/10" : ""}
-            `}
-            >
-              <input
-                type="radio"
-                name="modeInscription"
-                value="validation"
-                checked={modeInscription === "validation"}
-                onChange={(e) => setModeInscription(e.target.value)}
-              />
-
-              <div>
-                <p className="font-medium">
-                  Validation par l&apos;organisateur
-                </p>
-
-                <p className="text-sm text-gray-500">
-                  Vous acceptez chaque demande avant l&apos;inscription.
-                </p>
-              </div>
-            </label>
+            <ChoiceCard
+              name="modeInscription"
+              value="validation"
+              checked={modeInscription === "validation"}
+              onChange={setModeInscription}
+              title="Validation par l’organisateur"
+              description="Vous acceptez ou refusez chaque demande avant que la personne rejoigne la sortie."
+            />
           </div>
         </div>
       </section>

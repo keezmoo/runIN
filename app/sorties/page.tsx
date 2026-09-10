@@ -11,6 +11,9 @@ import {
   formatHeure,
   getDateKey,
 } from "@/lib/date-utils";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+
 
 type SortiesPageProps = {
   searchParams: Promise<{
@@ -656,7 +659,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                   >
                     {/* TITRE DU JOUR */}
 
-                    <h2 className="border-b pb-2 text-xl font-semibold">
+                    <h2 className="border-b border-border pb-2 text-lg font-semibold">
                       {date === aujourdHui
                         ? `Aujourd'hui — ${formatDateLongue(date)}`
                         : date === ajouterJours(aujourdHui, 1)
@@ -666,7 +669,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
                     {/* SORTIES DU JOUR */}
 
-                    <div>
+                    <div className="space-y-3 pt-3">
                       {sortiesJour.map((sortie) => {
                         const organisateur = profilsParId.get(
                           sortie.organisateur_id,
@@ -778,85 +781,93 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
                         const minuteJour = heureDepart * 60 + minuteDepart;
 
                         return (
-                          <Link
-                            key={sortie.id}
-                            href={`/sorties/${sortie.id}`}
-                            data-minute-depart={minuteJour}
-                            className="
-                                            flex
-                                            items-center
-                                            gap-4
-                                            border-b
-                                            py-2
-                                            hover:opacity-70
-                                        "
-                          >
-                            {/* HEURE */}
+                          <Card key={sortie.id} className="overflow-hidden">
+                            <Link
+                              href={`/sorties/${sortie.id}`}
+                              data-minute-depart={minuteJour}
+                              className="
+        flex
+        items-start
+        gap-3
+        p-4
+        transition-colors
+        hover:bg-accent/50
+        focus-visible:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-inset
+        focus-visible:ring-ring
+      "
+                            >
+                              {/* HEURE */}
 
-                            <div className="w-14 shrink-0 self-start pt-1">
-                              <p className="font-semibold leading-none">
-                                {heureAffichee}
-                              </p>
-                            </div>
-
-                            {/* INFORMATIONS DE LA SORTIE */}
-
-                            <div className="min-w-0 flex-1">
-                              {/* TITRE + ROUTE/TRAIL */}
-
-                              <div className="flex items-baseline gap-2">
-                                <h3 className="truncate font-semibold">
-                                  {sortie.titre}
-                                </h3>
-
-                                <span className="shrink-0 text-sm text-gray-500">
-                                  {sortie.type_sortie === "trail"
-                                    ? "Trail"
-                                    : "Route"}
-                                </span>
+                              <div className="w-14 shrink-0">
+                                <p className="text-base font-semibold leading-none">
+                                  {heureAffichee}
+                                </p>
                               </div>
 
-                              {/* DONNÉES SPORTIVES */}
+                              {/* INFORMATIONS */}
 
-                              <p className="mt-1 truncate text-sm text-gray-500">
-                                {infosSportives}
-                              </p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0 flex-1">
+                                    {/* TITRE + TYPE */}
 
-                              {/* ORGANISATEUR */}
+                                    <div className="flex min-w-0 items-center gap-2">
+                                      <h3 className="truncate font-semibold">
+                                        {sortie.titre}
+                                      </h3>
 
-                              <p className="mt-1 truncate text-xs text-gray-500">
-                                {organisateur?.nom ?? "Organisateur"}
+                                      <Badge
+                                        variant="secondary"
+                                        className="shrink-0 font-medium"
+                                      >
+                                        {sortie.type_sortie === "trail"
+                                          ? "Trail"
+                                          : "Route"}
+                                      </Badge>
+                                    </div>
 
-                                {distanceGeoAffichee !== null &&
-                                  ` • ${distanceGeoAffichee} km`}
-                              </p>
+                                    {/* DONNÉES SPORTIVES */}
 
-                              {infosSuivis && (
-                                <p className="mt-1 truncate text-xs font-medium">
-                                  {infosSuivis}
+                                    <p className="mt-1 truncate text-sm text-muted-foreground">
+                                      {infosSportives}
+                                    </p>
+                                  </div>
+
+                                  {/* PARTICIPANTS */}
+
+                                  <div className="shrink-0 text-right">
+                                    <p className="font-medium leading-none">
+                                      {nombreActuel} /{" "}
+                                      {sortie.nombre_max_participants}
+                                    </p>
+
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                      {modeInscriptionAffiche}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* ORGANISATEUR + DISTANCE */}
+
+                                <p className="mt-2 truncate text-xs text-muted-foreground">
+                                  {organisateur?.nom ?? "Organisateur"}
+
+                                  {distanceGeoAffichee !== null &&
+                                    ` • ${distanceGeoAffichee} km`}
                                 </p>
-                              )}
-                            </div>
 
-                            {/* PARTICIPANTS + INSCRIPTION */}
+                                {/* PERSONNES SUIVIES */}
 
-                            <div
-                              className="
-        shrink-0
-        self-start
-        text-right
-    "
-                            >
-                              <p className="font-medium leading-none">
-                                {nombreActuel} /{" "}
-                                {sortie.nombre_max_participants}
-                              </p>
-
-                              <p className="mt-2 text-xs text-gray-500">
-                                {modeInscriptionAffiche}
-                              </p>
-                            </div>
-                          </Link>
+                                {infosSuivis && (
+                                  <p className="mt-2 truncate text-xs font-medium text-primary-strong">
+                                    {infosSuivis}
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                          </Card>
                         );
                       })}
                     </div>

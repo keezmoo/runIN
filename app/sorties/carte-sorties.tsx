@@ -122,13 +122,7 @@ export default function CarteSorties({
   return (
     <div
       ref={conteneurRef}
-      className="
-        h-72
-        w-full
-        overflow-hidden
-        rounded
-        border
-      "
+      className="h-64 w-full overflow-hidden rounded-xl border border-border"
     />
   );
 }

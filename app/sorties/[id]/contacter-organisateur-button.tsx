@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type ContacterOrganisateurButtonProps = {
@@ -57,26 +57,17 @@ export default function ContacterOrganisateurButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         onClick={contacterOrganisateur}
         disabled={loading}
-        className="
-  rounded
-  border
-  border-white/50
-  bg-black
-  px-3
-  py-2
-  text-sm
-  text-white
-  disabled:opacity-40
-"
       >
         {loading ? "Ouverture..." : "Contacter l'organisateur"}
-      </button>
+      </Button>
 
-      {message && <p className="mt-2 text-sm">{message}</p>}
+      {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
     </div>
   );
 }

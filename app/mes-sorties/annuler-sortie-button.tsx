@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type AnnulerSortieButtonProps = {
@@ -49,16 +49,16 @@ export default function AnnulerSortieButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant="warning"
         onClick={annulerSortie}
         disabled={loading}
-        className="rounded border px-4 py-2 disabled:opacity-40"
       >
         {loading ? "Annulation..." : "Annuler la sortie"}
-      </button>
+      </Button>
 
-      {message && <p className="mt-2 text-sm">{message}</p>}
+      {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
     </div>
   );
 }

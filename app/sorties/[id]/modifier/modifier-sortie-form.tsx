@@ -10,6 +10,13 @@ import {
   validerDonneesSportives,
 } from "@/lib/sortie-utils";
 import SelecteurLieu, { type Localisation } from "../../selecteur-lieu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleButton } from "@/components/ui/toggle-button";
+import { ChoiceCard } from "@/components/ui/choice-card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type Genre = "homme" | "femme" | "autre";
 
@@ -286,372 +293,408 @@ export default function ModifierSortieForm({
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <label className="mb-1 block">Titre</label>
-
-        <input
-          type="text"
-          value={titre}
-          onChange={(e) => setTitre(e.target.value)}
-          className="w-full rounded border p-2"
-        />
-      </div>
-
-      <SelecteurLieu
-        lieu={lieuDepart}
-        onLieuChange={setLieuDepart}
-        localisation={localisation}
-        onLocalisationChange={setLocalisation}
-      />
+    <div className="space-y-8">
+      {/* ==================================================
+        TYPE DE SORTIE
+    ================================================== */}
 
       <div>
-        <label className="mb-1 block">Date et heure</label>
+        <p className="mb-2 font-medium">Type de sortie</p>
 
-        <input
-          type="datetime-local"
-          value={dateHeure}
-          onChange={(e) => setDateHeure(e.target.value)}
-          min={maintenantDatetimeLocal()}
-          className="w-full rounded border p-2"
-        />
+        <div className="grid grid-cols-2 gap-2">
+          <ToggleButton
+            type="button"
+            pressed={typeSortie === "route"}
+            onClick={() => setTypeSortie("route")}
+            className="py-3"
+          >
+            Route
+          </ToggleButton>
+
+          <ToggleButton
+            type="button"
+            pressed={typeSortie === "trail"}
+            onClick={() => setTypeSortie("trail")}
+            className="py-3"
+          >
+            Trail
+          </ToggleButton>
+        </div>
       </div>
 
-      <div>
-        <label className="mb-1 block">Type de sortie</label>
+      {/* ==================================================
+        INFORMATIONS PRINCIPALES
+    ================================================== */}
 
-        <select
-          value={typeSortie}
-          onChange={(e) => setTypeSortie(e.target.value)}
-          className="w-full rounded border p-2"
-        >
-          <option value="route">Route</option>
+      <section className="space-y-5">
+        <div className="border-b pb-2">
+          <h2 className="text-lg font-semibold">Informations principales</h2>
+        </div>
 
-          <option value="trail">Trail</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="mb-1 block font-medium">
-          Type d&apos;entraînement
-        </label>
-
-        <select
-          value={typeEntrainement}
-          onChange={(e) => setTypeEntrainement(e.target.value)}
-          className="w-full rounded border p-2"
-          required
-        >
-          {TYPES_ENTRAINEMENT.map((type) => (
-            <option key={type.value} value={type.value}>
-              {type.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1 block font-medium">Distance</label>
+          <label className="mb-1 block font-medium">Titre de la sortie</label>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="0.1"
-              step="0.1"
-              inputMode="decimal"
-              value={distanceKm}
-              onChange={(e) => setDistanceKm(e.target.value)}
-              className="w-full rounded border p-2"
-              required
-              onWheel={empecherModificationMolette}
-            />
+          <Input
+            type="text"
+            value={titre}
+            onChange={(e) => setTitre(e.target.value)}
+          />
+        </div>
 
-            <span>km</span>
+        <SelecteurLieu
+          lieu={lieuDepart}
+          onLieuChange={setLieuDepart}
+          localisation={localisation}
+          onLocalisationChange={setLocalisation}
+        />
+
+        <div>
+          <label className="mb-1 block font-medium">
+            Date et heure de départ
+          </label>
+
+          <Input
+            type="datetime-local"
+            value={dateHeure}
+            onChange={(e) => setDateHeure(e.target.value)}
+            min={maintenantDatetimeLocal()}
+          />
+        </div>
+      </section>
+
+      {/* ==================================================
+        ENTRAÎNEMENT
+    ================================================== */}
+
+      <section className="space-y-5">
+        <div className="border-b pb-2">
+          <h2 className="text-lg font-semibold">Entraînement</h2>
+        </div>
+
+        <div>
+          <label className="mb-1 block font-medium">
+            Type d&apos;entraînement
+          </label>
+
+          <Select
+            value={typeEntrainement}
+            onChange={(e) => setTypeEntrainement(e.target.value)}
+            required
+          >
+            {TYPES_ENTRAINEMENT.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div
+          className={typeSortie === "trail" ? "grid gap-4 sm:grid-cols-2" : ""}
+        >
+          <div>
+            <label className="mb-1 block font-medium">Distance</label>
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="0.1"
+                step="0.1"
+                inputMode="decimal"
+                value={distanceKm}
+                onChange={(e) => setDistanceKm(e.target.value)}
+                required
+                onWheel={empecherModificationMolette}
+              />
+
+              <span className="shrink-0">km</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block font-medium">
+              Dénivelé positif
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                (facultatif)
+              </span>
+            </label>
+
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                value={denivelePositif}
+                onChange={(e) => setDenivelePositif(e.target.value)}
+                onWheel={empecherModificationMolette}
+              />
+
+              <span className="shrink-0">m D+</span>
+            </div>
           </div>
         </div>
 
         <div>
           <label className="mb-1 block font-medium">
-            Durée totale estimée
-            <span className="ml-1 text-sm font-normal text-gray-500">
+            Durée estimée
+            <span className="ml-1 text-sm font-normal text-muted-foreground">
               (facultatif)
             </span>
           </label>
 
-          <p className="mb-2 text-sm text-gray-500">
+          <p className="mb-2 text-xs text-muted-foreground">
             Temps global prévu pour la sortie, pauses et arrêts compris.
           </p>
 
           <div className="flex items-center gap-2">
-            <input
+            <Input
               type="number"
               min="0"
               step="1"
-              value={denivelePositif}
-              onChange={(e) => setDenivelePositif(e.target.value)}
-              className="w-full rounded border p-2"
+              placeholder="1"
+              value={dureeHeures}
+              onChange={(e) => setDureeHeures(e.target.value)}
+              className="w-20"
               onWheel={empecherModificationMolette}
             />
 
-            <span>m D+</span>
+            <span>h</span>
+
+            <Input
+              type="number"
+              min="0"
+              max="59"
+              step="1"
+              placeholder="30"
+              value={dureeMinutes}
+              onChange={(e) => setDureeMinutes(e.target.value)}
+              className="w-20"
+              onWheel={empecherModificationMolette}
+            />
+
+            <span>min</span>
           </div>
         </div>
-      </div>
 
-      <div>
-        <label className="mb-1 block font-medium">Durée estimée</label>
+        <div>
+          <p className="mb-2 font-medium">Intensité</p>
 
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="0"
-            step="1"
-            placeholder="1"
-            value={dureeHeures}
-            onChange={(e) => setDureeHeures(e.target.value)}
-            className="w-20 rounded border p-2"
-            onWheel={empecherModificationMolette}
-          />
-
-          <span>h</span>
-
-          <input
-            type="number"
-            min="0"
-            max="59"
-            step="1"
-            placeholder="30"
-            value={dureeMinutes}
-            onChange={(e) => setDureeMinutes(e.target.value)}
-            className="w-20 rounded border p-2"
-            onWheel={empecherModificationMolette}
-          />
-
-          <span>min</span>
+          <div className="grid grid-cols-3 gap-2">
+            {INTENSITES.map((item) => (
+              <ToggleButton
+                key={item.value}
+                type="button"
+                size="sm"
+                pressed={intensite === item.value}
+                onClick={() => setIntensite(item.value)}
+              >
+                {item.label}
+              </ToggleButton>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div>
-        <p className="mb-2 font-medium">Intensité</p>
+        <div>
+          <label className="mb-1 block font-medium">
+            Allure moyenne prévue
+            {typeSortie === "trail" ? (
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                (facultatif)
+              </span>
+            ) : (
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
+                *
+              </span>
+            )}
+          </label>
 
-        <div className="space-y-2">
-          {INTENSITES.map((item) => (
-            <label key={item.value} className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="intensite"
-                value={item.value}
-                checked={intensite === item.value}
-                onChange={(e) => setIntensite(e.target.value)}
-              />
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="5"
+              value={allureMinutes}
+              onChange={(e) => setAllureMinutes(e.target.value)}
+              className="w-20"
+              onWheel={empecherModificationMolette}
+            />
 
-              {item.label}
-            </label>
-          ))}
+            <span>:</span>
+
+            <Input
+              type="number"
+              min="0"
+              max="59"
+              step="1"
+              placeholder="30"
+              value={allureSecondes}
+              onChange={(e) => setAllureSecondes(e.target.value)}
+              className="w-20"
+              onWheel={empecherModificationMolette}
+            />
+
+            <span>/ km</span>
+          </div>
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            Allure moyenne envisagée sur l&apos;ensemble de la sortie. Exemple :
+            5:30 / km
+          </p>
         </div>
-      </div>
 
-      <div>
-        <label className="mb-1 block font-medium">
-          Allure moyenne prévue
-          {typeSortie === "trail" ? (
-            <span className="ml-1 text-sm font-normal text-gray-500">
+        <div>
+          <label className="mb-1 block font-medium">
+            Description
+            <span className="ml-1 text-sm font-normal text-muted-foreground">
               (facultatif)
             </span>
-          ) : (
-            <span className="ml-1 text-sm font-normal text-gray-500">*</span>
-          )}
-        </label>
+          </label>
 
-        <div className="flex items-center gap-2">
-          <input
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={1000}
+            rows={5}
+            placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
+          />
+
+          <p className="mt-1 text-xs text-muted-foreground">
+            {description.length} / 1000
+          </p>
+        </div>
+      </section>
+
+      {/* ==================================================
+        PARTICIPATION
+    ================================================== */}
+
+      <section className="space-y-5">
+        <div className="border-b pb-2">
+          <h2 className="text-lg font-semibold">Participation</h2>
+        </div>
+
+        <div>
+          <label className="mb-1 block font-medium">
+            Nombre maximum de participants
+          </label>
+
+          <Input
             type="number"
-            min="0"
-            step="1"
-            placeholder="5"
-            value={allureMinutes}
-            onChange={(e) => setAllureMinutes(e.target.value)}
-            className="w-20 rounded border p-2"
+            min={nombreParticipants}
+            max="100"
+            value={nombreMaxParticipants}
+            onChange={(e) => setNombreMaxParticipants(e.target.value)}
             onWheel={empecherModificationMolette}
           />
 
-          <span>:</span>
-
-          <input
-            type="number"
-            min="0"
-            max="59"
-            step="1"
-            placeholder="30"
-            value={allureSecondes}
-            onChange={(e) => setAllureSecondes(e.target.value)}
-            className="w-20 rounded border p-2"
-            onWheel={empecherModificationMolette}
-          />
-
-          <span>/ km</span>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {nombreParticipants} participant
+            {nombreParticipants > 1 ? "s" : ""} actuellement.
+          </p>
         </div>
 
-        <p className="mt-1 text-sm text-gray-500">
-          Allure moyenne envisagée sur l&apos;ensemble de la sortie. Exemple :
-          5:30 / km
-        </p>
-      </div>
-
-      <div>
-        <label className="mb-1 block font-medium">
-          Description
-          <span className="ml-1 text-sm font-normal text-gray-500">
-            (facultatif)
-          </span>
-        </label>
-
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={1000}
-          rows={5}
-          placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
-          className="w-full rounded border p-2"
-        />
-
-        <p className="mt-1 text-sm text-gray-500">
-          {description.length} / 1000
-        </p>
-      </div>
-
-      <div>
-        <label className="mb-1 block">Nombre maximum de participants</label>
-
-        <input
-          type="number"
-          min={nombreParticipants}
-          max="100"
-          value={nombreMaxParticipants}
-          onChange={(e) => setNombreMaxParticipants(e.target.value)}
-          className="w-full rounded border p-2"
-          onWheel={empecherModificationMolette}
-        />
-
-        <p className="mt-1 text-sm text-gray-500">
-          {nombreParticipants} participant
-          {nombreParticipants > 1 ? "s" : ""} actuellement.
-        </p>
-      </div>
-      <div>
-        <label className="mb-2 block font-medium">Participants autorisés</label>
-
-        <p className="mb-3 text-sm text-gray-500">
-          Choisissez qui peut rejoindre cette sortie.
-        </p>
-
-        <div className="flex flex-wrap gap-4">
-          <label
-            className={
-              sexeOrganisateur === "femme"
-                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
-                : "flex items-center gap-2"
-            }
-          >
-            <input
-              type="checkbox"
-              checked={genresAutorises.includes("femme")}
-              disabled={sexeOrganisateur === "femme"}
-              onChange={() => basculerGenre("femme")}
-            />
-            Femmes
+        <div>
+          <label className="mb-2 block font-medium">
+            Participants autorisés
           </label>
 
-          <label
-            className={
-              sexeOrganisateur === "homme"
-                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
-                : "flex items-center gap-2"
-            }
-          >
-            <input
-              type="checkbox"
-              checked={genresAutorises.includes("homme")}
-              disabled={sexeOrganisateur === "homme"}
-              onChange={() => basculerGenre("homme")}
-            />
-            Hommes
-          </label>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Choisissez qui peut rejoindre cette sortie.
+          </p>
 
-          <label
-            className={
-              sexeOrganisateur === "autre"
-                ? "flex cursor-not-allowed items-center gap-2 opacity-50"
-                : "flex items-center gap-2"
-            }
-          >
-            <input
-              type="checkbox"
-              checked={genresAutorises.includes("autre")}
-              disabled={sexeOrganisateur === "autre"}
-              onChange={() => basculerGenre("autre")}
-            />
-            Autre
-          </label>
+          <div className="flex flex-wrap gap-x-6 gap-y-3">
+            <label
+              className={
+                sexeOrganisateur === "femme"
+                  ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                  : "flex items-center gap-2"
+              }
+            >
+              <Checkbox
+                checked={genresAutorises.includes("femme")}
+                disabled={sexeOrganisateur === "femme"}
+                onCheckedChange={() => basculerGenre("femme")}
+              />
+              Femmes
+            </label>
+
+            <label
+              className={
+                sexeOrganisateur === "homme"
+                  ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                  : "flex items-center gap-2"
+              }
+            >
+              <Checkbox
+                checked={genresAutorises.includes("homme")}
+                disabled={sexeOrganisateur === "homme"}
+                onCheckedChange={() => basculerGenre("homme")}
+              />
+              Hommes
+            </label>
+
+            <label
+              className={
+                sexeOrganisateur === "autre"
+                  ? "flex cursor-not-allowed items-center gap-2 opacity-50"
+                  : "flex items-center gap-2"
+              }
+            >
+              <Checkbox
+                checked={genresAutorises.includes("autre")}
+                disabled={sexeOrganisateur === "autre"}
+                onCheckedChange={() => basculerGenre("autre")}
+              />
+              Autre
+            </label>
+          </div>
         </div>
-      </div>
-      <div>
-        <label className="mb-2 block font-medium">
-          Inscription des participants
-        </label>
 
-        <div className="space-y-3">
-          <label className="flex cursor-pointer gap-3 rounded border p-3">
-            <input
-              type="radio"
+        <div>
+          <label className="mb-2 block font-medium">
+            Inscription des participants
+          </label>
+
+          <div className="space-y-2">
+            <ChoiceCard
               name="modeInscription"
               value="automatique"
               checked={modeInscription === "automatique"}
-              onChange={(e) => setModeInscription(e.target.value)}
+              onChange={setModeInscription}
+              title="Inscription automatique"
+              description="Toute personne qui clique sur Participer rejoint immédiatement la sortie."
             />
 
-            <div>
-              <p className="font-medium">Inscription automatique</p>
-
-              <p className="text-sm text-gray-500">
-                Toute personne qui clique sur Participer rejoint immédiatement
-                la sortie.
-              </p>
-            </div>
-          </label>
-
-          <label className="flex cursor-pointer gap-3 rounded border p-3">
-            <input
-              type="radio"
+            <ChoiceCard
               name="modeInscription"
               value="validation"
               checked={modeInscription === "validation"}
-              onChange={(e) => setModeInscription(e.target.value)}
+              onChange={setModeInscription}
+              title="Validation par l’organisateur"
+              description="Vous acceptez ou refusez chaque demande avant que la personne rejoigne la sortie."
             />
-
-            <div>
-              <p className="font-medium">Validation par l&apos;organisateur</p>
-
-              <p className="text-sm text-gray-500">
-                Vous acceptez ou refusez chaque demande avant que la personne
-                rejoigne la sortie.
-              </p>
-            </div>
-          </label>
+          </div>
         </div>
+      </section>
+
+      {/* ==================================================
+        ENREGISTREMENT
+    ================================================== */}
+
+      <div className="space-y-3">
+        {message && <p className="text-sm text-destructive">{message}</p>}
+
+        <Button
+          type="button"
+          size="lg"
+          className="w-full"
+          onClick={modifierSortie}
+          disabled={loading}
+        >
+          {loading ? "Enregistrement..." : "Enregistrer les modifications"}
+        </Button>
       </div>
-
-      <button
-        type="button"
-        onClick={modifierSortie}
-        disabled={loading}
-        className="rounded bg-black px-4 py-2 text-white disabled:opacity-40"
-      >
-        {loading ? "Enregistrement..." : "Enregistrer les modifications"}
-      </button>
-
-      {message && <p className="text-sm">{message}</p>}
     </div>
   );
 }

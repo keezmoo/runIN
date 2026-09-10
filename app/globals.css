@@ -29,6 +29,12 @@
     --accent: 150 15% 92.2%;
     --accent-foreground: 240 5.9% 10%;
 
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --warning: 25 95% 53%;
+    --warning-foreground: 240 10% 3.9%;
+
     --border: 150 12.5% 81.2%;
     --input: 150 12.5% 81.2%;
 
@@ -102,9 +108,14 @@
   height: 8px;
   border-radius: 9999px;
 
-  background: #c79a6b;
+  background: hsl(var(--secondary));
 
   cursor: pointer;
+}
+
+.rayon-slider:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 4px;
 }
 
 /* Chrome / Edge / Safari */
@@ -118,9 +129,11 @@
 
   border-radius: 50%;
 
-  background: #8ed8b6;
+  background: hsl(var(--primary));
 
-  border: 2px solid #ffffff;
+  border: 2px solid hsl(var(--card));
+
+  box-shadow: 0 0 0 1px hsl(var(--primary-strong));
 
   cursor: grab;
 }
@@ -136,7 +149,7 @@
 
   border-radius: 9999px;
 
-  background: #c79a6b;
+  background: hsl(var(--secondary));
 }
 
 .rayon-slider::-moz-range-thumb {
@@ -145,9 +158,11 @@
 
   border-radius: 50%;
 
-  background: #8ed8b6;
+  background: hsl(var(--primary));
 
-  border: 2px solid #ffffff;
+  border: 2px solid hsl(var(--card));
+
+  box-shadow: 0 0 0 1px hsl(var(--primary-strong));
 
   cursor: grab;
 }

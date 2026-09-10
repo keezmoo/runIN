@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const HEURES = Array.from({ length: 24 }, (_, index) => index);
+const HEURES = Array.from({ length: 8 }, (_, index) => index * 3);
 
 export default function NavigationHeures() {
   const [heureActive, setHeureActive] = useState<number | null>(null);
@@ -33,39 +33,42 @@ export default function NavigationHeures() {
   // JOUR ACTUELLEMENT AFFICHÉ
   // ------------------------------------------------
 
-const trouverJourActif = useCallback((conteneur: HTMLElement) => {
-    // ------------------------------------------------
-    // PRIORITÉ AU JOUR SOULIGNÉ
-    // ------------------------------------------------
+  const trouverJourActif = useCallback(
+    (conteneur: HTMLElement) => {
+      // ------------------------------------------------
+      // PRIORITÉ AU JOUR SOULIGNÉ
+      // ------------------------------------------------
 
-    if (jourActif) {
-      const section = document.getElementById(`jour-${jourActif}`);
+      if (jourActif) {
+        const section = document.getElementById(`jour-${jourActif}`);
 
-      if (section) {
-        return section;
+        if (section) {
+          return section;
+        }
       }
-    }
 
-    // ------------------------------------------------
-    // SINON : PREMIÈRE SORTIE VISIBLE
-    // ------------------------------------------------
+      // ------------------------------------------------
+      // SINON : PREMIÈRE SORTIE VISIBLE
+      // ------------------------------------------------
 
-    const lignes = Array.from(
-      conteneur.querySelectorAll<HTMLElement>("[data-minute-depart]"),
-    );
+      const lignes = Array.from(
+        conteneur.querySelectorAll<HTMLElement>("[data-minute-depart]"),
+      );
 
-    const conteneurRect = conteneur.getBoundingClientRect();
+      const conteneurRect = conteneur.getBoundingClientRect();
 
-    const premiereVisible = lignes.find(
-      (ligne) => ligne.getBoundingClientRect().bottom > conteneurRect.top + 2,
-    );
+      const premiereVisible = lignes.find(
+        (ligne) => ligne.getBoundingClientRect().bottom > conteneurRect.top + 2,
+      );
 
-    if (!premiereVisible) {
-      return null;
-    }
+      if (!premiereVisible) {
+        return null;
+      }
 
-    return premiereVisible.closest<HTMLElement>("[data-jour-sorties]");
-  }, [jourActif]);
+      return premiereVisible.closest<HTMLElement>("[data-jour-sorties]");
+    },
+    [jourActif],
+  );
 
   // ------------------------------------------------
   // ALLER À UNE HEURE
@@ -161,7 +164,7 @@ const trouverJourActif = useCallback((conteneur: HTMLElement) => {
 
       const minutes = Number(premiereVisible.dataset.minuteDepart);
 
-      setHeureActive(Math.floor(minutes / 60));
+      setHeureActive(Math.floor(minutes / 180) * 3);
     }
 
     mettreAJour();
@@ -184,26 +187,14 @@ const trouverJourActif = useCallback((conteneur: HTMLElement) => {
       className="
                 w-14
                 shrink-0
-                border-l
+                border-l border-border
                 pl-2
             "
       aria-label="Navigation par heure"
     >
-      <div
-        className="
-                    flex
-                      h-[480px]
-                    max-h-[80dvh]
-                    self-start
-                    flex-col
-                    justify-between
-                    py-1
-                "
-      >
+      <div className="flex flex-col gap-4 py-2">
         {HEURES.map((heure) => {
           const active = heure === heureActive;
-
-          const afficherHeure = heure % 2 === 0 || active;
 
           return (
             <button
@@ -219,8 +210,14 @@ const trouverJourActif = useCallback((conteneur: HTMLElement) => {
                             "
               title={`${heure}h`}
             >
-              <span className={active ? "font-semibold" : "text-gray-500"}>
-                {afficherHeure ? `${String(heure).padStart(2, "0")}h` : ""}
+              <span
+                className={
+                  active
+                    ? "font-semibold text-primary-strong"
+                    : "text-muted-foreground"
+                }
+              >
+                {String(heure).padStart(2, "0")}h
               </span>
 
               <span

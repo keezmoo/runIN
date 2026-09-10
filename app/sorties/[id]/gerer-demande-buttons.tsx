@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ContacterParticipantButton from "./contacter-participant-button";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 type GererDemandeButtonsProps = {
   demandeId: string;
@@ -82,26 +83,22 @@ export default function GererDemandeButtons({
           utilisateurId={utilisateurId}
         />
 
-        <button
-          type="button"
-          onClick={accepter}
-          disabled={loading}
-          className="rounded bg-[#8ED8B6] px-3 py-2 text-black disabled:opacity-40"
-        >
+        <Button type="button" size="sm" onClick={accepter} disabled={loading}>
           Accepter
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={refuser}
           disabled={loading}
-          className="rounded border px-3 py-2 disabled:opacity-40"
         >
           Refuser
-        </button>
+        </Button>
       </div>
 
-      {message && <p className="mt-2 text-sm">{message}</p>}
+      {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
     </div>
   );
 }
