@@ -495,9 +495,10 @@ export default function NavigationPrincipale() {
           top-0
           z-40
 
-          border-b
-          border-zinc-800
-          bg-background
+border-b
+border-border
+bg-card
+shadow-sm
 
           md:hidden
         "
@@ -611,9 +612,10 @@ export default function NavigationPrincipale() {
           right-0
           z-50
 
-          border-t
-          border-zinc-800
-          bg-background
+border-b
+border-border
+bg-card
+shadow-sm
 
           md:hidden
         "
@@ -729,9 +731,9 @@ export default function NavigationPrincipale() {
           z-50
 
           hidden
-          border-b
-          border-zinc-800
-          bg-background
+border-t
+border-border
+bg-card
 
           md:block
         "

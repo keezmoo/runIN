@@ -10,6 +10,11 @@ import {
   validerDonneesSportives,
 } from "@/lib/sortie-utils";
 import SelecteurLieu, { type Localisation } from "../selecteur-lieu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { ToggleButton } from "@/components/ui/toggle-button";
 
 type Genre = "homme" | "femme" | "autre";
 
@@ -293,47 +298,23 @@ export default function SortieForm({
         <p className="mb-2 font-medium">Type de sortie</p>
 
         <div className="grid grid-cols-2 gap-2">
-          <button
+          <ToggleButton
             type="button"
+            pressed={typeSortie === "route"}
             onClick={() => setTypeSortie("route")}
-            className={`
-            rounded
-            border
-            px-4
-            py-3
-            font-medium
-            transition
-
-            ${
-              typeSortie === "route"
-                ? "border-[#8ED8B6] bg-[#8ED8B6]/10"
-                : "hover:bg-gray-500/5"
-            }
-          `}
+            className="py-3"
           >
             Route
-          </button>
+          </ToggleButton>
 
-          <button
+          <ToggleButton
             type="button"
+            pressed={typeSortie === "trail"}
             onClick={() => setTypeSortie("trail")}
-            className={`
-            rounded
-            border
-            px-4
-            py-3
-            font-medium
-            transition
-
-            ${
-              typeSortie === "trail"
-                ? "border-[#8ED8B6] bg-[#8ED8B6]/10"
-                : "hover:bg-gray-500/5"
-            }
-          `}
+            className="py-3"
           >
             Trail
-          </button>
+          </ToggleButton>
         </div>
       </div>
 
@@ -351,16 +332,13 @@ export default function SortieForm({
         <div>
           <label className="mb-1 block font-medium">Titre de la sortie</label>
 
-          <input
+          <Input
             type="text"
             value={titre}
             onChange={(e) => setTitre(e.target.value)}
-            className="w-full rounded border p-2"
             placeholder="Trail tranquille au Nivolet"
           />
         </div>
-
-        {/* LIEU */}
 
         {/* LIEU */}
 
@@ -378,12 +356,11 @@ export default function SortieForm({
             Date et heure de départ
           </label>
 
-          <input
+          <Input
             type="datetime-local"
             value={dateHeure}
             onChange={(e) => setDateHeure(e.target.value)}
             min={dateHeureMin || undefined}
-            className="w-full rounded border p-2"
           />
         </div>
       </section>
@@ -404,10 +381,9 @@ export default function SortieForm({
             Type d&apos;entraînement
           </label>
 
-          <select
+          <Select
             value={typeEntrainement}
             onChange={(e) => setTypeEntrainement(e.target.value)}
-            className="w-full rounded border p-2"
             required
           >
             {TYPES_ENTRAINEMENT.map((type) => (
@@ -415,7 +391,7 @@ export default function SortieForm({
                 {type.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         {/* DISTANCE + D+ TRAIL */}
@@ -427,14 +403,13 @@ export default function SortieForm({
             <label className="mb-1 block font-medium">Distance</label>
 
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 type="number"
                 min="0.1"
                 step="0.1"
                 inputMode="decimal"
                 value={distanceKm}
                 onChange={(e) => setDistanceKm(e.target.value)}
-                className="w-full rounded border p-2"
                 required
                 onWheel={empecherModificationMolette}
               />
@@ -448,13 +423,12 @@ export default function SortieForm({
               <label className="mb-1 block font-medium">Dénivelé positif</label>
 
               <div className="flex items-center gap-2">
-                <input
+                <Input
                   type="number"
                   min="0"
                   step="1"
                   value={denivelePositif}
                   onChange={(e) => setDenivelePositif(e.target.value)}
-                  className="w-full rounded border p-2"
                   onWheel={empecherModificationMolette}
                 />
 
@@ -469,18 +443,13 @@ export default function SortieForm({
         {typeSortie === "route" && (
           <div>
             {!deniveleRouteVisible && denivelePositif === "" ? (
-              <button
+              <Button
                 type="button"
+                variant="link"
                 onClick={() => setDeniveleRouteVisible(true)}
-                className="
-                text-sm
-                font-medium
-                text-gray-500
-                hover:text-current
-              "
               >
                 + Ajouter du dénivelé
-              </button>
+              </Button>
             ) : (
               <div>
                 <label className="mb-1 block font-medium">
@@ -491,13 +460,12 @@ export default function SortieForm({
                 </label>
 
                 <div className="flex items-center gap-2">
-                  <input
+                  <Input
                     type="number"
                     min="0"
                     step="1"
                     value={denivelePositif}
                     onChange={(e) => setDenivelePositif(e.target.value)}
-                    className="w-full rounded border p-2"
                     onWheel={empecherModificationMolette}
                   />
 
@@ -515,27 +483,15 @@ export default function SortieForm({
 
           <div className="grid grid-cols-3 gap-2">
             {INTENSITES.map((item) => (
-              <button
+              <ToggleButton
                 key={item.value}
                 type="button"
+                size="sm"
+                pressed={intensite === item.value}
                 onClick={() => setIntensite(item.value)}
-                className={`
-                rounded
-                border
-                px-3
-                py-2
-                text-sm
-                transition
-
-                ${
-                  intensite === item.value
-                    ? "border-[#8ED8B6] bg-[#8ED8B6]/10 font-medium"
-                    : "hover:bg-gray-500/5"
-                }
-              `}
               >
                 {item.label}
-              </button>
+              </ToggleButton>
             ))}
           </div>
         </div>
@@ -549,7 +505,7 @@ export default function SortieForm({
             </label>
 
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 type="number"
                 min="0"
                 step="1"
@@ -562,7 +518,7 @@ export default function SortieForm({
 
               <span>:</span>
 
-              <input
+              <Input
                 type="number"
                 min="0"
                 max="59"
@@ -577,25 +533,22 @@ export default function SortieForm({
               <span>/ km</span>
             </div>
 
-            <p className="mt-1 text-xs text-gray-500">Exemple : 5:30 / km</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Exemple : 5:30 / km
+            </p>
           </div>
         )}
 
         {/* DURÉE FACULTATIVE */}
 
         {!dureeVisible && dureeHeures === "" && dureeMinutes === "" ? (
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={() => setDureeVisible(true)}
-            className="
-            text-sm
-            font-medium
-            text-gray-500
-            hover:text-current
-          "
           >
             + Ajouter une durée estimée
-          </button>
+          </Button>
         ) : (
           <div>
             <label className="mb-1 block font-medium">
@@ -643,19 +596,13 @@ export default function SortieForm({
         {/* DESCRIPTION FACULTATIVE */}
 
         {!descriptionVisible && description === "" ? (
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={() => setDescriptionVisible(true)}
-            className="
-            block
-            text-sm
-            font-medium
-            text-gray-500
-            hover:text-current
-          "
           >
             + Ajouter une description
-          </button>
+          </Button>
         ) : (
           <div>
             <label className="mb-1 block font-medium">
@@ -665,15 +612,13 @@ export default function SortieForm({
               </span>
             </label>
 
-            <textarea
+            <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={1000}
               rows={4}
               placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
-              className="w-full rounded border p-2"
             />
-
             <p className="mt-1 text-xs text-gray-500">
               {description.length} / 1000
             </p>
@@ -783,12 +728,12 @@ export default function SortieForm({
               flex
               cursor-pointer
               gap-3
-              rounded
+              rounded-lg
               border
               p-3
               transition
 
-              ${modeInscription === "automatique" ? "border-[#8ED8B6]" : ""}
+              ${modeInscription === "automatique" ? "border-primary-strong bg-primary/10" : ""}
             `}
             >
               <input
@@ -813,12 +758,12 @@ export default function SortieForm({
               flex
               cursor-pointer
               gap-3
-              rounded
+              rounded-lg
               border
               p-3
               transition
 
-              ${modeInscription === "validation" ? "border-[#8ED8B6]" : ""}
+              ${modeInscription === "validation" ? "border-primary-strong bg-primary/10" : ""}
             `}
             >
               <input
@@ -849,29 +794,20 @@ export default function SortieForm({
 
       <div className="space-y-3">
         {message && (
-          <p className="flex items-start gap-2 text-sm text-red-500">
+          <p className="flex items-start gap-2 text-sm text-destructive">
             <span>{message}</span>
           </p>
         )}
 
-        <button
+        <Button
           type="button"
+          size="lg"
+          className="w-full"
           onClick={creerSortie}
           disabled={loading}
-          className="
-          w-full
-          rounded
-         bg-[#8ED8B6]
-          px-4
-          py-3
-          font-medium
-          text-black
-          transition
-          disabled:opacity-50
-        "
         >
           {loading ? "Création..." : "Créer la sortie"}
-        </button>
+        </Button>
       </div>
     </div>
   );

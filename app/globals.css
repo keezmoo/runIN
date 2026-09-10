@@ -4,50 +4,46 @@
 
 @layer base {
   :root {
-:root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+    --background: 150 12.5% 96.9%;
+    --foreground: 240 10% 3.9%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
 
-  /* Vert runIN : #8ED8B6 */
-  --primary: 152.4 48.7% 70.2%;
-  --primary-foreground: 240 10% 3.9%;
+    /* Pistache runIN */
+    --primary: 152.4 48.7% 70.2%;
+    --primary-foreground: 240 10% 3.9%;
 
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
+    /* Vert plus soutenu : états actifs, contours, focus */
+    --primary-strong: 152.1 41.3% 40.8%;
 
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
+    --secondary: 150 15% 92.2%;
+    --secondary-foreground: 240 5.9% 10%;
 
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+    --muted: 140 12% 95.1%;
+    --muted-foreground: 240 3.8% 42%;
 
-  --destructive: 0 72.2% 50.6%;
-  --destructive-foreground: 0 0% 98%;
+    --accent: 150 15% 92.2%;
+    --accent-foreground: 240 5.9% 10%;
 
-  --warning: 25 95% 53%;
-  --warning-foreground: 240 10% 3.9%;
+    --border: 150 12.5% 81.2%;
+    --input: 150 12.5% 81.2%;
 
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
+    --ring: 152.1 41.3% 40.8%;
 
-  --ring: 152.4 48.7% 55%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
 
-  --chart-1: 12 76% 61%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
-
-  --radius: 0.625rem;
-}
+    --radius: 0.625rem;
   }
- .dark {
+}
+.dark {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
 
@@ -58,6 +54,7 @@
   --popover-foreground: 0 0% 98%;
 
   --primary: 152.4 48.7% 70.2%;
+  --primary-strong: 152.4 48.7% 70.2%;
   --primary-foreground: 240 10% 3.9%;
 
   --secondary: 240 3.7% 15.9%;
@@ -85,7 +82,6 @@
   --chart-3: 30 80% 55%;
   --chart-4: 280 65% 60%;
   --chart-5: 340 75% 55%;
-}
 }
 
 @layer base {
