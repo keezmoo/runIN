@@ -94,7 +94,7 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
           href="/admin/sorties"
           className="
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                         hover:underline
                     "
         >
@@ -156,25 +156,25 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
 
           <dl className="mt-4 space-y-3 text-sm">
             <div>
-              <dt className="text-gray-500">Identifiant</dt>
+              <dt className="text-muted-foreground">Identifiant</dt>
 
               <dd className="break-all">{sortie.sortie_id}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Départ</dt>
+              <dt className="text-muted-foreground">Départ</dt>
 
               <dd>{afficherDate(sortie.date_heure_depart)}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Lieu</dt>
+              <dt className="text-muted-foreground">Lieu</dt>
 
               <dd>{sortie.lieu_depart}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Créée le</dt>
+              <dt className="text-muted-foreground">Créée le</dt>
 
               <dd>{afficherDate(sortie.date_creation)}</dd>
             </div>
@@ -199,7 +199,7 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
               className="
                                 mt-1
                                 text-sm
-                                text-gray-500
+                                text-muted-foreground
                             "
             >
               {sortie.organisateur_email}
@@ -222,7 +222,7 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
                     "
         >
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Participants</p>
+            <p className="text-sm text-muted-foreground">Participants</p>
 
             <p className="mt-1 text-2xl font-bold">
               {sortie.nombre_participants}
@@ -232,13 +232,13 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
           </div>
 
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Demandes</p>
+            <p className="text-sm text-muted-foreground">Demandes</p>
 
             <p className="mt-1 text-2xl font-bold">{sortie.nombre_demandes}</p>
           </div>
 
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Conversations</p>
+            <p className="text-sm text-muted-foreground">Conversations</p>
 
             <p className="mt-1 text-2xl font-bold">
               {sortie.nombre_conversations}
@@ -246,7 +246,7 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
           </div>
 
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Messages</p>
+            <p className="text-sm text-muted-foreground">Messages</p>
 
             <p className="mt-1 text-2xl font-bold">{sortie.nombre_messages}</p>
           </div>
@@ -287,7 +287,7 @@ export default async function AdminDetailSortiePage({ params }: PageProps) {
         className="
                     inline-block
                     text-sm
-                    text-[#8ED8B6]
+                    text-primary-strong
                     hover:underline
                 "
       >

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -176,7 +176,7 @@ export default function ActionsSortie({
       className="
                 rounded-xl
                 border
-                border-red-900/70
+                border-destructive/40
                 p-5
             "
     >
@@ -186,7 +186,7 @@ export default function ActionsSortie({
         className="
                     mt-2
                     text-sm
-                    text-gray-500
+                    text-muted-foreground
                 "
       >
         Ces actions sont journalisées. L&apos;annulation doit être privilégiée à
@@ -209,7 +209,7 @@ export default function ActionsSortie({
             className="
                             mt-1
                             text-sm
-                            text-gray-500
+                            text-muted-foreground
                         "
           >
             La sortie reste en base et dans les historiques.
@@ -230,26 +230,15 @@ export default function ActionsSortie({
                             p-3
                         "
           />
-
-          <button
+          <Button
             type="button"
+            variant="warning"
             disabled={loading}
             onClick={annulerSortie}
-            className="
-                            mt-3
-                            rounded-lg
-                            border
-                            border-orange-700
-                            px-4
-                            py-2
-                            text-sm
-                            font-medium
-                            text-orange-400
-                            disabled:opacity-40
-                        "
+            className="mt-3"
           >
             {loading ? "Traitement..." : "Annuler administrativement"}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -265,7 +254,7 @@ export default function ActionsSortie({
         <h3
           className="
                         font-medium
-                        text-red-400
+                        text-destructive
                     "
         >
           Supprimer définitivement
@@ -275,7 +264,7 @@ export default function ActionsSortie({
           className="
                         mt-2
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           Cette sortie contient actuellement {nombreParticipants} participant
@@ -287,7 +276,7 @@ export default function ActionsSortie({
           className="
                         mt-2
                         text-sm
-                        text-red-400
+                        text-destructive
                     "
         >
           Cette opération est irréversible. Les données liées à la sortie
@@ -337,28 +326,28 @@ export default function ActionsSortie({
           />
         </label>
 
-        <button
+        <Button
           type="button"
+          variant="destructive"
           disabled={loading || confirmationSuppression !== "SUPPRIMER"}
           onClick={supprimerSortie}
-          className="
-                        mt-4
-                        rounded-lg
-                        bg-red-700
-                        px-4
-                        py-2
-                        text-sm
-                        font-medium
-                        text-white
-                        disabled:cursor-not-allowed
-                        disabled:opacity-40
-                    "
+          className="mt-4"
         >
           {loading ? "Suppression..." : "Supprimer définitivement"}
-        </button>
+        </Button>
       </div>
 
-      {message && <p className="mt-4 text-sm">{message}</p>}
+      {message && (
+        <p
+          className={
+            message === "Sortie annulée administrativement."
+              ? "mt-4 text-sm text-primary-strong"
+              : "mt-4 text-sm text-destructive"
+          }
+        >
+          {message}
+        </p>
+      )}
     </section>
   );
 }

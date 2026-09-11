@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -42,7 +42,6 @@ export default function ActionsRole({
   const [loading, setLoading] = useState(false);
 
   const [message, setMessage] = useState("");
-
 
   async function enregistrer() {
     if (
@@ -179,25 +178,13 @@ export default function ActionsRole({
         </div>
 
         {estAdministrateurConnecte && !estCompteCourant && (
-          <button
+          <Button
             type="button"
             onClick={enregistrer}
             disabled={loading || nouveauRole === roleActuel}
-            className="
-                            rounded-lg
-                            bg-[#8ED8B6]
-                            px-4
-                            py-2
-                            text-sm
-                            font-medium
-                            text-black
-
-                            disabled:cursor-not-allowed
-                            disabled:opacity-40
-                        "
           >
             {loading ? "Enregistrement..." : "Enregistrer"}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -206,7 +193,7 @@ export default function ActionsRole({
           className="
                         mt-3
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           Seul un administrateur peut modifier les rôles.
@@ -218,14 +205,24 @@ export default function ActionsRole({
           className="
                         mt-3
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           Vous ne pouvez pas modifier votre propre rôle.
         </p>
       )}
 
-      {message && <p className="mt-3 text-sm">{message}</p>}
+      {message && (
+  <p
+    className={
+      message === "Rôle modifié."
+        ? "mt-3 text-sm text-primary-strong"
+        : "mt-3 text-sm text-destructive"
+    }
+  >
+    {message}
+  </p>
+)}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -130,7 +130,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
 
     return (
       <main className="mx-auto max-w-7xl p-6">
-        <p className="text-red-500">Impossible de charger les sorties.</p>
+        <p className="text-destructive">Impossible de charger les sorties.</p>
       </main>
     );
   }
@@ -204,7 +204,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
           href="/admin"
           className="
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                         hover:underline
                     "
         >
@@ -225,7 +225,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
           className="
                         mt-1
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           {totalResultats} sortie
@@ -318,19 +318,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
           <option value="trail">Trail</option>
         </select>
 
-        <button
-          type="submit"
-          className="
-                        rounded-lg
-                        bg-[#8ED8B6]
-                        px-4
-                        py-2
-                        font-medium
-                        text-black
-                    "
-        >
-          Appliquer
-        </button>
+        <Button type="submit">Appliquer</Button>
 
         <select
           name="tri"
@@ -370,12 +358,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
                         text-sm
                     "
         >
-          <thead
-            className="
-                            border-b
-                            bg-zinc-900
-                        "
-          >
+          <thead className="border-b border-border bg-muted/60">
             <tr>
               <th className="px-4 py-3">Sortie</th>
 
@@ -418,7 +401,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
                     className="
                                                 mt-1
                                                 text-xs
-                                                text-gray-500
+                                                text-muted-foreground
                                             "
                   >
                     {sortie.lieu_depart}
@@ -500,7 +483,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
                             p-8
                             text-center
                             text-sm
-                            text-gray-500
+                            text-muted-foreground
                         "
           >
             Aucune sortie trouvée.
@@ -520,7 +503,7 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
                     sm:justify-between
                 "
       >
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {premiereLigne}
           {" – "}
           {derniereLigne}
@@ -575,17 +558,13 @@ export default async function AdminSortiesPage({ searchParams }: PageProps) {
 
                 <option value="100">100</option>
               </select>
-              <button
+              <Button
                 type="submit"
-                className="
-                                    rounded
-                                    border
-                                    px-2
-                                    py-1
-                                "
+                variant="outline"
+                className="h-auto px-2 py-1"
               >
                 OK
-              </button>
+              </Button>
             </label>
           </form>
 

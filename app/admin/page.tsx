@@ -78,7 +78,7 @@ export default async function AdminPage() {
       <main className="mx-auto max-w-5xl p-6">
         <h1 className="text-2xl font-bold">Administration</h1>
 
-        <p className="mt-6 text-red-500">
+        <p className="mt-6 text-destructive">
           Impossible de charger les statistiques.
         </p>
       </main>
@@ -122,7 +122,7 @@ export default async function AdminPage() {
           className="
                         text-sm
                         font-medium
-                        text-[#8ED8B6]
+                        text-primary-strong
                     "
         >
           runIN
@@ -142,7 +142,7 @@ export default async function AdminPage() {
           className="
                         mt-2
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           Vue générale de la plateforme.
@@ -151,47 +151,28 @@ export default async function AdminPage() {
 
       <section
         className="
-                    grid
-                    gap-4
-                    sm:grid-cols-2
-                    lg:grid-cols-4
-                "
+    grid
+    gap-4
+    sm:grid-cols-2
+    lg:grid-cols-4
+  "
       >
         {statistiques.map((statistique) => (
           <div
             key={statistique.titre}
             className="
-                                rounded-xl
-                                border
-                                p-5
-                            "
+        rounded-xl
+        border
+        border-border
+        bg-card
+        p-5
+      "
           >
-            <p
-              className="
-                                    text-sm
-                                    text-gray-500
-                                "
-            >
-              {statistique.titre}
-            </p>
+            <p className="text-sm text-muted-foreground">{statistique.titre}</p>
 
-            <p
-              className="
-                                    mt-2
-                                    text-3xl
-                                    font-bold
-                                "
-            >
-              {statistique.valeur}
-            </p>
+            <p className="mt-2 text-3xl font-bold">{statistique.valeur}</p>
 
-            <p
-              className="
-                                    mt-2
-                                    text-xs
-                                    text-gray-500
-                                "
-            >
+            <p className="mt-2 text-xs text-muted-foreground">
               {statistique.detail}
             </p>
           </div>
@@ -220,16 +201,21 @@ export default async function AdminPage() {
           <Link
             href="/admin/utilisateurs"
             className="
-        rounded-xl
-        border
-        p-5
-        transition
-        hover:bg-zinc-900
-    "
+  rounded-xl
+  border
+  border-border
+  bg-card
+  p-5
+  transition-colors
+  hover:bg-accent/50
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-ring
+"
           >
             <h3 className="font-semibold">Utilisateurs</h3>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Recherche, rôles et sanctions.
             </p>
 
@@ -238,7 +224,7 @@ export default async function AdminPage() {
             mt-4
             text-sm
             font-medium
-            text-[#8ED8B6]
+            text-primary-strong
         "
             >
               Gérer les utilisateurs →
@@ -248,16 +234,21 @@ export default async function AdminPage() {
           <Link
             href="/admin/sorties"
             className="
-        rounded-xl
-        border
-        p-5
-        transition
-        hover:bg-zinc-900
-    "
+  rounded-xl
+  border
+  border-border
+  bg-card
+  p-5
+  transition-colors
+  hover:bg-accent/50
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-ring
+"
           >
             <h3 className="font-semibold">Sorties</h3>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Rechercher et administrer les sorties de la plateforme.
             </p>
 
@@ -266,7 +257,7 @@ export default async function AdminPage() {
             mt-4
             text-sm
             font-medium
-            text-[#8ED8B6]
+            text-primary-strong
         "
             >
               Gérer les sorties →
@@ -280,12 +271,12 @@ export default async function AdminPage() {
         border
         p-5
         transition
-        hover:bg-zinc-900
+        hover:bg-accent/50
     "
           >
             <h3 className="font-semibold">Système</h3>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Accès à Supabase, Vercel, Resend et aux informations techniques de
               runIN.
             </p>
@@ -295,7 +286,7 @@ export default async function AdminPage() {
             mt-4
             text-sm
             font-medium
-            text-[#8ED8B6]
+            text-primary-strong
         "
             >
               Ouvrir le système →
@@ -305,16 +296,21 @@ export default async function AdminPage() {
           <Link
             href="/admin/journal"
             className="
-        rounded-xl
-        border
-        p-5
-        transition
-        hover:bg-zinc-900
-    "
+  rounded-xl
+  border
+  border-border
+  bg-card
+  p-5
+  transition-colors
+  hover:bg-accent/50
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-ring
+"
           >
             <h3 className="font-semibold">Journal</h3>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Historique des sanctions, changements de rôles et autres actions
               administratives.
             </p>
@@ -324,7 +320,7 @@ export default async function AdminPage() {
             mt-4
             text-sm
             font-medium
-            text-[#8ED8B6]
+            text-primary-strong
         "
             >
               Consulter le journal →
@@ -334,16 +330,21 @@ export default async function AdminPage() {
           <Link
             href="/admin/signalements"
             className="
-        rounded-xl
-        border
-        p-5
-        transition
-        hover:bg-zinc-900
-    "
+  rounded-xl
+  border
+  border-border
+  bg-card
+  p-5
+  transition-colors
+  hover:bg-accent/50
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-ring
+"
           >
             <h3 className="font-semibold">Signalements</h3>
 
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               Examiner les profils et sorties signalés par les utilisateurs.
             </p>
 
@@ -352,7 +353,7 @@ export default async function AdminPage() {
             mt-4
             text-sm
             font-medium
-            text-[#8ED8B6]
+            text-primary-strong
         "
             >
               Voir les signalements →

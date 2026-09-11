@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -196,7 +196,7 @@ export default function ActionsSanction({
           className="
                     mt-2
                     text-sm
-                    text-gray-500
+                    text-muted-foreground
                 "
         >
           {role === "administrateur"
@@ -222,7 +222,7 @@ export default function ActionsSanction({
           className="
                         mt-2
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           Une{" "}
@@ -259,23 +259,15 @@ export default function ActionsSanction({
           />
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={leverSanction}
           disabled={loading}
-          className="
-                        mt-4
-                        rounded-lg
-                        border
-                        px-4
-                        py-2
-                        text-sm
-                        font-medium
-                        disabled:opacity-50
-                    "
+          className="mt-4"
         >
           {loading ? "Traitement..." : "Lever la sanction"}
-        </button>
+        </Button>
 
         {message && <p className="mt-3 text-sm">{message}</p>}
       </section>
@@ -406,52 +398,38 @@ export default function ActionsSanction({
           className="
                         mt-1
                         text-xs
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           {motif.length} / 1000
         </p>
       </div>
 
-      <button
+      <Button
         type="button"
+        variant={type === "bannissement" ? "destructive" : "warning"}
         onClick={sanctionner}
         disabled={loading}
-        className={
-          type === "bannissement"
-            ? `
-                            mt-4
-                            rounded-lg
-                            bg-red-700
-                            px-4
-                            py-2
-                            text-sm
-                            font-medium
-                            text-white
-                            disabled:opacity-50
-                        `
-            : `
-                            mt-4
-                            rounded-lg
-                            border
-                            border-orange-700
-                            px-4
-                            py-2
-                            text-sm
-                            font-medium
-                            text-orange-400
-                            disabled:opacity-50
-                        `
-        }
+        className="mt-4"
       >
         {loading
           ? "Traitement..."
           : type === "bannissement"
             ? "Bannir l'utilisateur"
             : "Suspendre l'utilisateur"}
-      </button>
+      </Button>
 
-      {message && <p className="mt-3 text-sm">{message}</p>}
+      {message && (
+        <p
+          className={
+            message === "Sanction enregistrée." || message === "Sanction levée."
+              ? "mt-3 text-sm text-primary-strong"
+              : "mt-3 text-sm text-destructive"
+          }
+        >
+          {message}
+        </p>
+      )}
     </section>
   );
 }

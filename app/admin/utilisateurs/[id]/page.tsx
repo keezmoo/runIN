@@ -140,7 +140,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
           href="/admin/utilisateurs"
           className="
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                         hover:underline
                     "
         >
@@ -182,7 +182,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
           className="
                         mt-1
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           {utilisateur.email}
@@ -214,15 +214,15 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
           className="
                         rounded-xl
                         border
-                        border-red-800
-                        bg-red-950/20
+                        border-destructive/40
+                        bg-destructive/10
                         p-5
                     "
         >
           <h2
             className="
                             font-semibold
-                            text-red-400
+                            text-destructive
                         "
           >
             Sanction active
@@ -238,7 +238,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
             className="
                             mt-2
                             text-sm
-                            text-gray-400
+                            text-muted-foreground
                         "
           >
             {utilisateur.sanction_active_motif}
@@ -248,7 +248,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
             className="
                             mt-3
                             text-xs
-                            text-gray-500
+                            text-muted-foreground
                         "
           >
             Depuis {afficherDate(utilisateur.sanction_active_debut)}
@@ -284,25 +284,25 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
                         "
           >
             <div>
-              <dt className="text-gray-500">Identifiant</dt>
+              <dt className="text-muted-foreground">Identifiant</dt>
 
               <dd className="break-all">{utilisateur.utilisateur_id}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Inscription</dt>
+              <dt className="text-muted-foreground">Inscription</dt>
 
               <dd>{afficherDate(utilisateur.date_inscription)}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Dernière connexion</dt>
+              <dt className="text-muted-foreground">Dernière connexion</dt>
 
               <dd>{afficherDate(utilisateur.derniere_connexion)}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Rôle</dt>
+              <dt className="text-muted-foreground">Rôle</dt>
 
               <dd>{afficherRole(utilisateur.role)}</dd>
             </div>
@@ -326,19 +326,19 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
                         "
           >
             <div>
-              <dt className="text-gray-500">Âge</dt>
+              <dt className="text-muted-foreground">Âge</dt>
 
               <dd>{utilisateur.age} ans</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Sexe</dt>
+              <dt className="text-muted-foreground">Sexe</dt>
 
               <dd>{utilisateur.sexe}</dd>
             </div>
 
             <div>
-              <dt className="text-gray-500">Description</dt>
+              <dt className="text-muted-foreground">Description</dt>
 
               <dd>{utilisateur.description ?? "Aucune description"}</dd>
             </div>
@@ -367,7 +367,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
                     "
         >
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Sorties créées</p>
+            <p className="text-sm text-muted-foreground">Sorties créées</p>
 
             <p className="mt-1 text-2xl font-bold">
               {utilisateur.nombre_sorties}
@@ -375,7 +375,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
           </div>
 
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Participations</p>
+            <p className="text-sm text-muted-foreground">Participations</p>
 
             <p className="mt-1 text-2xl font-bold">
               {utilisateur.nombre_participations}
@@ -383,7 +383,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
           </div>
 
           <div className="rounded-xl border p-4">
-            <p className="text-sm text-gray-500">Messages envoyés</p>
+            <p className="text-sm text-muted-foreground">Messages envoyés</p>
 
             <p className="mt-1 text-2xl font-bold">
               {utilisateur.nombre_messages}
@@ -412,7 +412,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
                             border
                             p-5
                             text-sm
-                            text-gray-500
+                            text-muted-foreground
                         "
           >
             Aucune sanction enregistrée.
@@ -452,7 +452,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
                   <span
                     className="
                                                 text-xs
-                                                text-gray-500
+                                                text-muted-foreground
                                             "
                   >
                     {sanction.levee_at
@@ -477,7 +477,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
                   className="
                                             mt-2
                                             text-xs
-                                            text-gray-500
+                                            text-muted-foreground
                                         "
                 >
                   {afficherDate(sanction.date_debut)}
@@ -495,7 +495,7 @@ export default async function AdminUtilisateurPage({ params }: PageProps) {
         className="
                     inline-block
                     text-sm
-                    text-[#8ED8B6]
+                    text-primary-strong
                     hover:underline
                 "
       >

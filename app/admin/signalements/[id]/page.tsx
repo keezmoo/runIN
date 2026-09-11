@@ -305,7 +305,7 @@ export default async function SignalementAdminPage({ params }: Props) {
       <header>
         <Link
           href="/admin/signalements"
-          className="text-sm text-gray-500 hover:underline"
+          className="text-sm text-muted-foreground hover:underline"
         >
           ← Signalements
         </Link>
@@ -318,7 +318,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           </span>
         </div>
 
-        <p className="mt-2 break-all text-xs text-gray-500">
+        <p className="mt-2 break-all text-xs text-muted-foreground">
           {signalement.signalement_id}
         </p>
       </header>
@@ -334,7 +334,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           {/* PLAIGNANT */}
 
           <div>
-            <dt className="text-sm text-gray-500">Signalé par</dt>
+            <dt className="text-sm text-muted-foreground">Signalé par</dt>
 
             <dd className="mt-1">
               {signalement.signaleur_id ? (
@@ -346,12 +346,12 @@ export default async function SignalementAdminPage({ params }: Props) {
                     {signalement.signaleur_nom ?? "Utilisateur"}
                   </span>
 
-                  <span className="mt-1 block break-all font-mono text-xs text-gray-500 group-hover:underline">
+                  <span className="mt-1 block break-all font-mono text-xs text-muted-foreground group-hover:underline">
                     {signalement.signaleur_id}
                   </span>
                 </Link>
               ) : (
-                <span className="text-gray-500">Compte supprimé</span>
+                <span className="text-muted-foreground">Compte supprimé</span>
               )}
             </dd>
           </div>
@@ -359,7 +359,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           {/* UTILISATEUR CONCERNE */}
 
           <div>
-            <dt className="text-sm text-gray-500">Utilisateur concerné</dt>
+            <dt className="text-sm text-muted-foreground">Utilisateur concerné</dt>
 
             <dd className="mt-1">
               {signalement.cible_utilisateur_id ? (
@@ -371,18 +371,18 @@ export default async function SignalementAdminPage({ params }: Props) {
                     {nomUtilisateurConcerne}
                   </span>
 
-                  <span className="mt-1 block break-all font-mono text-xs text-gray-500 group-hover:underline">
+                  <span className="mt-1 block break-all font-mono text-xs text-muted-foreground group-hover:underline">
                     {signalement.cible_utilisateur_id}
                   </span>
                 </Link>
               ) : (
-                <span className="text-gray-500">
+                <span className="text-muted-foreground">
                   Compte supprimé ou indisponible
                 </span>
               )}
 
               {signalement.cible_utilisateur_id && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {afficherRole(roleUtilisateurConcerne)}
                 </p>
               )}
@@ -390,7 +390,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           </div>
 
           <div>
-            <dt className="text-sm text-gray-500">Type</dt>
+            <dt className="text-sm text-muted-foreground">Type</dt>
 
             <dd className="mt-1 font-medium">
               {afficherTypeCible(signalement.type_cible)}
@@ -398,7 +398,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           </div>
 
           <div>
-            <dt className="text-sm text-gray-500">Motif</dt>
+            <dt className="text-sm text-muted-foreground">Motif</dt>
 
             <dd className="mt-1 font-medium">
               {afficherMotif(signalement.motif)}
@@ -406,7 +406,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           </div>
 
           <div>
-            <dt className="text-sm text-gray-500">Date du signalement</dt>
+            <dt className="text-sm text-muted-foreground">Date du signalement</dt>
 
             <dd className="mt-1">
               {afficherDate(signalement.date_signalement)}
@@ -414,7 +414,7 @@ export default async function SignalementAdminPage({ params }: Props) {
           </div>
 
           <div>
-            <dt className="text-sm text-gray-500">Prise en charge</dt>
+            <dt className="text-sm text-muted-foreground">Prise en charge</dt>
 
             <dd className="mt-1">
               {signalement.assigne_nom ?? "Pas encore pris en charge"}
@@ -423,7 +423,7 @@ export default async function SignalementAdminPage({ params }: Props) {
         </dl>
 
         <div className="mt-5 border-t pt-5">
-          <p className="text-sm text-gray-500">Commentaire du signaleur</p>
+          <p className="text-sm text-muted-foreground">Commentaire du signaleur</p>
 
           <p className="mt-2 whitespace-pre-wrap">
             {signalement.commentaire ?? "Aucun commentaire."}
@@ -442,7 +442,7 @@ export default async function SignalementAdminPage({ params }: Props) {
 
         {signalement.type_cible === "message" && (
           <>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Conversation conservée au moment du signalement. Jusqu&apos;à 10
               messages précédents sont affichés.
             </p>
@@ -456,7 +456,7 @@ export default async function SignalementAdminPage({ params }: Props) {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm font-medium">{message.auteur_nom}</p>
 
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {afficherDate(message.created_at)}
                     </p>
                   </div>
@@ -472,8 +472,8 @@ export default async function SignalementAdminPage({ params }: Props) {
                   className="
                     rounded-lg
                     border-2
-                    border-red-500/60
-                    bg-red-500/5
+                    border-destructive/60
+                    bg-destructive/5
                     p-4
                   "
                 >
@@ -484,12 +484,12 @@ export default async function SignalementAdminPage({ params }: Props) {
                           nomUtilisateurConcerne}
                       </p>
 
-                      <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500">
+                      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                         Message signalé
                       </span>
                     </div>
 
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {afficherDate(detailMessage.date_message_snapshot)}
                     </p>
                   </div>
@@ -499,7 +499,7 @@ export default async function SignalementAdminPage({ params }: Props) {
                   </p>
                 </article>
               ) : (
-                <div className="rounded-lg border border-red-500/40 p-4 text-sm text-gray-500">
+                <div className="rounded-lg border border-destructive/40 p-4 text-sm text-muted-foreground">
                   Impossible de charger la copie du message signalé.
                 </div>
               )}
@@ -516,12 +516,12 @@ export default async function SignalementAdminPage({ params }: Props) {
             {signalement.cible_profil_existe ? (
               <Link
                 href={`/admin/utilisateurs/${signalement.cible_id}`}
-                className="mt-3 inline-block text-sm font-medium text-[#8ED8B6] hover:underline"
+                className="mt-3 inline-block text-sm font-medium text-primary-strong hover:underline"
               >
                 Ouvrir le profil →
               </Link>
             ) : (
-              <p className="mt-3 text-sm text-gray-500">
+              <p className="mt-3 text-sm text-muted-foreground">
                 Ce profil n&apos;existe plus.
               </p>
             )}
@@ -537,12 +537,12 @@ export default async function SignalementAdminPage({ params }: Props) {
             {signalement.cible_sortie_existe ? (
               <Link
                 href={`/admin/sorties/${signalement.cible_id}`}
-                className="mt-3 inline-block text-sm font-medium text-[#8ED8B6] hover:underline"
+                className="mt-3 inline-block text-sm font-medium text-primary-strong hover:underline"
               >
                 Ouvrir la sortie →
               </Link>
             ) : (
-              <p className="mt-3 text-sm text-gray-500">
+              <p className="mt-3 text-sm text-muted-foreground">
                 Cette sortie n&apos;existe plus.
               </p>
             )}

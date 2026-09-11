@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -184,7 +184,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                     p-6
                 "
       >
-        <p className="text-red-500">
+        <p className="text-destructive">
           Impossible de charger le journal d&apos;administration.
         </p>
       </main>
@@ -247,7 +247,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
           href="/admin"
           className="
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                         hover:underline
                     "
         >
@@ -268,7 +268,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
           className="
                         mt-1
                         text-sm
-                        text-gray-500
+                        text-muted-foreground
                     "
         >
           Historique des actions sensibles réalisées depuis
@@ -281,13 +281,15 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
       <form
         method="get"
         className="
-                    grid
-                    gap-3
-                    rounded-xl
-                    border
-                    p-4
-                    md:grid-cols-4
-                "
+  grid
+  gap-3
+  rounded-xl
+  border
+  border-border
+  bg-card
+  p-4
+  md:grid-cols-4
+"
       >
         <input
           type="search"
@@ -348,19 +350,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
           <option value="rejet_signalement">Rejet d&apos;un signalement</option>
         </select>
 
-        <button
-          type="submit"
-          className="
-                        rounded-lg
-                        bg-[#8ED8B6]
-                        px-4
-                        py-2
-                        font-medium
-                        text-black
-                    "
-        >
-          Appliquer
-        </button>
+        <Button type="submit">Appliquer</Button>
 
         <input type="hidden" name="parPage" value={parPage} />
       </form>
@@ -369,10 +359,12 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
 
       <div
         className="
-                    overflow-x-auto
-                    rounded-xl
-                    border
-                "
+  overflow-x-auto
+  rounded-xl
+  border
+  border-border
+  bg-card
+"
       >
         <table
           className="
@@ -382,12 +374,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                         text-sm
                     "
         >
-          <thead
-            className="
-                            border-b
-                            bg-zinc-900
-                        "
-          >
+          <thead className="border-b border-border bg-muted/60">
             <tr>
               <th className="px-4 py-3">Date</th>
 
@@ -416,7 +403,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                                             whitespace-nowrap
                                             px-4
                                             py-3
-                                            text-gray-400
+                                            text-muted-foreground
                                         "
                 >
                   {afficherDate(entree.date_action)}
@@ -434,7 +421,9 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                       {entree.acteur_nom ?? "Compte supprimé"}
                     </Link>
                   ) : (
-                    <span className="text-gray-500">Compte supprimé</span>
+                    <span className="text-muted-foreground">
+                      Compte supprimé
+                    </span>
                   )}
                 </td>
 
@@ -464,7 +453,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                       {entree.utilisateur_cible_nom ?? "Compte supprimé"}
                     </Link>
                   ) : (
-                    <span className="text-gray-500">—</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </td>
 
@@ -473,7 +462,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                                             max-w-md
                                             px-4
                                             py-3
-                                            text-gray-400
+                                            text-muted-foreground
                                         "
                 >
                   {afficherDetails(entree)}
@@ -489,7 +478,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                             p-8
                             text-center
                             text-sm
-                            text-gray-500
+                            text-muted-foreground
                         "
           >
             Aucune action administrative trouvée.
@@ -509,7 +498,7 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
                     sm:justify-between
                 "
       >
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {premiereLigne}
           {" – "}
           {derniereLigne}
@@ -558,17 +547,13 @@ export default async function JournalAdminPage({ searchParams }: PageProps) {
 
                 <option value="100">100</option>
               </select>
-              <button
+              <Button
                 type="submit"
-                className="
-                                    rounded
-                                    border
-                                    px-2
-                                    py-1
-                                "
+                variant="outline"
+                className="h-auto px-2 py-1"
               >
                 OK
-              </button>
+              </Button>
             </label>
           </form>
 
