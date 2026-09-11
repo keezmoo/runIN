@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ToutMarquerLuButton from "./tout-marquer-lu-button";
 import NotificationLink from "./notification-link";
+import { Card } from "@/components/ui/card";
 
 function afficherDateNotification(dateTexte: string) {
   const date = new Date(dateTexte);
@@ -118,12 +119,14 @@ export default async function NotificationsPage() {
 
   if (utilisateursIndisponiblesResult.error || notificationsResult.error) {
     return (
-      <main className="mx-auto max-w-2xl p-6">
+      <main className="mx-auto max-w-2xl px-4 py-4 md:p-6">
         <h1 className="hidden text-2xl font-bold md:mb-6 md:block">
           Notifications
         </h1>
 
-        <p>Impossible de charger les notifications.</p>
+        <p className="text-sm text-destructive">
+          Impossible de charger les notifications.
+        </p>
       </main>
     );
   }
@@ -152,25 +155,23 @@ export default async function NotificationsPage() {
   return (
     <main className="mx-auto max-w-2xl p-6">
       <div
-        className="
-        mb-6
-        flex
-        items-start
-        justify-between
-        gap-4
-    "
+        className={
+          listeNotifications.length > 0
+            ? "mb-4 flex items-start justify-between gap-4 md:mb-6"
+            : "hidden md:mb-6 md:flex md:items-start md:justify-between md:gap-4"
+        }
       >
-        <div>
+        <div className="min-w-0">
           <h1 className="hidden text-2xl font-bold md:block">Notifications</h1>
 
           {nombreNonLues > 0 ? (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground md:mt-1">
               {nombreNonLues === 1
                 ? "1 notification non lue"
                 : `${nombreNonLues} notifications non lues`}
             </p>
           ) : listeNotifications.length > 0 ? (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground md:mt-1">
               Aucune notification non lue
             </p>
           ) : null}
@@ -180,43 +181,41 @@ export default async function NotificationsPage() {
       </div>
 
       {listeNotifications.length === 0 ? (
-        <p className="text-gray-500">Vous n&apos;avez aucune notification.</p>
+        <p className="text-sm text-muted-foreground">
+          Vous n&apos;avez aucune notification.
+        </p>
       ) : (
         <div className="space-y-3">
           {listeNotifications.map((notification) => {
             const estNonLue = notification.lu_at === null;
 
             const contenu = (
-              <div
-                className={`
-                                        rounded
-                                        border
-                                        p-4
-                                        transition
-
-                                        ${estNonLue ? "bg-[#8ED8B6]/10" : ""}
-                                    `}
+              <Card
+                className={
+                  estNonLue
+                    ? "overflow-hidden border-primary-strong/40 bg-primary/5 transition-colors hover:bg-primary/10"
+                    : "overflow-hidden transition-colors hover:bg-accent/50"
+                }
               >
-                <div
-                  className="
-                                            flex
-                                            items-start
-                                            justify-between
-                                            gap-3
-                                        "
-                >
-                  <div>
-                    <p className={estNonLue ? "font-semibold" : "font-medium"}>
+                <div className="flex items-start justify-between gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={
+                        estNonLue
+                          ? "font-semibold text-foreground"
+                          : "font-medium text-foreground"
+                      }
+                    >
                       {notification.titre}
                     </p>
 
                     {notification.contenu && (
-                      <p className="mt-1 text-sm text-gray-600">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {notification.contenu}
                       </p>
                     )}
 
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {afficherDateNotification(notification.created_at)}
                     </p>
                   </div>
@@ -224,18 +223,19 @@ export default async function NotificationsPage() {
                   {estNonLue && (
                     <span
                       className="
-                                                    mt-1
-                                                    h-2.5
-                                                    w-2.5
-                                                    shrink-0
-                                                    rounded-full
-                                                    bg-[#8ED8B6]
-                                                "
+            mt-1.5
+            h-2.5
+            w-2.5
+            shrink-0
+            rounded-full
+            bg-primary-strong
+          "
                       title="Non lue"
+                      aria-label="Notification non lue"
                     />
                   )}
                 </div>
-              </div>
+              </Card>
             );
 
             // Notification avec destination
@@ -257,7 +257,7 @@ export default async function NotificationsPage() {
           })}
         </div>
       )}
-      <p className="mt-10 text-center text-xs text-gray-500">
+      <p className="mt-8 text-center text-xs text-muted-foreground">
         Les notifications lues sont conservées 30 jours. Les notifications non
         lues sont conservées 90 jours.
       </p>

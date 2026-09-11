@@ -98,61 +98,52 @@ export default async function AbonnementsPage({ params }: PageProps) {
   const profilsParId = new Map(profils.map((profil) => [profil.id, profil]));
 
   return (
-  <main className="mx-auto max-w-xl px-4 py-4 md:p-6">
-    <Button
-      asChild
-      variant="ghost"
-      size="sm"
-      className="mb-4 -ml-3"
-    >
-      <Link href={`/membres/${id}`}>
-        ← Retour au profil
-      </Link>
-    </Button>
+    <main className="mx-auto max-w-xl px-4 py-4 md:p-6">
+      <Button asChild variant="ghost" size="sm" className="mb-4 -ml-3">
+        <Link href={`/membres/${id}`}>← Retour au profil</Link>
+      </Button>
 
-    <h1 className="mb-4 text-2xl font-bold md:mb-6">
-      Abonnés de {profile.nom}
-    </h1>
+      <h1 className="mb-4 text-2xl font-bold md:mb-6">
+        Abonnements de {profile.nom}
+      </h1>
 
-    {idsProfils.length === 0 ? (
-      <Card className="p-4">
-        <p className="text-sm text-muted-foreground">
-          Aucun abonné pour le moment.
-        </p>
-      </Card>
-    ) : (
-      <Card className="overflow-hidden">
-        <div className="divide-y">
-          {idsProfils.map((profilId) => {
-            if (idsIndisponibles.has(profilId)) {
-              return (
-                <div
-                  key={profilId}
-                  className="
+      {idsProfils.length === 0 ? (
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">
+            Aucun abonnement pour le moment.
+          </p>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="divide-y">
+            {idsProfils.map((profilId) => {
+              if (idsIndisponibles.has(profilId)) {
+                return (
+                  <div
+                    key={profilId}
+                    className="
                     px-4
                     py-3
                     text-sm
                     text-muted-foreground
                   "
-                >
-                  <span className="font-medium">
-                    Profil indisponible
-                  </span>
-                </div>
-              );
-            }
+                  >
+                    <span className="font-medium">Profil indisponible</span>
+                  </div>
+                );
+              }
 
-            const profil = profilsParId.get(profilId);
+              const profil = profilsParId.get(profilId);
 
-            if (!profil) {
-              return null;
-            }
+              if (!profil) {
+                return null;
+              }
 
-            return (
-              <Link
-                key={profil.id}
-                href={`/membres/${profil.id}`}
-                className="
+              return (
+                <Link
+                  key={profil.id}
+                  href={`/membres/${profil.id}`}
+                  className="
                   flex
                   items-center
                   justify-between
@@ -166,23 +157,23 @@ export default async function AbonnementsPage({ params }: PageProps) {
                   focus-visible:ring-inset
                   focus-visible:ring-ring
                 "
-              >
-                <span className="min-w-0 truncate font-medium">
-                  {profil.nom}
-                </span>
-
-                <span
-                  className="text-lg leading-none text-muted-foreground"
-                  aria-hidden="true"
                 >
-                  ›
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </Card>
-    )}
-  </main>
-);
+                  <span className="min-w-0 truncate font-medium">
+                    {profil.nom}
+                  </span>
+
+                  <span
+                    className="text-lg leading-none text-muted-foreground"
+                    aria-hidden="true"
+                  >
+                    ›
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+    </main>
+  );
 }

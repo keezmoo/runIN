@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
@@ -57,24 +57,18 @@ export default function ToutMarquerLuButton({
   }
 
   return (
-    <div>
-      <button
+    <div className="text-right">
+      <Button
         type="button"
+        variant="outline"
         onClick={toutMarquerCommeLu}
         disabled={chargement}
-        className="
-                    rounded
-                    border
-                    px-3
-                    py-2
-                    text-sm
-                    disabled:opacity-50
-                "
+        className="h-auto px-3 py-2 text-sm"
       >
         {chargement ? "Traitement..." : "Tout marquer comme lu"}
-      </button>
+      </Button>
 
-      {erreur && <p className="mt-2 text-sm">{erreur}</p>}
+      {erreur && <p className="mt-2 text-sm text-destructive">{erreur}</p>}
     </div>
   );
 }

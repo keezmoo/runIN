@@ -56,7 +56,7 @@ export default function SupprimerSortieButton({
         onClick={supprimerSortie}
         disabled={loading}
       >
-        {loading ? "Suppression..." : "Supprimer définitivement"}
+        {loading ? "Suppression..." : "Supprimer"}
       </Button>
 
       {message && <p className="mt-2 text-sm text-destructive">{message}</p>}

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import ToutMarquerLuButton from "./tout-marquer-lu-button";
 import { createClient } from "@/lib/supabase/server";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 function numeroJourParis(date: Date) {
   const parties = new Intl.DateTimeFormat("fr-FR", {
@@ -102,8 +104,8 @@ export default async function MessagesPage() {
 
   if (utilisateursIndisponiblesResult.error || conversationsResult.error) {
     return (
-      <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les conversations.</p>
+      <main className="mx-auto max-w-2xl px-4 py-4 md:p-6">
+        <p className="text-sm text-destructive">Impossible de charger les conversations.</p>
       </main>
     );
   }
@@ -121,7 +123,7 @@ export default async function MessagesPage() {
       <main className="mx-auto max-w-2xl p-6">
         <h1 className="hidden text-3xl font-bold md:mb-6 md:block">Messages</h1>
 
-        <p className="text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Vous n&apos;avez aucune conversation active.
         </p>
       </main>
@@ -153,7 +155,7 @@ export default async function MessagesPage() {
   if (sortiesError) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les sorties.</p>
+        <p className="text-sm text-destructive">Impossible de charger les sorties.</p>
       </main>
     );
   }
@@ -207,7 +209,7 @@ export default async function MessagesPage() {
       <main className="mx-auto max-w-2xl p-6">
         <h1 className="hidden text-3xl font-bold md:mb-6 md:block">Messages</h1>
 
-        <p className="text-gray-500">
+        <p className="text-sm text-muted-foreground">
           Vous n&apos;avez aucune conversation active.
         </p>
       </main>
@@ -265,7 +267,7 @@ export default async function MessagesPage() {
   if (profilsResult.error || messagesResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les conversations.</p>
+        <p className="text-sm text-destructive">Impossible de charger les conversations.</p>
       </main>
     );
   }
@@ -392,81 +394,84 @@ export default async function MessagesPage() {
             const dateActivite =
               dernierMessage?.created_at ?? conversation.created_at;
 
+            const estNonLue = nombreNonLus > 0;
+
             return (
-              <Link
+              <Card
                 key={conversation.id}
-                href={`/messages/${conversation.id}`}
-                className="
-                relative
-                block
-                overflow-hidden
-                rounded
-                border
-                px-4
-                py-3
-                transition
-                hover:bg-gray-500/5
-
-                after:absolute
-                after:bottom-0
-                after:left-0
-                after:h-[3px]
-                after:w-full
-                after:origin-left
-                after:scale-x-0
-                after:bg-[#8ED8B6]
-                after:transition-transform
-                after:duration-200
-
-                hover:after:scale-x-100
-              "
+                className={
+                  estNonLue
+                    ? "overflow-hidden border-primary-strong/40 bg-primary/5"
+                    : "overflow-hidden"
+                }
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    {/* INTERLOCUTEUR */}
+                <Link
+                  href={`/messages/${conversation.id}`}
+                  className="
+              block
+              p-4
+              transition-colors
+              hover:bg-accent/50
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-inset
+              focus-visible:ring-ring
+            "
+                >
+                  {/* PREMIÈRE LIGNE */}
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <h2
+                        className={
+                          estNonLue
+                            ? "truncate font-semibold"
+                            : "truncate font-medium"
+                        }
+                      >
                         {interlocuteur?.nom ?? "Utilisateur"}
                       </h2>
 
-                      {nombreNonLus > 0 && (
-                        <span
+                      {estNonLue && (
+                        <Badge
+                          variant="secondary"
                           className="
-                          rounded-full
-                          bg-[#8ED8B6]
-                          px-2
-                          py-0.5
-                          text-xs
-                          font-semibold
-                          text-black
-                        "
+                      shrink-0
+                      border-primary-strong/30
+                      bg-primary/15
+                      text-primary-strong
+                    "
                         >
-                          {nombreNonLus === 1
-                            ? "1 nouveau message"
-                            : `${nombreNonLus} nouveaux messages`}
-                        </span>
+                          {nombreNonLus}{" "}
+                          {nombreNonLus === 1 ? "non lu" : "non lus"}
+                        </Badge>
                       )}
                     </div>
 
-                    {/* SORTIE */}
-
-                    <p className="mt-1 text-sm font-medium">{sortie.titre}</p>
-
-                    {/* DERNIER MESSAGE */}
-
-                    <p className="mt-1 truncate text-sm text-gray-500">
-                      {apercu}
+                    <p className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                      {afficherDateRelative(dateActivite)}
                     </p>
                   </div>
 
-                  {/* DATE */}
+                  {/* SORTIE */}
 
-                  <p className="shrink-0 text-xs text-gray-500">
-                    {afficherDateRelative(dateActivite)}
+                  <p className="mt-1 truncate text-sm font-medium">
+                    {sortie.titre}
                   </p>
-                </div>
-              </Link>
+
+                  {/* DERNIER MESSAGE */}
+
+                  <p
+                    className={
+                      estNonLue
+                        ? "mt-1 truncate text-sm font-medium text-foreground"
+                        : "mt-1 truncate text-sm text-muted-foreground"
+                    }
+                  >
+                    {apercu}
+                  </p>
+                </Link>
+              </Card>
             );
           },
         )}
@@ -474,14 +479,7 @@ export default async function MessagesPage() {
 
       {/* CONSERVATION */}
 
-      <p
-        className="
-        mt-10
-        text-center
-        text-xs
-        text-gray-500
-      "
-      >
+      <p className="mt-8 text-center text-xs text-muted-foreground">
         Les conversations sont accessibles jusqu&apos;à 12 h après la fin de la
         sortie. Les messages sont supprimés après 12 mois.
       </p>
