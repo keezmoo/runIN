@@ -5,7 +5,8 @@ import BlocageUtilisateurButton from "@/components/blocage-utilisateur-button";
 import Link from "next/link";
 import SignalerButton from "@/components/signaler-button";
 import { afficherAllure, afficherIntensite } from "@/lib/sortie-utils";
-
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
 
 type ProfilPublicPageProps = {
@@ -78,8 +79,10 @@ export default async function ProfilPublicPage({
       );
 
       return (
-        <main className="mx-auto max-w-xl p-6">
-          <p>Impossible de charger ce profil.</p>
+        <main className="mx-auto max-w-xl px-4 py-4 md:p-6">
+          <p className="text-sm text-destructive">
+            Impossible de charger ce profil.
+          </p>
         </main>
       );
     }
@@ -97,7 +100,7 @@ export default async function ProfilPublicPage({
       <main className="mx-auto max-w-xl p-6">
         <h1 className="text-2xl font-bold">Profil indisponible</h1>
 
-        <p className="mt-3 text-sm text-gray-500">
+        <p className="mt-3 text-sm text-muted-foreground">
           Ce profil n&apos;est pas accessible.
         </p>
 
@@ -208,8 +211,10 @@ export default async function ProfilPublicPage({
     });
 
     return (
-      <main className="mx-auto max-w-xl p-6">
-        <p>Impossible de charger ce profil.</p>
+      <main className="mx-auto max-w-xl px-4 py-4 md:p-6">
+        <p className="text-sm text-destructive">
+          Impossible de charger ce profil.
+        </p>
       </main>
     );
   }
@@ -227,272 +232,210 @@ export default async function ProfilPublicPage({
   // ------------------------------------------------
 
   return (
-    <main
-      className="
-      mx-auto
-      max-w-xl
-      p-6
-    "
-    >
+    <main className="mx-auto max-w-xl px-4 py-4 md:p-6">
       {/* PROFIL */}
 
-      <header className="mb-8">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{profil.nom}</h1>
+      <header className="mb-6">
+        <Card className="p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-bold">{profil.nom}</h1>
 
-            <p className="mt-1 text-sm text-gray-500">
-              {profil.age} ans
-              {" • "}
-              {afficherSexe(profil.sexe)}
-            </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {profil.age} ans
+                {" • "}
+                {afficherSexe(profil.sexe)}
+              </p>
+            </div>
+
+            {!estMonProfil && (
+              <SuivreButton
+                profilId={profil.id}
+                estSuiviInitialement={estSuivi}
+              />
+            )}
           </div>
 
-          {!estMonProfil && (
-            <SuivreButton
-              profilId={profil.id}
-              estSuiviInitialement={estSuivi}
-            />
-          )}
-        </div>
+          {/* ABONNÉS / ABONNEMENTS */}
 
-        {/* ABONNÉS / ABONNEMENTS */}
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <Link
+              href={`/membres/${profil.id}/abonnes`}
+              className="
+              rounded-sm
+              transition-colors
+              hover:text-primary-strong
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+            >
+              <strong>{nombreAbonnes}</strong>{" "}
+              <span className="text-muted-foreground">
+                {nombreAbonnes === 1 ? "abonné" : "abonnés"}
+              </span>
+            </Link>
 
-        <div className="mt-4 flex gap-6 text-sm">
-          <Link
-            href={`/membres/${profil.id}/abonnes`}
-            className="hover:underline"
-          >
-            <strong>{nombreAbonnes}</strong>{" "}
-            {nombreAbonnes === 1 ? "abonné" : "abonnés"}
-          </Link>
-
-          <Link
-            href={`/membres/${profil.id}/abonnements`}
-            className="hover:underline"
-          >
-            <strong>{nombreAbonnements}</strong>{" "}
-            {nombreAbonnements === 1 ? "abonnement" : "abonnements"}
-          </Link>
-        </div>
+            <Link
+              href={`/membres/${profil.id}/abonnements`}
+              className="
+              rounded-sm
+              transition-colors
+              hover:text-primary-strong
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-ring
+            "
+            >
+              <strong>{nombreAbonnements}</strong>{" "}
+              <span className="text-muted-foreground">
+                {nombreAbonnements === 1 ? "abonnement" : "abonnements"}
+              </span>
+            </Link>
+          </div>
+        </Card>
       </header>
 
       {/* DESCRIPTION */}
 
       <section>
-        <h2
-          className="
-          text-lg
-          font-semibold
-        "
-        >
-          À propos
-        </h2>
+        <h2 className="mb-3 text-lg font-semibold">À propos</h2>
 
-        {profil.description && profil.description.trim() !== "" ? (
-          <p
-            className="
-            mt-3
-            whitespace-pre-wrap
-          "
-          >
-            {profil.description}
-          </p>
-        ) : (
-          <p
-            className="
-            mt-3
-            text-sm
-            text-gray-500
-          "
-          >
-            Ce coureur n&apos;a pas encore ajouté de présentation.
-          </p>
-        )}
+        <Card className="p-4">
+          {profil.description && profil.description.trim() !== "" ? (
+            <p className="whitespace-pre-wrap text-sm">{profil.description}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Ce coureur n&apos;a pas encore ajouté de présentation.
+            </p>
+          )}
+        </Card>
       </section>
 
       {/* SORTIES ORGANISÉES */}
 
-      <section
-        className="
-        mt-8
-        border-t
-        pt-6
-      "
-      >
-        <h2
-          className="
-          text-lg
-          font-semibold
-        "
-        >
+      <section className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold">
           Prochaines sorties organisées
         </h2>
 
         {prochainesSorties.length === 0 ? (
-          <p
-            className="
-            mt-3
-            text-sm
-            text-gray-500
-          "
-          >
-            Aucune sortie organisée prochainement.
-          </p>
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">
+              Aucune sortie organisée prochainement.
+            </p>
+          </Card>
         ) : (
-          <div
-            className="
-            mt-4
-            divide-y
-            border-y
-          "
-          >
-            {prochainesSorties.map((sortie) => {
-              const dateKey = getDateKey(new Date(sortie.date_heure_depart));
+          <Card className="overflow-hidden">
+            <div className="divide-y">
+              {prochainesSorties.map((sortie) => {
+                const dateKey = getDateKey(new Date(sortie.date_heure_depart));
 
-              const distance =
-                sortie.distance_km !== null
-                  ? `${Number(sortie.distance_km).toLocaleString("fr-FR", {
-                      maximumFractionDigits: 2,
-                    })} km`
-                  : null;
+                const distance =
+                  sortie.distance_km !== null
+                    ? `${Number(sortie.distance_km).toLocaleString("fr-FR", {
+                        maximumFractionDigits: 2,
+                      })} km`
+                    : null;
 
-              const intensite = afficherIntensite(sortie.intensite);
+                const intensite = afficherIntensite(sortie.intensite);
 
-              const infosSportives =
-                sortie.type_sortie === "trail"
-                  ? [
-                      distance,
+                const infosSportives =
+                  sortie.type_sortie === "trail"
+                    ? [
+                        distance,
+                        sortie.denivele_positif_m !== null
+                          ? `${sortie.denivele_positif_m} m D+`
+                          : null,
+                        intensite,
+                      ]
+                        .filter(Boolean)
+                        .join(" • ")
+                    : [
+                        distance,
+                        sortie.allure_secondes_km !== null
+                          ? afficherAllure(sortie.allure_secondes_km)
+                          : null,
+                        intensite,
+                      ]
+                        .filter(Boolean)
+                        .join(" • ");
 
-                      sortie.denivele_positif_m !== null
-                        ? `${sortie.denivele_positif_m} m D+`
-                        : null,
-
-                      intensite,
-                    ]
-                      .filter(Boolean)
-                      .join(" • ")
-                  : [
-                      distance,
-
-                      sortie.allure_secondes_km !== null
-                        ? afficherAllure(sortie.allure_secondes_km)
-                        : null,
-
-                      intensite,
-                    ]
-                      .filter(Boolean)
-                      .join(" • ");
-
-              return (
-                <Link
-                  key={sortie.id}
-                  href={`/sorties/${sortie.id}`}
-                  className="
-                      block
-                      py-4
-                      hover:opacity-70
-                    "
-                >
-                  <p
+                return (
+                  <Link
+                    key={sortie.id}
+                    href={`/sorties/${sortie.id}`}
                     className="
-                      text-sm
-                      text-gray-500
-                    "
+                    block
+                    px-4
+                    py-3
+                    transition-colors
+                    hover:bg-accent/50
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-inset
+                    focus-visible:ring-ring
+                  "
                   >
-                    {formatDateLongue(dateKey)}
-                    {" — "}
-                    {formatHeure(sortie.date_heure_depart)}
-                  </p>
-
-                  <div
-                    className="
-                      mt-1
-                      flex
-                      items-baseline
-                      gap-2
-                    "
-                  >
-                    <h3
-                      className="
-                        font-semibold
-                      "
-                    >
-                      {sortie.titre}
-                    </h3>
-
-                    <span
-                      className="
-                        shrink-0
-                        text-sm
-                        text-gray-500
-                      "
-                    >
-                      {sortie.type_sortie === "trail" ? "Trail" : "Route"}
-                    </span>
-                  </div>
-
-                  {infosSportives && (
-                    <p
-                      className="
-                        mt-1
-                        text-sm
-                        text-gray-500
-                      "
-                    >
-                      {infosSportives}
+                    <p className="text-xs text-muted-foreground">
+                      {formatDateLongue(dateKey)}
+                      {" — "}
+                      {formatHeure(sortie.date_heure_depart)}
                     </p>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+
+                    <div className="mt-1 flex items-baseline justify-between gap-3">
+                      <h3 className="min-w-0 truncate font-semibold">
+                        {sortie.titre}
+                      </h3>
+
+                      <span className="shrink-0 text-sm text-muted-foreground">
+                        {sortie.type_sortie === "trail" ? "Trail" : "Route"}
+                      </span>
+                    </div>
+
+                    {infosSportives && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {infosSportives}
+                      </p>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </Card>
         )}
       </section>
-
-      {/* BLOCAGE */}
 
       {/* ACTIONS SUR UN AUTRE PROFIL */}
 
       {!estMonProfil && (
-        <section className="mt-8 border-t pt-6">
-          <div className="space-y-4">
-            <BlocageUtilisateurButton
-              utilisateurId={profil.id}
-              mode="bloquer"
-            />
+        <section className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold">Actions</h2>
 
-            <SignalerButton
-              typeCible="profil"
-              cibleId={profil.id}
-              libelle="Signaler ce profil"
-            />
-          </div>
+          <Card className="p-4">
+            <div className="flex flex-wrap gap-3">
+              <BlocageUtilisateurButton
+                utilisateurId={profil.id}
+                mode="bloquer"
+              />
+
+              <SignalerButton
+                typeCible="profil"
+                cibleId={profil.id}
+                libelle="Signaler ce profil"
+              />
+            </div>
+          </Card>
         </section>
       )}
 
       {/* PROPRE PROFIL */}
 
-      {user.id === profil.id && (
-        <div
-          className="
-          mt-8
-          border-t
-          pt-6
-        "
-        >
-          <Link
-            href="/profil"
-            className="
-              inline-block
-              rounded
-              border
-              px-4
-              py-2
-            "
-          >
-            Modifier mon profil
-          </Link>
+      {estMonProfil && (
+        <div className="mt-6">
+          <Button asChild variant="outline">
+            <Link href="/profil">Modifier mon profil</Link>
+          </Button>
         </div>
       )}
     </main>

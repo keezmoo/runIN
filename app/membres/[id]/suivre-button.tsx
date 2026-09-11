@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type SuivreButtonProps = {
@@ -74,23 +75,14 @@ export default function SuivreButton({
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant={estSuivi ? "outline" : "default"}
       onClick={basculerSuivi}
       disabled={loading}
-      className={`
-        rounded
-        border
-        px-4
-        py-2
-        font-medium
-        transition
-        disabled:opacity-50
-
-        ${estSuivi ? "border-[#8ED8B6] bg-[#8ED8B6]/10" : "hover:bg-gray-500/5"}
-      `}
+      className="shrink-0"
     >
       {loading ? "..." : estSuivi ? "✓ Suivi" : "Suivre"}
-    </button>
+    </Button>
   );
 }
