@@ -25,6 +25,7 @@ type SelecteurLieuProps = {
   contenuSupplementaire?: ReactNode;
   rayonCarteKm?: number;
   aideCarte?: string;
+  onValidation?: (localisation: Localisation) => void;
 };
 
 export default function SelecteurLieu({
@@ -38,6 +39,7 @@ export default function SelecteurLieu({
   contenuSupplementaire,
   rayonCarteKm,
   aideCarte = "Cliquez sur la carte ou déplacez le point pour préciser le lieu exact.",
+  onValidation,
 }: SelecteurLieuProps) {
   const [ouverte, setOuverte] = useState(false);
   const [rechercheEnCours, setRechercheEnCours] = useState(false);
@@ -408,6 +410,7 @@ export default function SelecteurLieu({
     }
 
     setOuverte(false);
+    onValidation?.(localisation);
   }
 
   return (

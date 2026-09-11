@@ -172,6 +172,76 @@ export default function FiltresSorties({
 
   const [loading, setLoading] = useState(false);
 
+  function appliquerFiltresRapides({
+    type = typeSortie,
+    suivis = avecSuivis,
+    lieuRecherche,
+    localisationRecherche,
+    rayonRecherche,
+  }: {
+    type?: TypeSortie;
+    suivis?: boolean;
+    lieuRecherche?: string;
+    localisationRecherche?: Localisation;
+    rayonRecherche?: number;
+  } = {}) {
+    const params = new URLSearchParams(searchParams.toString());
+
+    // ------------------------------------------------
+    // TYPE DE SORTIE
+    // ------------------------------------------------
+
+    if (type) {
+      params.set("type", type);
+    } else {
+      params.delete("type");
+    }
+
+    // Les filtres spécifiques à un terrain ne doivent
+    // pas rester actifs lorsqu'on change de terrain.
+
+    if (type === "route") {
+      params.delete("deniveleMin");
+      params.delete("deniveleMax");
+    } else if (type === "trail") {
+      params.delete("allureMin");
+      params.delete("allureMax");
+    } else {
+      params.delete("deniveleMin");
+      params.delete("deniveleMax");
+      params.delete("allureMin");
+      params.delete("allureMax");
+    }
+
+    // ------------------------------------------------
+    // CONTACTS
+    // ------------------------------------------------
+
+    if (suivis) {
+      params.set("suivis", "1");
+    } else {
+      params.delete("suivis");
+    }
+
+    // ------------------------------------------------
+    // LOCALISATION
+    // ------------------------------------------------
+
+    if (
+      lieuRecherche !== undefined &&
+      localisationRecherche !== undefined &&
+      rayonRecherche !== undefined
+    ) {
+      params.set("lieu", lieuRecherche.trim());
+      params.set("rayon", String(rayonRecherche));
+      params.set("lat", String(localisationRecherche.latitude));
+      params.set("lon", String(localisationRecherche.longitude));
+    }
+
+    router.replace(`/sorties?${params.toString()}`, {
+      scroll: false,
+    });
+  }
   // ------------------------------------------------
   // CHANGEMENT DE SPORT
   // ------------------------------------------------
@@ -188,6 +258,20 @@ export default function FiltresSorties({
       setAllureMin("");
       setAllureMax("");
     }
+
+    appliquerFiltresRapides({
+      type: nouveauType,
+    });
+  }
+
+  function basculerContacts() {
+    const nouvelleValeur = !avecSuivis;
+
+    setAvecSuivis(nouvelleValeur);
+
+    appliquerFiltresRapides({
+      suivis: nouvelleValeur,
+    });
   }
 
   // ------------------------------------------------
@@ -592,7 +676,7 @@ export default function FiltresSorties({
             <ToggleButton
               type="button"
               pressed={avecSuivis}
-              onClick={() => setAvecSuivis((valeur) => !valeur)}
+              onClick={basculerContacts}
               aria-label="Mes contacts uniquement"
               className="min-h-10"
             >
@@ -610,6 +694,13 @@ export default function FiltresSorties({
           onLieuChange={setLieu}
           localisation={localisation}
           onLocalisationChange={setLocalisation}
+          onValidation={(localisationValidee) => {
+            appliquerFiltresRapides({
+              lieuRecherche: lieu,
+              localisationRecherche: localisationValidee,
+              rayonRecherche: rayon,
+            });
+          }}
           libelle="Lieu de recherche"
           placeholder="Chambéry"
           resumeSupplementaire={
@@ -627,14 +718,6 @@ export default function FiltresSorties({
           pour modifier le centre de la recherche.
         "
         />
-
-        {/* COMMANDES PRINCIPALES */}
-
-        <div className="flex items-center justify-end">
-          <Button type="submit" disabled={loading} className="min-w-28">
-            {loading ? "Recherche..." : "Rechercher"}
-          </Button>
-        </div>
       </div>
 
       {/* ==================================================
