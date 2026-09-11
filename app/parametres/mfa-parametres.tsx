@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type FacteurTotp = {
   id: string;
@@ -200,7 +202,7 @@ export default function MfaParametres() {
   }
 
   if (chargement) {
-    return <p className="text-sm text-zinc-400">Chargement...</p>;
+    return <p className="text-sm text-muted-foreground">Chargement...</p>;
   }
 
   async function desactiverMfa() {
@@ -281,11 +283,9 @@ export default function MfaParametres() {
     return (
       <div className="space-y-4">
         <div>
-          <p className="font-medium text-white">
-            Authentification à deux facteurs
-          </p>
+          <p className="font-medium">Authentification à deux facteurs</p>
 
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Votre compte est protégé par une application
             d&apos;authentification.
           </p>
@@ -293,112 +293,80 @@ export default function MfaParametres() {
 
         <div
           className="
-                    inline-flex
-                    rounded-full
-                    border
-                    border-emerald-900
-                    bg-emerald-950/30
-                    px-3
-                    py-1
-                    text-sm
-                    text-emerald-400
-                "
+          inline-flex
+          rounded-full
+          border
+          border-primary-strong/30
+          bg-primary/10
+          px-3
+          py-1
+          text-sm
+          font-medium
+          text-primary-strong
+        "
         >
           Activé
         </div>
 
-        {message && <p className="text-sm text-[#8ED8B6]">{message}</p>}
+        {message && <p className="text-sm text-primary-strong">{message}</p>}
 
-        {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+        {erreur && <p className="text-sm text-destructive">{erreur}</p>}
 
         {!afficherDesactivation && (
-          <div>
-            <button
-              type="button"
-              onClick={() => setAfficherDesactivation(true)}
-              className="
-                            rounded-lg
-                            border
-                            border-zinc-700
-                            bg-zinc-800
-                            px-4
-                            py-2
-                            text-sm
-                            font-medium
-                            text-white
-                            hover:bg-zinc-700
-                        "
-            >
-              Désactiver le MFA
-            </button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setAfficherDesactivation(true)}
+          >
+            Désactiver le MFA
+          </Button>
         )}
 
         {afficherDesactivation && (
           <div
             className="
-                        space-y-3
-                        rounded-lg
-                        border
-                        border-red-900
-                        bg-red-950/20
-                        p-4
-                    "
+            space-y-4
+            rounded-xl
+            border
+            border-destructive/30
+            bg-destructive/5
+            p-4
+          "
           >
             <div>
-              <p className="font-medium text-red-400">Désactiver le MFA ?</p>
+              <p className="font-medium text-destructive">
+                Désactiver le MFA ?
+              </p>
 
-              <p className="mt-1 text-sm text-zinc-400">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Votre compte ne demandera plus de code depuis votre application
                 d&apos;authentification lors de la connexion.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 disabled={desactivationEnCours}
                 onClick={() => {
                   setAfficherDesactivation(false);
-
                   setErreur("");
                 }}
-                className="
-                                rounded-lg
-                                border
-                                border-zinc-700
-                                bg-zinc-800
-                                px-4
-                                py-2
-                                text-sm
-                                text-white
-                                hover:bg-zinc-700
-                                disabled:opacity-50
-                            "
               >
                 Annuler
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="destructive"
                 disabled={desactivationEnCours}
                 onClick={desactiverMfa}
-                className="
-                                rounded-lg
-                                bg-red-700
-                                px-4
-                                py-2
-                                text-sm
-                                font-medium
-                                text-white
-                                hover:bg-red-600
-                                disabled:opacity-50
-                            "
               >
                 {desactivationEnCours
                   ? "Désactivation..."
                   : "Confirmer la désactivation"}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -408,61 +376,37 @@ export default function MfaParametres() {
 
   if (!activationEnCours) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
-          <p className="font-medium text-white">
-            Authentification à deux facteurs
-          </p>
+          <p className="font-medium">Authentification à deux facteurs</p>
 
-          <p className="mt-1 text-sm text-zinc-400">
+          <p className="mt-1 text-sm text-muted-foreground">
             Ajoutez une protection supplémentaire à votre compte avec une
             application d&apos;authentification.
           </p>
         </div>
 
-        {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+        {erreur && <p className="text-sm text-destructive">{erreur}</p>}
 
-        <button
-          type="button"
-          onClick={commencerActivation}
-          className="
-                        rounded-lg
-                        border
-                        border-zinc-700
-                        bg-zinc-800
-                        px-4
-                        py-2
-                        text-sm
-                        font-medium
-                        text-white
-                        hover:bg-zinc-700
-                    "
-        >
+        <Button type="button" variant="outline" onClick={commencerActivation}>
           Activer le MFA
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <p className="font-medium text-white">Configurer le MFA</p>
+        <p className="font-medium">Configurer le MFA</p>
 
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-sm text-muted-foreground">
           Scannez ce QR code avec votre application d&apos;authentification.
         </p>
       </div>
 
       {qrCode && (
-        <div
-          className="
-                        inline-block
-                        rounded-lg
-                        bg-white
-                        p-3
-                    "
-        >
+        <div className="inline-block rounded-xl border bg-white p-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={qrCode} alt="QR code MFA" width={200} height={200} />
         </div>
@@ -470,22 +414,22 @@ export default function MfaParametres() {
 
       {secret && (
         <div>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Si vous ne pouvez pas scanner le QR code, saisissez cette clé
             manuellement :
           </p>
 
           <code
             className="
-                            mt-2
-                            block
-                            break-all
-                            rounded-lg
-                            bg-zinc-950
-                            p-3
-                            text-sm
-                            text-zinc-200
-                        "
+            mt-2
+            block
+            break-all
+            rounded-lg
+            border
+            bg-muted
+            p-3
+            text-sm
+          "
           >
             {secret}
           </code>
@@ -493,11 +437,11 @@ export default function MfaParametres() {
       )}
 
       <div>
-        <label htmlFor="code-mfa" className="block text-sm text-zinc-300">
+        <label htmlFor="code-mfa" className="mb-1.5 block text-sm font-medium">
           Code à 6 chiffres
         </label>
 
-        <input
+        <Input
           id="code-mfa"
           type="text"
           inputMode="numeric"
@@ -505,58 +449,20 @@ export default function MfaParametres() {
           maxLength={6}
           value={code}
           onChange={(event) => setCode(event.target.value)}
-          className="
-                        mt-2
-                        w-full
-                        rounded-lg
-                        border
-                        border-zinc-700
-                        bg-zinc-950
-                        px-3
-                        py-2
-                        text-white
-                        outline-none
-                        focus:border-[#8ED8B6]
-                    "
+          className="max-w-48"
         />
       </div>
 
-      {erreur && <p className="text-sm text-red-400">{erreur}</p>}
+      {erreur && <p className="text-sm text-destructive">{erreur}</p>}
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={annulerActivation}
-          className="
-                        rounded-lg
-                        border
-                        border-zinc-700
-                        bg-zinc-800
-                        px-4
-                        py-2
-                        text-sm
-                        text-white
-                        hover:bg-zinc-700
-                    "
-        >
+        <Button type="button" variant="outline" onClick={annulerActivation}>
           Annuler
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          onClick={confirmerActivation}
-          className="
-                        rounded-lg
-                        bg-[#8ED8B6]
-                        px-4
-                        py-2
-                        text-sm
-                        font-medium
-                        text-zinc-950
-                    "
-        >
+        <Button type="button" onClick={confirmerActivation}>
           Vérifier et activer
-        </button>
+        </Button>
       </div>
     </div>
   );

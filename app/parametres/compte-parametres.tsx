@@ -1,697 +1,351 @@
 "use client";
 
-import {
-    FormEvent,
-    useEffect,
-    useState,
-} from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
-
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function CompteParametres() {
+  const [email, setEmail] = useState("");
 
-    const [
-        email,
-        setEmail,
-    ] = useState("");
+  const [nouveauMotDePasse, setNouveauMotDePasse] = useState("");
 
+  const [confirmation, setConfirmation] = useState("");
 
-    const [
-        nouveauMotDePasse,
-        setNouveauMotDePasse,
-    ] = useState("");
+  const [message, setMessage] = useState("");
 
+  const [erreur, setErreur] = useState("");
 
-    const [
-        confirmation,
-        setConfirmation,
-    ] = useState("");
+  const [chargement, setChargement] = useState(false);
 
+  const [nouvelEmail, setNouvelEmail] = useState("");
 
-    const [
-        message,
-        setMessage,
-    ] = useState("");
+  const [messageEmail, setMessageEmail] = useState("");
 
+  const [erreurEmail, setErreurEmail] = useState("");
 
-    const [
-        erreur,
-        setErreur,
-    ] = useState("");
+  const [chargementEmail, setChargementEmail] = useState(false);
 
+  const [motDePasseActuel, setMotDePasseActuel] = useState("");
 
-    const [
-        chargement,
-        setChargement,
-    ] = useState(false);
+  useEffect(() => {
+    async function chargerUtilisateur() {
+      const supabase = createClient();
 
-    const [
-        nouvelEmail,
-        setNouvelEmail,
-    ] = useState("");
+      const { data } = await supabase.auth.getUser();
 
-
-    const [
-        messageEmail,
-        setMessageEmail,
-    ] = useState("");
-
-
-    const [
-        erreurEmail,
-        setErreurEmail,
-    ] = useState("");
-
-
-    const [
-        chargementEmail,
-        setChargementEmail,
-    ] = useState(false);
-
-    const [
-        motDePasseActuel,
-        setMotDePasseActuel,
-    ] = useState("");
-
-    useEffect(() => {
-
-        async function chargerUtilisateur() {
-
-            const supabase =
-                createClient();
-
-
-            const {
-                data,
-            } =
-                await supabase.auth.getUser();
-
-
-            setEmail(
-                data.user?.email ?? ""
-            );
-
-        }
-
-
-        chargerUtilisateur();
-
-    }, []);
-
-
-    async function modifierMotDePasse(
-        event: FormEvent<HTMLFormElement>
-    ) {
-
-        event.preventDefault();
-
-        setMessage("");
-        setErreur("");
-
-
-        // ------------------------------------------------
-        // Vérifications locales
-        // ------------------------------------------------
-
-        if (!motDePasseActuel) {
-
-            setErreur(
-                "Saisissez votre mot de passe actuel."
-            );
-
-            return;
-        }
-
-
-        if (
-            nouveauMotDePasse.length < 8
-        ) {
-
-            setErreur(
-                "Le nouveau mot de passe doit contenir au moins 8 caractères."
-            );
-
-            return;
-        }
-
-
-        if (
-            nouveauMotDePasse !==
-            confirmation
-        ) {
-
-            setErreur(
-                "Les deux nouveaux mots de passe ne correspondent pas."
-            );
-
-            return;
-        }
-
-
-        setChargement(true);
-
-
-        const supabase =
-            createClient();
-
-
-        // ------------------------------------------------
-        // Vérification MFA
-        // ------------------------------------------------
-
-        const {
-            data: aal,
-            error: aalError,
-        } =
-            await supabase.auth.mfa
-                .getAuthenticatorAssuranceLevel();
-
-
-        if (aalError) {
-
-            console.error(
-                "Erreur vérification MFA :",
-                aalError
-            );
-
-            setErreur(
-                "Impossible de vérifier le niveau de sécurité de la session."
-            );
-
-            setChargement(false);
-
-            return;
-        }
-
-
-        // Si le compte possède un MFA,
-        // la session doit être en AAL2.
-
-        if (
-            aal.nextLevel === "aal2" &&
-            aal.currentLevel !== "aal2"
-        ) {
-
-            setErreur(
-                "Vous devez valider l'authentification à deux facteurs avant de modifier votre mot de passe."
-            );
-
-            setChargement(false);
-
-            return;
-        }
-
-
-        // ------------------------------------------------
-        // Modification du mot de passe
-        // ------------------------------------------------
-
-        const {
-            error,
-        } =
-            await supabase.auth.updateUser({
-                password:
-                    nouveauMotDePasse,
-
-                current_password:
-                    motDePasseActuel,
-            });
-
-
-        if (error) {
-
-            console.error(
-                "Erreur modification mot de passe :",
-                error
-            );
-
-            setErreur(
-                "Le mot de passe actuel est incorrect ou la modification est impossible."
-            );
-
-            setChargement(false);
-
-            return;
-        }
-
-
-        // ------------------------------------------------
-        // Succès
-        // ------------------------------------------------
-
-        setMotDePasseActuel("");
-        setNouveauMotDePasse("");
-        setConfirmation("");
-
-        setMessage(
-            "Mot de passe modifié."
-        );
-
-        setChargement(false);
-
+      setEmail(data.user?.email ?? "");
     }
 
-    async function modifierEmail(
-        event: FormEvent<HTMLFormElement>
-    ) {
+    chargerUtilisateur();
+  }, []);
 
-        event.preventDefault();
+  async function modifierMotDePasse(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-        setMessageEmail("");
-        setErreurEmail("");
+    setMessage("");
+    setErreur("");
 
+    // ------------------------------------------------
+    // Vérifications locales
+    // ------------------------------------------------
 
-        const emailNettoye =
-            nouvelEmail
-                .trim()
-                .toLowerCase();
+    if (!motDePasseActuel) {
+      setErreur("Saisissez votre mot de passe actuel.");
 
-
-        if (!emailNettoye) {
-
-            setErreurEmail(
-                "Saisissez une nouvelle adresse e-mail."
-            );
-
-            return;
-        }
-
-
-        if (
-            emailNettoye ===
-            email.toLowerCase()
-        ) {
-
-            setErreurEmail(
-                "Cette adresse est déjà utilisée par votre compte."
-            );
-
-            return;
-        }
-
-
-        setChargementEmail(true);
-
-
-        const supabase =
-            createClient();
-
-        const {
-            data: aal,
-            error: aalError,
-        } =
-            await supabase.auth.mfa
-                .getAuthenticatorAssuranceLevel();
-
-
-        if (aalError) {
-
-            console.error(
-                "Erreur vérification MFA :",
-                aalError
-            );
-
-            setErreurEmail(
-                "Impossible de vérifier le niveau de sécurité de la session."
-            );
-
-            setChargementEmail(false);
-
-            return;
-        }
-
-
-        if (
-            aal.nextLevel === "aal2" &&
-            aal.currentLevel !== "aal2"
-        ) {
-
-            setErreurEmail(
-                "Vous devez valider l'authentification à deux facteurs avant de modifier votre adresse e-mail."
-            );
-
-            setChargementEmail(false);
-
-            return;
-        }
-
-        const {
-            error,
-        } =
-            await supabase.auth.updateUser({
-                email: emailNettoye,
-            });
-
-
-        setChargementEmail(false);
-
-
-        if (error) {
-
-            console.error(
-                "Erreur modification e-mail :",
-                {
-                    message: error.message,
-                    code: error.code,
-                    status: error.status,
-                }
-            );
-
-
-            if (
-                error.code ===
-                "over_email_send_rate_limit"
-            ) {
-
-                setErreurEmail(
-                    "Trop d'e-mails d'authentification ont été envoyés. Réessayez plus tard."
-                );
-
-            } else {
-
-                setErreurEmail(
-                    error.message ||
-                    "Impossible de modifier l'adresse e-mail."
-                );
-
-            }
-
-
-            return;
-        }
-
-
-        setNouvelEmail("");
-
-        setMessageEmail(
-            "Demande envoyée. Confirmez le changement depuis les e-mails envoyés à votre ancienne et à votre nouvelle adresse."
-        );
-
+      return;
     }
 
-    return (
-        <div className="space-y-6">
+    if (nouveauMotDePasse.length < 8) {
+      setErreur("Le nouveau mot de passe doit contenir au moins 8 caractères.");
 
-            {/* E-MAIL */}
+      return;
+    }
 
-            <div>
+    if (nouveauMotDePasse !== confirmation) {
+      setErreur("Les deux nouveaux mots de passe ne correspondent pas.");
 
-                <p className="text-sm font-medium">
-                    Adresse e-mail
-                </p>
+      return;
+    }
 
-                <p className="mt-1 text-sm text-zinc-400">
-                    {email || "Chargement..."}
-                </p>
+    setChargement(true);
 
-            </div>
+    const supabase = createClient();
 
-            <form
-                onSubmit={modifierEmail}
-                className="space-y-3"
-            >
+    // ------------------------------------------------
+    // Vérification MFA
+    // ------------------------------------------------
 
-                <div>
+    const { data: aal, error: aalError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-                    <p className="font-medium">
-                        Modifier l&apos;adresse e-mail
-                    </p>
+    if (aalError) {
+      console.error("Erreur vérification MFA :", aalError);
 
-                    <p className="mt-1 text-sm text-zinc-400">
-                        Le changement devra être confirmé
-                        par e-mail avant de devenir effectif.
-                    </p>
+      setErreur("Impossible de vérifier le niveau de sécurité de la session.");
 
-                </div>
+      setChargement(false);
 
+      return;
+    }
 
-                <div>
+    // Si le compte possède un MFA,
+    // la session doit être en AAL2.
 
-                    <label
-                        htmlFor="nouvel-email"
-                        className="
-        mb-1
-        block
-        text-sm
-        text-zinc-300
-      "
-                    >
-                        Nouvelle adresse e-mail
-                    </label>
+    if (aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      setErreur(
+        "Vous devez valider l'authentification à deux facteurs avant de modifier votre mot de passe.",
+      );
 
-                    <input
-                        id="nouvel-email"
-                        type="email"
-                        autoComplete="email"
-                        value={nouvelEmail}
-                        onChange={(event) =>
-                            setNouvelEmail(
-                                event.target.value
-                            )
-                        }
-                        className="
-        w-full
-        rounded-lg
-        border
-        border-zinc-700
-        bg-zinc-950
-        px-3
-        py-2
-        text-white
-        outline-none
+      setChargement(false);
 
-        focus:border-[#8ED8B6]
-      "
-                    />
+      return;
+    }
 
-                </div>
+    // ------------------------------------------------
+    // Modification du mot de passe
+    // ------------------------------------------------
 
+    const { error } = await supabase.auth.updateUser({
+      password: nouveauMotDePasse,
 
-                {erreurEmail && (
+      current_password: motDePasseActuel,
+    });
 
-                    <p className="text-sm text-red-400">
-                        {erreurEmail}
-                    </p>
+    if (error) {
+      console.error("Erreur modification mot de passe :", error);
 
-                )}
+      setErreur(
+        "Le mot de passe actuel est incorrect ou la modification est impossible.",
+      );
 
+      setChargement(false);
 
-                {messageEmail && (
+      return;
+    }
 
-                    <p className="text-sm text-[#8ED8B6]">
-                        {messageEmail}
-                    </p>
+    // ------------------------------------------------
+    // Succès
+    // ------------------------------------------------
 
-                )}
+    setMotDePasseActuel("");
+    setNouveauMotDePasse("");
+    setConfirmation("");
 
+    setMessage("Mot de passe modifié.");
 
-                <button
-                    type="submit"
-                    disabled={chargementEmail}
-                    className="
-      rounded-lg
-      border
-      border-zinc-700
-      bg-zinc-800
-      px-4
-      py-2
-      text-sm
-      font-medium
-      text-white
+    setChargement(false);
+  }
 
-      hover:bg-zinc-700
-      disabled:opacity-50
-    "
-                >
-                    {chargementEmail
-                        ? "Envoi..."
-                        : "Modifier l'adresse e-mail"}
-                </button>
+  async function modifierEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-            </form>
+    setMessageEmail("");
+    setErreurEmail("");
 
-            <div className="border-t border-zinc-800" />
+    const emailNettoye = nouvelEmail.trim().toLowerCase();
 
+    if (!emailNettoye) {
+      setErreurEmail("Saisissez une nouvelle adresse e-mail.");
 
-            {/* MOT DE PASSE */}
+      return;
+    }
 
-            <form
-                onSubmit={modifierMotDePasse}
-                className="space-y-4"
-            >
+    if (emailNettoye === email.toLowerCase()) {
+      setErreurEmail("Cette adresse est déjà utilisée par votre compte.");
 
-                <div>
+      return;
+    }
 
-                    <p className="font-medium">
-                        Modifier le mot de passe
-                    </p>
+    setChargementEmail(true);
 
-                    <p className="mt-1 text-sm text-zinc-400">
-                        Choisissez un nouveau mot de passe
-                        pour votre compte runIN.
-                    </p>
+    const supabase = createClient();
 
-                </div>
+    const { data: aal, error: aalError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-                <div>
+    if (aalError) {
+      console.error("Erreur vérification MFA :", aalError);
 
-                    <label
-                        htmlFor="mot-de-passe-actuel"
-                        className="mb-1 block text-sm text-zinc-300"
-                    >
-                        Mot de passe actuel
-                    </label>
+      setErreurEmail(
+        "Impossible de vérifier le niveau de sécurité de la session.",
+      );
 
-                    <input
-                        id="mot-de-passe-actuel"
-                        type="password"
-                        autoComplete="current-password"
-                        value={motDePasseActuel}
-                        onChange={(event) =>
-                            setMotDePasseActuel(
-                                event.target.value
-                            )
-                        }
-                        className="
-            w-full
-            rounded-lg
-            border
-            border-zinc-700
-            bg-zinc-950
-            px-3
-            py-2
-            text-white
-            outline-none
-            focus:border-[#8ED8B6]
-        "
-                    />
+      setChargementEmail(false);
 
-                </div>
-                <div>
+      return;
+    }
 
-                    <label
-                        htmlFor="nouveau-mot-de-passe"
-                        className="
-              mb-1
-              block
-              text-sm
-              text-zinc-300
-            "
-                    >
-                        Nouveau mot de passe
-                    </label>
+    if (aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      setErreurEmail(
+        "Vous devez valider l'authentification à deux facteurs avant de modifier votre adresse e-mail.",
+      );
 
-                    <input
-                        id="nouveau-mot-de-passe"
-                        type="password"
-                        autoComplete="new-password"
-                        value={nouveauMotDePasse}
-                        onChange={(event) =>
-                            setNouveauMotDePasse(
-                                event.target.value
-                            )
-                        }
-                        className="
-              w-full
-              rounded-lg
-              border
-              border-zinc-700
-              bg-zinc-950
-              px-3
-              py-2
-              text-white
-              outline-none
+      setChargementEmail(false);
 
-              focus:border-[#8ED8B6]
-            "
-                    />
+      return;
+    }
 
-                </div>
+    const { error } = await supabase.auth.updateUser({
+      email: emailNettoye,
+    });
 
+    setChargementEmail(false);
 
-                <div>
+    if (error) {
+      console.error("Erreur modification e-mail :", {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+      });
 
-                    <label
-                        htmlFor="confirmation-mot-de-passe"
-                        className="
-              mb-1
-              block
-              text-sm
-              text-zinc-300
-            "
-                    >
-                        Confirmer le mot de passe
-                    </label>
+      if (error.code === "over_email_send_rate_limit") {
+        setErreurEmail(
+          "Trop d'e-mails d'authentification ont été envoyés. Réessayez plus tard.",
+        );
+      } else {
+        setErreurEmail(
+          error.message || "Impossible de modifier l'adresse e-mail.",
+        );
+      }
 
-                    <input
-                        id="confirmation-mot-de-passe"
-                        type="password"
-                        autoComplete="new-password"
-                        value={confirmation}
-                        onChange={(event) =>
-                            setConfirmation(
-                                event.target.value
-                            )
-                        }
-                        className="
-              w-full
-              rounded-lg
-              border
-              border-zinc-700
-              bg-zinc-950
-              px-3
-              py-2
-              text-white
-              outline-none
+      return;
+    }
 
-              focus:border-[#8ED8B6]
-            "
-                    />
+    setNouvelEmail("");
 
-                </div>
-
-
-                {erreur && (
-
-                    <p className="text-sm text-red-400">
-                        {erreur}
-                    </p>
-
-                )}
-
-
-                {message && (
-
-                    <p className="text-sm text-[#8ED8B6]">
-                        {message}
-                    </p>
-
-                )}
-
-
-                <button
-                    type="submit"
-                    disabled={chargement}
-                    className="
-            rounded-lg
-            bg-[#8ED8B6]
-            px-4
-            py-2
-            text-sm
-            font-medium
-            text-black
-
-            disabled:opacity-50
-          "
-                >
-                    {chargement
-                        ? "Modification..."
-                        : "Modifier le mot de passe"}
-                </button>
-
-            </form>
-
-        </div>
+    setMessageEmail(
+      "Demande envoyée. Confirmez le changement depuis les e-mails envoyés à votre ancienne et à votre nouvelle adresse.",
     );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* E-MAIL ACTUEL */}
+
+      <div>
+        <p className="text-sm font-medium">Adresse e-mail</p>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          {email || "Chargement..."}
+        </p>
+      </div>
+
+      {/* MODIFICATION E-MAIL */}
+
+      <form onSubmit={modifierEmail} className="space-y-4">
+        <div>
+          <p className="font-medium">Modifier l&apos;adresse e-mail</p>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Le changement devra être confirmé par e-mail avant de devenir
+            effectif.
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="nouvel-email"
+            className="mb-1.5 block text-sm font-medium"
+          >
+            Nouvelle adresse e-mail
+          </label>
+
+          <Input
+            id="nouvel-email"
+            type="email"
+            autoComplete="email"
+            value={nouvelEmail}
+            onChange={(event) => setNouvelEmail(event.target.value)}
+          />
+        </div>
+
+        {erreurEmail && (
+          <p className="text-sm text-destructive">{erreurEmail}</p>
+        )}
+
+        {messageEmail && (
+          <p className="text-sm text-primary-strong">{messageEmail}</p>
+        )}
+
+        <Button type="submit" variant="outline" disabled={chargementEmail}>
+          {chargementEmail ? "Envoi..." : "Modifier l'adresse e-mail"}
+        </Button>
+      </form>
+
+      <div className="border-t" />
+
+      {/* MOT DE PASSE */}
+
+      <form onSubmit={modifierMotDePasse} className="space-y-4">
+        <div>
+          <p className="font-medium">Modifier le mot de passe</p>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Choisissez un nouveau mot de passe pour votre compte runIN.
+          </p>
+        </div>
+
+        <div>
+          <label
+            htmlFor="mot-de-passe-actuel"
+            className="mb-1.5 block text-sm font-medium"
+          >
+            Mot de passe actuel
+          </label>
+
+          <Input
+            id="mot-de-passe-actuel"
+            type="password"
+            autoComplete="current-password"
+            value={motDePasseActuel}
+            onChange={(event) => setMotDePasseActuel(event.target.value)}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="nouveau-mot-de-passe"
+            className="mb-1.5 block text-sm font-medium"
+          >
+            Nouveau mot de passe
+          </label>
+
+          <Input
+            id="nouveau-mot-de-passe"
+            type="password"
+            autoComplete="new-password"
+            value={nouveauMotDePasse}
+            onChange={(event) => setNouveauMotDePasse(event.target.value)}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="confirmation-mot-de-passe"
+            className="mb-1.5 block text-sm font-medium"
+          >
+            Confirmer le mot de passe
+          </label>
+
+          <Input
+            id="confirmation-mot-de-passe"
+            type="password"
+            autoComplete="new-password"
+            value={confirmation}
+            onChange={(event) => setConfirmation(event.target.value)}
+          />
+        </div>
+
+        {erreur && <p className="text-sm text-destructive">{erreur}</p>}
+
+        {message && <p className="text-sm text-primary-strong">{message}</p>}
+
+        <Button type="submit" disabled={chargement}>
+          {chargement ? "Modification..." : "Modifier le mot de passe"}
+        </Button>
+      </form>
+    </div>
+  );
 }

@@ -1,156 +1,106 @@
+import Link from "next/link";
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
 import NotificationsEmailButton from "../profil/notifications-email-button";
 import CompteParametres from "./compte-parametres";
-import SuppressionCompte from "./suppression-compte";
 import MfaParametres from "./mfa-parametres";
 import SessionsParametres from "./sessions-parametres";
-import Link from "next/link";
+import SuppressionCompte from "./suppression-compte";
 
 export default function ParametresPage() {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-6">
-      <div className="mb-8">
+    <main className="mx-auto w-full max-w-2xl px-4 py-4 md:p-6">
+      <div className="mb-6">
         <h1 className="hidden text-2xl font-semibold md:block">Paramètres</h1>
 
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground md:mt-1">
           Gérez votre compte et vos préférences runIN.
         </p>
       </div>
 
-      {/* COMPTE */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold">Compte</h2>
+      <div className="space-y-6">
+        {/* COMPTE */}
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <CompteParametres />
-        </div>
-      </section>
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Compte</h2>
 
-      {/* NOTIFICATIONS */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold">Notifications</h2>
+          <Card className="p-4">
+            <CompteParametres />
+          </Card>
+        </section>
 
-        <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-          <div className="mb-4">
-            <p className="font-medium">Notifications par e-mail</p>
+        {/* NOTIFICATIONS */}
 
-            <p className="mt-1 text-sm text-gray-600">
-              Recevez par e-mail les notifications importantes liées à vos
-              sorties.
-            </p>
-          </div>
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Notifications</h2>
 
-          <NotificationsEmailButton />
-        </div>
-      </section>
+          <Card className="p-4">
+            <NotificationsEmailButton />
+          </Card>
+        </section>
 
-      {/* MFA parametre */}
+        {/* SÉCURITÉ */}
 
-      <section
-        className="
-        rounded-xl
-        border
-        border-zinc-800
-        bg-zinc-900
-        p-4
-    "
-      >
-        <h2 className="text-lg font-semibold">Sécurité</h2>
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Sécurité</h2>
 
-        <div className="mt-4">
-          <MfaParametres />
-          <div className="my-6 border-t border-zinc-800" />
+          <Card className="p-4">
+            <MfaParametres />
 
-          <SessionsParametres />
-        </div>
-      </section>
+            <div className="my-6 border-t" />
 
-      {/* CONFIDENTIALITÉ */}
-      <section
-        className="
-        mb-8
-        rounded-xl
-        border
-        border-zinc-800
-        bg-zinc-900
-        p-4
-    "
-      >
-        <h2 className="mb-4 text-lg font-semibold">Confidentialité</h2>
+            <SessionsParametres />
+          </Card>
+        </section>
 
-        <div className="space-y-4">
-          <div>
-            <p className="font-medium text-white">Données personnelles</p>
+        {/* CONFIDENTIALITÉ */}
 
-            <p className="mt-1 text-sm text-zinc-400">
-              Consultez les informations concernant l&apos;utilisation et la
-              protection de vos données personnelles.
-            </p>
-          </div>
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Confidentialité</h2>
 
-          <Link
-            href="/confidentialite"
-            className="
-                inline-block
-                rounded-lg
-                border
-                border-zinc-700
-                bg-zinc-800
-                px-4
-                py-2
-                text-sm
-                font-medium
-                text-white
-                hover:bg-zinc-700
-            "
-          >
-            Politique de confidentialité
-          </Link>
+          <Card className="p-4">
+            <div className="space-y-5">
+              <div>
+                <p className="font-medium">Données personnelles</p>
 
-          <div className="border-t border-zinc-800 pt-4">
-            <p className="text-sm text-zinc-400">
-              Vous pouvez télécharger une copie des principales données
-              associées à votre compte runIN.
-            </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Consultez les informations concernant l&apos;utilisation et la
+                  protection de vos données personnelles.
+                </p>
 
-            <a
-              href="/api/compte/export"
-              className="
-                    mt-3
-                    inline-block
-                    rounded-lg
-                    border
-                    border-zinc-700
-                    bg-zinc-800
-                    px-4
-                    py-2
-                    text-sm
-                    font-medium
-                    text-white
-                    hover:bg-zinc-700
-                "
-            >
-              Télécharger mes données
-            </a>
-          </div>
-        </div>
-      </section>
+                <Button asChild variant="outline" className="mt-3">
+                  <Link href="/confidentialite">
+                    Politique de confidentialité
+                  </Link>
+                </Button>
+              </div>
 
-      {/* COMPTE */}
-      <section
-        className="
-        rounded-xl
-        border
-        border-zinc-800
-        bg-zinc-900
-        p-4
-    "
-      >
-        <h2 className="text-lg font-semibold">Gestion du compte</h2>
+              <div className="border-t pt-5">
+                <p className="text-sm text-muted-foreground">
+                  Vous pouvez télécharger une copie des principales données
+                  associées à votre compte runIN.
+                </p>
 
-        <div className="mt-4">
-          <SuppressionCompte />
-        </div>
-      </section>
+                <Button asChild variant="outline" className="mt-3">
+                  <a href="/api/compte/export">Télécharger mes données</a>
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* GESTION DU COMPTE */}
+
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Gestion du compte</h2>
+
+          <Card className="p-4">
+            <SuppressionCompte />
+          </Card>
+        </section>
+      </div>
     </main>
   );
 }
