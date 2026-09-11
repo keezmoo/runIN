@@ -415,21 +415,21 @@ export default function SelecteurLieu({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border">
-      <button
-        type="button"
-        onClick={() => setOuverte((valeur) => !valeur)}
-        aria-expanded={ouverte}
-        className="
-  flex w-full items-center justify-between gap-3
-  px-4 py-3 text-left
-  transition-colors
-  hover:bg-accent
-  focus-visible:outline-none
-  focus-visible:ring-2
-  focus-visible:ring-inset
-  focus-visible:ring-ring
-"
-      >
+<Button
+  type="button"
+  variant="ghost"
+  onClick={() => setOuverte((valeur) => !valeur)}
+  aria-expanded={ouverte}
+  className="
+    h-auto
+    w-full
+    justify-between
+    rounded-none
+    px-4
+    py-3
+    text-left
+  "
+>
         <div className="flex min-w-0 items-center gap-2">
           <svg
             viewBox="0 0 24 24"
@@ -461,7 +461,7 @@ export default function SelecteurLieu({
         >
           <path d="m6 9 6 6 6-6" />
         </svg>
-      </button>
+      </Button>
 
       {ouverte && (
         <div className="space-y-4 border-t p-4">

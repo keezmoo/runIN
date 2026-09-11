@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { ComponentProps } from "react";
-
+import { Button } from "@/components/ui/button";
 import FiltresSorties from "./filtres-sorties";
 import CarteSorties from "./carte-sorties";
 
@@ -25,67 +25,41 @@ export default function OutilsRechercheSorties({ filtres, carte }: Props) {
       {/* BOUTONS */}
 
       <div className="grid grid-cols-2 gap-2">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => basculer("filtres")}
           aria-expanded={panneauOuvert === "filtres"}
-          className="
-            flex
-            items-center
-            justify-between
-            rounded-xl
-            border
-            px-4
-            py-3
-            text-left
-            text-sm
-            font-medium
-            transition
-            hover:bg-foreground/5
-          "
+          className="h-auto w-full justify-between rounded-xl px-4 py-3"
         >
           <span>Filtres</span>
 
           <span
-            className={`
-              transition-transform
-              ${panneauOuvert === "filtres" ? "rotate-90" : ""}
-            `}
+            className={`transition-transform ${
+              panneauOuvert === "filtres" ? "rotate-90" : ""
+            }`}
           >
             &gt;
           </span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => basculer("carte")}
           aria-expanded={panneauOuvert === "carte"}
-          className="
-            flex
-            items-center
-            justify-between
-            rounded-xl
-            border
-            px-4
-            py-3
-            text-left
-            text-sm
-            font-medium
-            transition
-            hover:bg-foreground/5
-          "
+          className="h-auto w-full justify-between rounded-xl px-4 py-3"
         >
           <span>Carte</span>
 
           <span
-            className={`
-              transition-transform
-              ${panneauOuvert === "carte" ? "rotate-90" : ""}
-            `}
+            className={`transition-transform ${
+              panneauOuvert === "carte" ? "rotate-90" : ""
+            }`}
           >
             &gt;
           </span>
-        </button>
+        </Button>
       </div>
 
       {/* FILTRES */}

@@ -608,11 +608,12 @@ export default function ProfileForm({
         <div className="mt-5 overflow-hidden rounded-xl border">
           {/* RÉSUMÉ */}
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setLocalisationOuverte((ouverte) => !ouverte)}
             aria-expanded={localisationOuverte}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            className="h-auto w-full justify-between rounded-none px-4 py-3 text-left"
           >
             <div className="flex min-w-0 items-center gap-2">
               <svg
@@ -649,7 +650,7 @@ export default function ProfileForm({
             >
               ⌄
             </span>
-          </button>
+          </Button>
 
           {/* ÉDITEUR */}
 
@@ -666,7 +667,7 @@ export default function ProfileForm({
                 </label>
 
                 <div className="flex gap-2">
-                  <input
+                  <Input
                     id="lieu-recherche-profil"
                     type="text"
                     value={valeurs.lieuRecherche}
@@ -674,17 +675,18 @@ export default function ProfileForm({
                       modifierLieuRecherche(event.target.value)
                     }
                     placeholder="Chambéry"
-                    className="min-w-0 flex-1 rounded-lg border p-2"
+                    className="min-w-0 flex-1"
                   />
 
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={localiserLieuRecherche}
                     disabled={rechercheLieuEnCours}
-                    className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50"
+                    className="shrink-0"
                   >
                     {rechercheLieuEnCours ? "Recherche..." : "Localiser"}
-                  </button>
+                  </Button>
                 </div>
 
                 {!positionRecherche && (
@@ -810,26 +812,32 @@ export default function ProfileForm({
 
       <div className="flex justify-end gap-3 border-t pt-5">
         {initialProfile && (
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={annulerModification}
             disabled={loading}
-            className="rounded border px-4 py-2 disabled:opacity-50"
           >
             Annuler
-          </button>
+          </Button>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded border px-4 py-2 font-medium disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading}>
           {loading ? "Enregistrement..." : "Enregistrer"}
-        </button>
+        </Button>
       </div>
 
-      {message && <p className="text-sm">{message}</p>}
+      {message && (
+        <p
+          className={
+            message === "Profil enregistré."
+              ? "text-sm text-primary-strong"
+              : "text-sm text-destructive"
+          }
+        >
+          {message}
+        </p>
+      )}
     </form>
   );
 }

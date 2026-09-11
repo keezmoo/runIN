@@ -183,7 +183,7 @@ function Badge({ nombre }: { nombre: number }) {
         justify-center
 
         rounded-full
-        bg-[#8ED8B6]
+        bg-primary
 
         px-1
 

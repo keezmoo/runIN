@@ -95,8 +95,10 @@ export default async function ConversationPage({ params }: PageProps) {
 
   if (relationBloqueeError) {
     return (
-      <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger la conversation.</p>
+      <main className="mx-auto max-w-2xl px-4 py-4 md:p-6">
+        <p className="text-sm text-destructive">
+          Impossible de charger la conversation.
+        </p>
       </main>
     );
   }
@@ -130,8 +132,10 @@ export default async function ConversationPage({ params }: PageProps) {
 
   if (interlocuteurResult.error || messagesResult.error) {
     return (
-      <main className="mx-auto max-w-2xl p-6">
-        <p>Impossible de charger les messages.</p>
+      <main className="mx-auto max-w-2xl px-4 py-4 md:p-6">
+        <p className="text-sm text-destructive">
+          Impossible de charger les messages.
+        </p>
       </main>
     );
   }
@@ -200,7 +204,7 @@ export default async function ConversationPage({ params }: PageProps) {
           </Link>
         </h1>
 
-        <p className="mt-1 text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Conversation avec{" "}
           <Link
             href={`/membres/${interlocuteurId}`}
@@ -238,7 +242,9 @@ export default async function ConversationPage({ params }: PageProps) {
       >
         <div className="pb-3">
           {messages.length === 0 ? (
-            <p className="text-gray-500">Aucun message pour le moment.</p>
+            <p className="text-sm text-muted-foreground">
+              Aucun message pour le moment.
+            </p>
           ) : (
             messages.map((message, index) => {
               const estMoi = message.expediteur_id === user.id;
@@ -253,7 +259,11 @@ export default async function ConversationPage({ params }: PageProps) {
                   key={message.id}
                   className={`
                     flex
-                    ${estMoi ? "justify-end" : "justify-start"}
+                    ${
+                      estMoi
+                        ? "border-primary-strong/30 bg-primary/10"
+                        : "border-border bg-muted"
+                    }
                     ${memeExpediteurQuePrecedent ? "mt-1" : "mt-3"}
 `}
                 >
@@ -266,7 +276,11 @@ export default async function ConversationPage({ params }: PageProps) {
         px-4
         py-3
 
-        ${estMoi ? "border-[#8ED8B6]/30 bg-[#8ED8B6]/10" : "bg-gray-500/10"}
+        ${
+          estMoi
+            ? "border-primary-strong/30 bg-primary/10"
+            : "border-border bg-muted"
+        }
       `}
                   >
                     <p
@@ -278,7 +292,7 @@ export default async function ConversationPage({ params }: PageProps) {
                       {message.contenu}
                     </p>
 
-                    <div className="mt-2 flex items-center justify-end gap-2 text-xs text-gray-500">
+                    <div className="mt-2 flex items-center justify-end gap-2 text-xs text-muted-foreground">
                       <span>
                         {new Date(message.created_at).toLocaleString("fr-FR", {
                           dateStyle: "short",
