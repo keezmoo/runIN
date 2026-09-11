@@ -3,7 +3,10 @@
 import { FormEvent, useRef, useState } from "react";
 
 import CarteZoneRecherche from "@/app/sorties/carte-zone-recherche";
-
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 
 type Sexe = "homme" | "femme" | "autre";
@@ -384,112 +387,91 @@ export default function ProfileForm({
   // MODE LECTURE
   // ------------------------------------------------
 
-   // ------------------------------------------------
+  // ------------------------------------------------
   // MODE LECTURE
   // ------------------------------------------------
 
   if (!edition) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* PROFIL */}
 
         <section>
-          <div className="mb-4 flex items-start justify-between gap-4">
-            <div>
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div className="min-w-0">
               <h2 className="text-lg font-semibold">
                 Informations personnelles
               </h2>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Informations visibles sur votre profil.
               </p>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
               onClick={() => {
                 setMessage("");
                 setMessageLocalisation("");
                 setLocalisationOuverte(false);
                 setEdition(true);
               }}
-              className="shrink-0 rounded border px-3 py-2 text-sm"
             >
               Modifier
-            </button>
+            </Button>
           </div>
 
-          <div className="space-y-2">
-            <p className="font-medium">
-              {valeursSauvegardees.nom}
-            </p>
+          <Card className="p-4">
+            <p className="font-semibold">{valeursSauvegardees.nom}</p>
 
-            <p className="text-sm">
+            <p className="mt-1 text-sm text-muted-foreground">
               {valeursSauvegardees.age} ans
               {" • "}
-              {afficherSexe(
-                valeursSauvegardees.sexe,
-              )}
+              {afficherSexe(valeursSauvegardees.sexe)}
             </p>
 
             {valeursSauvegardees.description && (
               <p className="mt-4 whitespace-pre-wrap text-sm">
-                {
-                  valeursSauvegardees.description
-                }
+                {valeursSauvegardees.description}
               </p>
             )}
-          </div>
+          </Card>
         </section>
 
         {/* ZONE DE RECHERCHE */}
 
-        <section className="border-t pt-6">
-          <h2 className="text-lg font-semibold">
-            Zone de recherche
-          </h2>
+        <section>
+          <h2 className="text-lg font-semibold">Zone de recherche</h2>
 
-          <p className="mt-1 text-sm text-gray-500">
-            Utilisée par défaut lorsque vous recherchez
-            des sorties.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Utilisée par défaut lorsque vous recherchez des sorties.
           </p>
 
-          <div className="mt-4 flex items-center gap-3 rounded-xl border px-4 py-3">
+          <Card className="mt-3 flex items-center gap-3 p-4">
             <svg
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className="h-5 w-5 shrink-0"
+              className="h-5 w-5 shrink-0 text-muted-foreground"
               aria-hidden="true"
             >
               <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-
-              <circle
-                cx="12"
-                cy="10"
-                r="2.5"
-              />
+              <circle cx="12" cy="10" r="2.5" />
             </svg>
 
             <span className="min-w-0 truncate font-medium">
-              {
-                valeursSauvegardees.lieuRecherche
-              }
+              {valeursSauvegardees.lieuRecherche}
               {" · "}
-              {
-                valeursSauvegardees.rayonRecherche
-              }{" "}
-              km
+              {valeursSauvegardees.rayonRecherche} km
             </span>
-          </div>
+          </Card>
         </section>
 
-        {message && (
-          <p className="text-sm">
-            {message}
-          </p>
-        )}
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
       </div>
     );
   }
@@ -499,42 +481,31 @@ export default function ProfileForm({
   // ------------------------------------------------
 
   return (
-    <form
-      onSubmit={enregistrerProfil}
-      className="space-y-8"
-    >
+    <form onSubmit={enregistrerProfil} className="space-y-8">
       {/* INFORMATIONS PERSONNELLES */}
 
       <section>
-        <h2 className="text-lg font-semibold">
-          Informations personnelles
-        </h2>
+        <h2 className="text-lg font-semibold">Informations personnelles</h2>
 
-        <p className="mt-1 text-sm text-gray-500">
-          Ces informations permettent aux autres coureurs
-          de vous identifier.
+        <p className="mt-1 text-sm text-muted-foreground">
+          Ces informations permettent aux autres coureurs de vous identifier.
         </p>
 
         <div className="mt-5 space-y-5">
           {/* NOM */}
 
           <div>
-            <label className="mb-1 block font-medium">
-              Nom
-            </label>
+            <label className="mb-1 block font-medium">Nom</label>
 
-            <input
+            <Input
               type="text"
               value={valeurs.nom}
               onChange={(event) =>
-                setValeurs(
-                  (valeursActuelles) => ({
-                    ...valeursActuelles,
-                    nom: event.target.value,
-                  }),
-                )
+                setValeurs((valeursActuelles) => ({
+                  ...valeursActuelles,
+                  nom: event.target.value,
+                }))
               }
-              className="w-full rounded border p-2"
               placeholder="Vincent"
             />
           </div>
@@ -542,22 +513,17 @@ export default function ProfileForm({
           {/* ÂGE */}
 
           <div>
-            <label className="mb-1 block font-medium">
-              Âge
-            </label>
+            <label className="mb-1 block font-medium">Âge</label>
 
-            <input
+            <Input
               type="number"
               value={valeurs.age}
               onChange={(event) =>
-                setValeurs(
-                  (valeursActuelles) => ({
-                    ...valeursActuelles,
-                    age: event.target.value,
-                  }),
-                )
+                setValeurs((valeursActuelles) => ({
+                  ...valeursActuelles,
+                  age: event.target.value,
+                }))
               }
-              className="w-full rounded border p-2"
               min="16"
               max="100"
             />
@@ -566,65 +532,63 @@ export default function ProfileForm({
           {/* SEXE */}
 
           <div>
-            <label className="mb-1 block font-medium">
-              Sexe
-            </label>
+            <label className="mb-1 block font-medium">Sexe</label>
 
             <select
               value={valeurs.sexe}
               onChange={(event) =>
-                setValeurs(
-                  (valeursActuelles) => ({
-                    ...valeursActuelles,
+                setValeurs((valeursActuelles) => ({
+                  ...valeursActuelles,
 
-                    sexe: normaliserSexe(
-                      event.target.value,
-                    ),
-                  }),
-                )
+                  sexe: normaliserSexe(event.target.value),
+                }))
               }
-              className="w-full rounded border p-2"
+              className="
+  flex
+  h-10
+  w-full
+  rounded-md
+  border
+  border-input
+  bg-background
+  px-3
+  py-2
+  text-sm
+  ring-offset-background
+  focus-visible:outline-none
+  focus-visible:ring-2
+  focus-visible:ring-ring
+  focus-visible:ring-offset-2
+"
             >
-              <option value="homme">
-                Homme
-              </option>
+              <option value="homme">Homme</option>
 
-              <option value="femme">
-                Femme
-              </option>
+              <option value="femme">Femme</option>
 
-              <option value="autre">
-                Autre
-              </option>
+              <option value="autre">Autre</option>
             </select>
           </div>
 
           {/* DESCRIPTION */}
 
           <div>
-            <label className="mb-1 block font-medium">
-              À propos de moi
-            </label>
+            <label className="mb-1 block font-medium">À propos de moi</label>
 
-            <textarea
+            <Textarea
               value={valeurs.description}
               onChange={(event) =>
-                setValeurs(
-                  (valeursActuelles) => ({
-                    ...valeursActuelles,
-
-                    description:
-                      event.target.value,
-                  }),
-                )
+                setValeurs((valeursActuelles) => ({
+                  ...valeursActuelles,
+                  description: event.target.value,
+                }))
               }
               maxLength={500}
               rows={4}
-              className="w-full resize-y rounded border p-2"
+              className="resize-y"
               placeholder="Quelques mots sur votre pratique de la course, ce que vous recherchez..."
             />
 
-            <p className="mt-1 text-right text-xs text-gray-500">
+            <p className="mt-1 text-right text-xs text-muted-foreground">
               {valeurs.description.length} / 500
             </p>
           </div>
@@ -634,13 +598,11 @@ export default function ProfileForm({
       {/* ZONE DE RECHERCHE */}
 
       <section className="border-t pt-6">
-        <h2 className="text-lg font-semibold">
-          Zone de recherche
-        </h2>
+        <h2 className="text-lg font-semibold">Zone de recherche</h2>
 
-        <p className="mt-1 text-sm text-gray-500">
-          Cette zone sera utilisée automatiquement pour
-          rechercher les sorties autour de vous.
+        <p className="mt-1 text-sm text-muted-foreground">
+          Cette zone sera utilisée automatiquement pour rechercher les sorties
+          autour de vous.
         </p>
 
         <div className="mt-5 overflow-hidden rounded-xl border">
@@ -648,14 +610,8 @@ export default function ProfileForm({
 
           <button
             type="button"
-            onClick={() =>
-              setLocalisationOuverte(
-                (ouverte) => !ouverte,
-              )
-            }
-            aria-expanded={
-              localisationOuverte
-            }
+            onClick={() => setLocalisationOuverte((ouverte) => !ouverte)}
+            aria-expanded={localisationOuverte}
             className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
           >
             <div className="flex min-w-0 items-center gap-2">
@@ -669,11 +625,7 @@ export default function ProfileForm({
               >
                 <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
 
-                <circle
-                  cx="12"
-                  cy="10"
-                  r="2.5"
-                />
+                <circle cx="12" cy="10" r="2.5" />
               </svg>
 
               <span className="truncate font-medium">
@@ -681,10 +633,7 @@ export default function ProfileForm({
                   <>
                     {valeurs.lieuRecherche}
                     {" · "}
-                    {
-                      valeurs.rayonRecherche
-                    }{" "}
-                    km
+                    {valeurs.rayonRecherche} km
                   </>
                 ) : (
                   "Ajouter une localisation"
@@ -694,9 +643,7 @@ export default function ProfileForm({
 
             <span
               className={`shrink-0 text-lg transition-transform ${
-                localisationOuverte
-                  ? "rotate-180"
-                  : ""
+                localisationOuverte ? "rotate-180" : ""
               }`}
               aria-hidden="true"
             >
@@ -722,13 +669,9 @@ export default function ProfileForm({
                   <input
                     id="lieu-recherche-profil"
                     type="text"
-                    value={
-                      valeurs.lieuRecherche
-                    }
+                    value={valeurs.lieuRecherche}
                     onChange={(event) =>
-                      modifierLieuRecherche(
-                        event.target.value,
-                      )
+                      modifierLieuRecherche(event.target.value)
                     }
                     placeholder="Chambéry"
                     className="min-w-0 flex-1 rounded-lg border p-2"
@@ -736,32 +679,23 @@ export default function ProfileForm({
 
                   <button
                     type="button"
-                    onClick={
-                      localiserLieuRecherche
-                    }
-                    disabled={
-                      rechercheLieuEnCours
-                    }
+                    onClick={localiserLieuRecherche}
+                    disabled={rechercheLieuEnCours}
                     className="shrink-0 rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50"
                   >
-                    {rechercheLieuEnCours
-                      ? "Recherche..."
-                      : "Localiser"}
+                    {rechercheLieuEnCours ? "Recherche..." : "Localiser"}
                   </button>
                 </div>
 
                 {!positionRecherche && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    Cliquez sur « Localiser »
-                    pour positionner ce lieu.
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Cliquez sur « Localiser » pour positionner ce lieu.
                   </p>
                 )}
 
                 {messageLocalisation && (
-                  <p className="mt-2 text-sm text-red-500">
-                    {
-                      messageLocalisation
-                    }
+                  <p className="mt-2 text-sm text-destructive">
+                    {messageLocalisation}
                   </p>
                 )}
               </div>
@@ -770,78 +704,52 @@ export default function ProfileForm({
 
               <div>
                 <div className="mb-1 flex items-center justify-between text-sm">
-                  <span className="font-medium">
-                    Rayon de recherche
-                  </span>
+                  <span className="font-medium">Rayon de recherche</span>
 
                   <span className="font-medium">
-                    {
-                      valeurs.rayonRecherche
-                    }{" "}
-                    km
+                    {valeurs.rayonRecherche} km
                   </span>
                 </div>
 
                 <input
                   type="range"
                   min={0}
-                  max={
-                    RAYONS_KM.length - 1
-                  }
+                  max={RAYONS_KM.length - 1}
                   step={1}
-                  value={indexRayonLePlusProche(
-                    valeurs.rayonRecherche,
-                  )}
+                  value={indexRayonLePlusProche(valeurs.rayonRecherche)}
                   onChange={(event) => {
-                    const index = Number(
-                      event.target.value,
-                    );
+                    const index = Number(event.target.value);
 
-                    setValeurs(
-                      (
-                        valeursActuelles,
-                      ) => ({
-                        ...valeursActuelles,
+                    setValeurs((valeursActuelles) => ({
+                      ...valeursActuelles,
 
-                        rayonRecherche:
-                          RAYONS_KM[
-                            index
-                          ],
-                      }),
-                    );
+                      rayonRecherche: RAYONS_KM[index],
+                    }));
                   }}
                   className="w-full"
                 />
 
                 <div className="-mt-1 grid grid-cols-7 text-center">
-                  {RAYONS_KM.map(
-                    (rayon) => (
-                      <button
-                        key={rayon}
-                        type="button"
-                        onClick={() =>
-                          setValeurs(
-                            (
-                              valeursActuelles,
-                            ) => ({
-                              ...valeursActuelles,
+                  {RAYONS_KM.map((rayon) => (
+                    <button
+                      key={rayon}
+                      type="button"
+                      onClick={() =>
+                        setValeurs((valeursActuelles) => ({
+                          ...valeursActuelles,
 
-                              rayonRecherche:
-                                rayon,
-                            }),
-                          )
-                        }
-                        className={`text-[10px] ${
-                          valeurs.rayonRecherche ===
-                          rayon
-                            ? "font-semibold"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {rayon}
-                      </button>
-                    ),
-                  )}
+                          rayonRecherche: rayon,
+                        }))
+                      }
+                      className={`text-[10px] ${
+                        valeurs.rayonRecherche === rayon
+                          ? "font-semibold"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {rayon}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -850,48 +758,35 @@ export default function ProfileForm({
               {positionRecherche ? (
                 <div>
                   <CarteZoneRecherche
-                    latitude={
-                      positionRecherche.latitude
-                    }
-                    longitude={
-                      positionRecherche.longitude
-                    }
-                    rayonKm={
-                      valeurs.rayonRecherche
-                    }
-                    onCentreChange={
-                      changerCentreRecherche
-                    }
+                    latitude={positionRecherche.latitude}
+                    longitude={positionRecherche.longitude}
+                    rayonKm={valeurs.rayonRecherche}
+                    onCentreChange={changerCentreRecherche}
                   />
 
-                  <p className="mt-2 text-xs text-gray-500">
-                    Cliquez sur la carte ou
-                    déplacez le point pour
-                    modifier le centre de la
-                    recherche.
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Cliquez sur la carte ou déplacez le point pour modifier le
+                    centre de la recherche.
                   </p>
                 </div>
               ) : (
-                <div className="rounded-lg border p-4 text-sm text-gray-500">
-                  Localisez un lieu pour
-                  afficher la carte.
+                <div className="rounded-lg border p-4 text-sm text-muted-foreground">
+                  Localisez un lieu pour afficher la carte.
                 </div>
               )}
 
-              <p className="text-xs text-gray-500">
-                Données © OpenStreetMap
-                contributors.
+              <p className="text-xs text-muted-foreground">
+                Données © OpenStreetMap contributors.
               </p>
 
               {/* VALIDATION LOCALISATION */}
 
               <div className="flex justify-end">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => {
-                    if (
-                      !positionRecherche
-                    ) {
+                    if (!positionRecherche) {
                       setMessageLocalisation(
                         "Localisez d'abord le lieu saisi.",
                       );
@@ -899,18 +794,12 @@ export default function ProfileForm({
                       return;
                     }
 
-                    setMessageLocalisation(
-                      "",
-                    );
-
-                    setLocalisationOuverte(
-                      false,
-                    );
+                    setMessageLocalisation("");
+                    setLocalisationOuverte(false);
                   }}
-                  className="rounded-lg border px-4 py-2 text-sm font-medium"
                 >
                   Valider la localisation
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -923,9 +812,7 @@ export default function ProfileForm({
         {initialProfile && (
           <button
             type="button"
-            onClick={
-              annulerModification
-            }
+            onClick={annulerModification}
             disabled={loading}
             className="rounded border px-4 py-2 disabled:opacity-50"
           >
@@ -938,17 +825,11 @@ export default function ProfileForm({
           disabled={loading}
           className="rounded border px-4 py-2 font-medium disabled:opacity-50"
         >
-          {loading
-            ? "Enregistrement..."
-            : "Enregistrer"}
+          {loading ? "Enregistrement..." : "Enregistrer"}
         </button>
       </div>
 
-      {message && (
-        <p className="text-sm">
-          {message}
-        </p>
-      )}
+      {message && <p className="text-sm">{message}</p>}
     </form>
   );
 }

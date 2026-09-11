@@ -3,7 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import BlocageUtilisateurButton from "@/components/blocage-utilisateur-button";
 import ProfileForm from "./profile-form";
-
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import NotificationsEmailButton from "./notifications-email-button";
 
 export default async function ProfilPage() {
@@ -149,25 +150,13 @@ export default async function ProfilPage() {
   // AFFICHAGE
   // ------------------------------------------------
 
+  // ------------------------------------------------
+  // AFFICHAGE
+  // ------------------------------------------------
+
   return (
-    <main
-      className="
-      mx-auto
-      max-w-xl
-      p-6
-    "
-    >
-      <h1
-        className="
-    hidden
-    text-2xl
-    font-bold
-    md:mb-8
-    md:block
-  "
-      >
-        Profil
-      </h1>
+    <main className="mx-auto max-w-xl px-4 py-4 md:p-6">
+      <h1 className="hidden text-2xl font-bold md:mb-8 md:block">Profil</h1>
 
       {/* PROFIL */}
 
@@ -180,160 +169,139 @@ export default async function ProfilPage() {
       {/* RÉSEAU */}
 
       {profile && (
-        <section
-          className="
-      mt-8
-      border-t
-      pt-6
-    "
-        >
-          <h2 className="text-lg font-semibold">Réseau</h2>
+        <section className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold">Réseau</h2>
 
-          <div className="mt-4 divide-y border-y">
+          <Card className="overflow-hidden">
             <Link
               href={`/membres/${user.id}/abonnes`}
               className="
-          flex
-          items-center
-          justify-between
-          py-3
-          hover:opacity-70
-        "
+              flex
+              items-center
+              justify-between
+              gap-4
+              border-b
+              px-4
+              py-3
+              transition-colors
+              hover:bg-accent/50
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-inset
+              focus-visible:ring-ring
+            "
             >
-              <span>Abonnés</span>
+              <span className="font-medium">Abonnés</span>
 
               <div className="flex items-center gap-3">
-                <span className="font-medium">{nombreAbonnes}</span>
+                <span className="font-semibold">{nombreAbonnes}</span>
 
-                <span className="text-gray-400">›</span>
+                <span
+                  className="text-lg leading-none text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  ›
+                </span>
               </div>
             </Link>
 
             <Link
               href={`/membres/${user.id}/abonnements`}
               className="
-          flex
-          items-center
-          justify-between
-          py-3
-          hover:opacity-70
-        "
-            >
-              <span>Abonnements</span>
-
-              <div className="flex items-center gap-3">
-                <span className="font-medium">{nombreAbonnements}</span>
-
-                <span className="text-gray-400">›</span>
-              </div>
-            </Link>
-          </div>
-        </section>
-      )}
-
-      {utilisateursBloques.length > 0 && (
-        <div className="mt-6">
-          <h3 className="font-medium">Utilisateurs bloqués</h3>
-
-          <div
-            className="
-        mt-3
-        max-h-56
-        divide-y
-        overflow-y-auto
-        border-y
-      "
-          >
-            {utilisateursBloques.map((utilisateurBloque) => (
-              <div
-                key={utilisateurBloque.id}
-                className="
               flex
               items-center
               justify-between
               gap-4
+              px-4
               py-3
+              transition-colors
+              hover:bg-accent/50
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-inset
+              focus-visible:ring-ring
             "
-              >
-                <span className="min-w-0 truncate text-sm">
-                  {utilisateurBloque.nom}
-                </span>
+            >
+              <span className="font-medium">Abonnements</span>
 
-                <BlocageUtilisateurButton
-                  utilisateurId={utilisateurBloque.id}
-                  mode="debloquer"
-                />
+              <div className="flex items-center gap-3">
+                <span className="font-semibold">{nombreAbonnements}</span>
+
+                <span
+                  className="text-lg leading-none text-muted-foreground"
+                  aria-hidden="true"
+                >
+                  ›
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+            </Link>
+          </Card>
+        </section>
+      )}
+
+      {/* UTILISATEURS BLOQUÉS */}
+
+      {utilisateursBloques.length > 0 && (
+        <section className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold">Utilisateurs bloqués</h2>
+
+          <Card className="max-h-56 overflow-y-auto">
+            <div className="divide-y">
+              {utilisateursBloques.map((utilisateurBloque) => (
+                <div
+                  key={utilisateurBloque.id}
+                  className="
+                  flex
+                  items-center
+                  justify-between
+                  gap-4
+                  px-4
+                  py-3
+                "
+                >
+                  <span className="min-w-0 truncate text-sm font-medium">
+                    {utilisateurBloque.nom}
+                  </span>
+
+                  <BlocageUtilisateurButton
+                    utilisateurId={utilisateurBloque.id}
+                    mode="debloquer"
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </section>
       )}
 
       {/* NOTIFICATIONS */}
 
       {profile && (
-        <section
-          className="
-          mt-8
-          border-t
-          pt-6
-        "
-        >
-          <h2
-            className="
-            text-lg
-            font-semibold
-          "
-          >
-            Notifications
-          </h2>
+        <section className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold">Notifications</h2>
 
-          <p
-            className="
-            mb-4
-            mt-1
-            text-sm
-            text-gray-500
-          "
-          >
-            Gérez les notifications liées à vos sorties et participations.
-          </p>
+          <Card className="p-4">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Gérez les notifications liées à vos sorties et participations.
+            </p>
 
-          <NotificationsEmailButton />
+            <NotificationsEmailButton />
+          </Card>
         </section>
       )}
 
       {/* COMPTE */}
 
-      <section
-        className="
-        mt-8
-        border-t
-        pt-6
-      "
-      >
-        <h2
-          className="
-          text-lg
-          font-semibold
-        "
-        >
-          Compte
-        </h2>
+      <section className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold">Compte</h2>
 
-        <form action="/auth/signout" method="post" className="mt-4">
-          <button
-            type="submit"
-            className="
-              rounded
-              border
-              px-4
-              py-2
-            "
-          >
-            Se déconnecter
-          </button>
-        </form>
+        <Card className="p-4">
+          <form action="/auth/signout" method="post">
+            <Button type="submit" variant="outline">
+              Se déconnecter
+            </Button>
+          </form>
+        </Card>
       </section>
     </main>
   );
