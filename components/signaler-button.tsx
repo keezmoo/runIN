@@ -106,17 +106,18 @@ export default function SignalerButton({
     return (
       <Button
         type="button"
-        variant="link"
+        variant="ghost"
         onClick={() => {
           setOuvert(true);
           setMessage("");
         }}
-        className="
-        h-auto
-        p-0
-        text-muted-foreground
-        hover:text-destructive
-      "
+        className={
+          affichage === "modal"
+            ? "h-6 min-w-6 px-1 text-base leading-none text-muted-foreground hover:text-destructive"
+            : "h-auto p-0 text-muted-foreground hover:text-destructive"
+        }
+        aria-label={affichage === "modal" ? "Signaler ce message" : undefined}
+        title={affichage === "modal" ? "Signaler ce message" : undefined}
       >
         {libelle}
       </Button>

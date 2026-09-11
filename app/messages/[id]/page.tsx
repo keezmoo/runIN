@@ -167,6 +167,39 @@ export default async function ConversationPage({ params }: PageProps) {
 
   const conversationOuverte = !sortieAnnulee && !conversationExpiree;
 
+  const DELAI_GROUPE_MS = 5 * 60 * 1000;
+
+  const groupesMessages = messages.reduce<
+    Array<{
+      expediteurId: string;
+      messages: typeof messages;
+    }>
+  >((groupes, message) => {
+    const dernierGroupe = groupes[groupes.length - 1];
+    const dernierMessage =
+      dernierGroupe?.messages[dernierGroupe.messages.length - 1];
+
+    const memeExpediteur =
+      dernierGroupe?.expediteurId === message.expediteur_id;
+
+    const assezProche =
+      dernierMessage &&
+      new Date(message.created_at).getTime() -
+        new Date(dernierMessage.created_at).getTime() <=
+        DELAI_GROUPE_MS;
+
+    if (dernierGroupe && memeExpediteur && assezProche) {
+      dernierGroupe.messages.push(message);
+    } else {
+      groupes.push({
+        expediteurId: message.expediteur_id,
+        messages: [message],
+      });
+    }
+
+    return groupes;
+  }, []);
+
   // ------------------------------------------------
   // AFFICHAGE
   // ------------------------------------------------
@@ -246,69 +279,69 @@ export default async function ConversationPage({ params }: PageProps) {
               Aucun message pour le moment.
             </p>
           ) : (
-            messages.map((message, index) => {
-              const estMoi = message.expediteur_id === user.id;
-
-              const messagePrecedent = index > 0 ? messages[index - 1] : null;
-
-              const memeExpediteurQuePrecedent =
-                messagePrecedent?.expediteur_id === message.expediteur_id;
+            groupesMessages.map((groupe) => {
+              const estMoi = groupe.expediteurId === user.id;
 
               return (
                 <div
-                  key={message.id}
+                  key={groupe.messages[0].id}
                   className={`
-                    flex
-                    ${
-                      estMoi
-                        ? "border-primary-strong/30 bg-primary/10"
-                        : "border-border bg-muted"
-                    }
-                    ${memeExpediteurQuePrecedent ? "mt-1" : "mt-3"}
-`}
+        mt-3
+        flex
+        ${estMoi ? "justify-end" : "justify-start"}
+      `}
                 >
                   <div
                     className={`
-        min-w-0
-        max-w-[80%]
-        rounded-lg
-        border
-        px-4
-        py-3
+          inline-flex
+          max-w-[80%]
+          flex-col
+          overflow-hidden
+          rounded-xl
+          border
 
-        ${
-          estMoi
-            ? "border-primary-strong/30 bg-primary/10"
-            : "border-border bg-muted"
-        }
-      `}
+          ${
+            estMoi
+              ? "border-primary-strong/30 bg-primary/10"
+              : "border-border bg-muted"
+          }
+        `}
                   >
-                    <p
-                      className="
-          whitespace-pre-wrap
-          break-words
-        "
-                    >
-                      {message.contenu}
-                    </p>
+                    {groupe.messages.map((message, index) => (
+                      <div
+                        key={message.id}
+                        className={`
+              px-4
+              py-3
+              ${index > 0 ? "border-t border-border/60" : ""}
+            `}
+                      >
+                        <p className="whitespace-pre-wrap break-words">
+                          {message.contenu}
+                        </p>
 
-                    <div className="mt-2 flex items-center justify-end gap-2 text-xs text-muted-foreground">
-                      <span>
-                        {new Date(message.created_at).toLocaleString("fr-FR", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
-                      </span>
+                        <div className="mt-2 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+                          <span>
+                            {new Date(message.created_at).toLocaleString(
+                              "fr-FR",
+                              {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              },
+                            )}
+                          </span>
 
-                      {!estMoi && (
-                        <SignalerButton
-                          typeCible="message"
-                          cibleId={message.id}
-                          libelle="⋯"
-                          affichage="modal"
-                        />
-                      )}
-                    </div>
+                          {!estMoi && (
+                            <SignalerButton
+                              typeCible="message"
+                              cibleId={message.id}
+                              libelle="⋯"
+                              affichage="modal"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );

@@ -633,22 +633,64 @@ bg-card
             href="/sorties"
             aria-current={sortiesActif ? "page" : undefined}
             className={`
-              flex
-              h-full
-              flex-1
-              flex-col
-              items-center
-              justify-center
-              gap-1
-              text-xs
-              transition
+    flex
+    h-full
+    flex-1
+    flex-col
+    items-center
+    justify-center
+    gap-1
+    text-xs
+    transition
 
-              ${sortiesActif ? "text-primary-strong" : "text-foreground"}
-            `}
+    ${sortiesActif ? "text-primary-strong" : "text-foreground"}
+  `}
           >
             <Icone type="search" />
 
             <span>Sorties</span>
+          </Link>
+
+          {/* CRÉER */}
+
+          <Link
+            href="/sorties/nouvelle"
+            aria-current={creerActif ? "page" : undefined}
+            className="
+    flex
+    h-full
+    flex-1
+    flex-col
+    items-center
+    justify-center
+    gap-1
+    text-xs
+    font-semibold
+    text-primary-strong
+  "
+          >
+            <div
+              className={`
+      flex
+      h-9
+      w-9
+      items-center
+      justify-center
+      rounded-full
+      border
+      transition
+
+      ${
+        creerActif
+          ? "border-primary-strong bg-primary text-primary-foreground"
+          : "border-primary-strong/60 bg-primary/10 text-primary-strong"
+      }
+    `}
+            >
+              <Icone type="plus" />
+            </div>
+
+            <span>Créer</span>
           </Link>
 
           {/* MES SORTIES */}
@@ -657,32 +699,23 @@ bg-card
             href="/mes-sorties"
             aria-current={mesSortiesActif ? "page" : undefined}
             className={`
-              flex
-              h-full
-              flex-1
-              flex-col
-              items-center
-              justify-center
-              gap-1
-              text-xs
-              transition
+    flex
+    h-full
+    flex-1
+    flex-col
+    items-center
+    justify-center
+    gap-1
+    text-xs
+    transition
 
-              ${mesSortiesActif ? "text-primary-strong" : "text-foreground"}
-            `}
+    ${mesSortiesActif ? "text-primary-strong" : "text-foreground"}
+  `}
           >
             <Icone type="calendar" />
 
             <span>Mes sorties</span>
           </Link>
-
-          {/* CRÉER */}
-
-          <Button asChild size="sm">
-            <Link href="/sorties/nouvelle">
-              <Icone type="plus" />
-              Créer
-            </Link>
-          </Button>
         </div>
       </nav>
 
