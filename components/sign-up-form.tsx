@@ -41,13 +41,13 @@ export function SignUpForm({
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("Les mots de passe ne correspondent pas.");
       setIsLoading(false);
       return;
     }
 
     if (!captchaToken) {
-      setError("Please complete the captcha");
+      setError("Veuillez compléter le captcha.");
       setIsLoading(false);
       return;
     }
@@ -66,7 +66,9 @@ export function SignUpForm({
 
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(
+        error instanceof Error ? error.message : "Une erreur est survenue.",
+      );
 
       captchaRef.current?.resetCaptcha();
       setCaptchaToken(null);
@@ -79,19 +81,24 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="text-2xl">Créer un compte</CardTitle>
+
+          <CardDescription>
+            Inscrivez-vous pour trouver et organiser des sorties avec
+            d&apos;autres coureurs.
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Adresse e-mail</Label>
+
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="vous@exemple.fr"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -99,7 +106,8 @@ export function SignUpForm({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Mot de passe</Label>
+
                 <Input
                   id="password"
                   type="password"
@@ -110,7 +118,10 @@ export function SignUpForm({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="repeat-password">Repeat Password</Label>
+                <Label htmlFor="repeat-password">
+                  Confirmer le mot de passe
+                </Label>
+
                 <Input
                   id="repeat-password"
                   type="password"
@@ -120,38 +131,41 @@ export function SignUpForm({
                 />
               </div>
 
-              <HCaptcha
-                ref={captchaRef}
-                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
-                onVerify={(token) => {
-                  setCaptchaToken(token);
-                }}
-                onExpire={() => {
-                  setCaptchaToken(null);
-                }}
-                onError={() => {
-                  setCaptchaToken(null);
-                }}
-              />
+              <div className="overflow-x-auto">
+                <HCaptcha
+                  ref={captchaRef}
+                  sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                  onVerify={(token) => {
+                    setCaptchaToken(token);
+                  }}
+                  onExpire={() => {
+                    setCaptchaToken(null);
+                  }}
+                  onError={() => {
+                    setCaptchaToken(null);
+                  }}
+                />
+              </div>
 
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating an account..." : "Sign up"}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Création..." : "Créer mon compte"}
               </Button>
             </div>
 
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
+            <div className="mt-5 text-center text-sm text-muted-foreground">
+              Vous avez déjà un compte ?{" "}
               <Link
                 href="/auth/login"
-                className="underline underline-offset-4"
+                className="
+                font-medium
+                text-foreground
+                underline-offset-4
+                hover:underline
+              "
               >
-                Login
+                Se connecter
               </Link>
             </div>
           </form>

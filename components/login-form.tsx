@@ -40,7 +40,7 @@ export function LoginForm({
     setError(null);
 
     if (!captchaToken) {
-      setError("Please complete the captcha");
+      setError("Veuillez compléter le captcha.");
       setIsLoading(false);
       return;
     }
@@ -68,37 +68,28 @@ export function LoginForm({
       }
 
       // Vérifie si ce compte possède un second facteur MFA.
-      const {
-        data: aal,
-        error: aalError,
-      } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      const { data: aal, error: aalError } =
+        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
       if (aalError) {
         throw aalError;
       }
 
       // Mot de passe validé, mais MFA encore nécessaire.
-      if (
-        aal.currentLevel === "aal1" &&
-        aal.nextLevel === "aal2"
-      ) {
+      if (aal.currentLevel === "aal1" && aal.nextLevel === "aal2") {
         router.replace("/auth/mfa");
         return;
       }
 
       // Aucun MFA nécessaire, ou MFA déjà validé.
       router.replace("/sorties");
-
     } catch (error: unknown) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "An error occurred"
+        error instanceof Error ? error.message : "Une erreur est survenue.",
       );
 
       captchaRef.current?.resetCaptcha();
       setCaptchaToken(null);
-
     } finally {
       setIsLoading(false);
     }
@@ -108,22 +99,23 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Connexion</CardTitle>
+
           <CardDescription>
-            Enter your email below to login to your account
+            Connectez-vous à votre compte runIN.
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-
+            <div className="flex flex-col gap-5">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Adresse e-mail</Label>
+
                 <Input
                   id="email"
                   type="email"
-                  placeholder="m@example.com"
+                  placeholder="vous@exemple.fr"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -131,14 +123,21 @@ export function LoginForm({
               </div>
 
               <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                <div className="flex items-center gap-3">
+                  <Label htmlFor="password">Mot de passe</Label>
 
                   <Link
                     href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                    className="
+                    ml-auto
+                    text-sm
+                    text-muted-foreground
+                    underline-offset-4
+                    hover:text-foreground
+                    hover:underline
+                  "
                   >
-                    Forgot your password?
+                    Mot de passe oublié ?
                   </Link>
                 </div>
 
@@ -151,44 +150,41 @@ export function LoginForm({
                 />
               </div>
 
-              <HCaptcha
-                ref={captchaRef}
-                sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
-                onVerify={(token) => {
-                  setCaptchaToken(token);
-                }}
-                onExpire={() => {
-                  setCaptchaToken(null);
-                }}
-                onError={() => {
-                  setCaptchaToken(null);
-                }}
-              />
+              <div className="overflow-x-auto">
+                <HCaptcha
+                  ref={captchaRef}
+                  sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                  onVerify={(token) => {
+                    setCaptchaToken(token);
+                  }}
+                  onExpire={() => {
+                    setCaptchaToken(null);
+                  }}
+                  onError={() => {
+                    setCaptchaToken(null);
+                  }}
+                />
+              </div>
 
-              {error && (
-                <p className="text-sm text-red-500">
-                  {error}
-                </p>
-              )}
+              {error && <p className="text-sm text-destructive">{error}</p>}
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Logging in..." : "Login"}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Connexion..." : "Se connecter"}
               </Button>
-
             </div>
 
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-
+            <div className="mt-5 text-center text-sm text-muted-foreground">
+              Pas encore de compte ?{" "}
               <Link
                 href="/auth/sign-up"
-                className="underline underline-offset-4"
+                className="
+                font-medium
+                text-foreground
+                underline-offset-4
+                hover:underline
+              "
               >
-                Sign up
+                Créer un compte
               </Link>
             </div>
           </form>

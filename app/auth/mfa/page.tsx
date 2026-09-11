@@ -3,6 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function destinationApresMfa() {
   if (typeof window === "undefined") {
@@ -170,125 +180,56 @@ export default function PageMfa() {
 
   if (chargement) {
     return (
-      <main
-        className="
-                    mx-auto
-                    max-w-md
-                    px-4
-                    py-10
-                "
-      >
-        <p className="text-zinc-400">Vérification...</p>
+      <main className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+        <p className="text-sm text-muted-foreground">Vérification...</p>
       </main>
     );
   }
 
   return (
-    <main
-      className="
-                mx-auto
-                max-w-md
-                px-4
-                py-10
-            "
-    >
-      <div
-        className="
-                    rounded-xl
-                    border
-                    border-zinc-800
-                    bg-zinc-900
-                    p-5
-                "
-      >
-        <h1
-          className="
-                        text-xl
-                        font-semibold
-                        text-white
-                    "
-        >
-          Vérification en deux étapes
-        </h1>
+    <main className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">
+              Vérification en deux étapes
+            </CardTitle>
 
-        <p
-          className="
-                        mt-2
-                        text-sm
-                        text-zinc-400
-                    "
-        >
-          Ouvrez votre application d&apos;authentification et saisissez le code
-          à 6 chiffres.
-        </p>
+            <CardDescription>
+              Ouvrez votre application d&apos;authentification et saisissez le
+              code à 6 chiffres.
+            </CardDescription>
+          </CardHeader>
 
-        <form onSubmit={verifierCode} className="mt-5 space-y-4">
-          <div>
-            <label
-              htmlFor="code-mfa"
-              className="
-                                block
-                                text-sm
-                                text-zinc-300
-                            "
-            >
-              Code de sécurité
-            </label>
+          <CardContent>
+            <form onSubmit={verifierCode} className="space-y-5">
+              <div className="grid gap-2">
+                <Label htmlFor="code-mfa">Code de sécurité</Label>
 
-            <input
-              id="code-mfa"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              autoFocus
-              className="
-                                mt-2
-                                w-full
-                                rounded-lg
-                                border
-                                border-zinc-700
-                                bg-zinc-950
-                                px-3
-                                py-2
-                                text-white
-                                outline-none
-                                focus:border-[#8ED8B6]
-                            "
-            />
-          </div>
+                <Input
+                  id="code-mfa"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  autoFocus
+                />
+              </div>
 
-          {erreur && (
-            <p
-              className="
-                                text-sm
-                                text-red-400
-                            "
-            >
-              {erreur}
-            </p>
-          )}
+              {erreur && <p className="text-sm text-destructive">{erreur}</p>}
 
-          <button
-            type="submit"
-            disabled={verification || code.length !== 6}
-            className="
-                            w-full
-                            rounded-lg
-                            bg-[#8ED8B6]
-                            px-4
-                            py-2
-                            font-medium
-                            text-zinc-950
-                            disabled:cursor-not-allowed
-                            disabled:opacity-40
-                        "
-          >
-            {verification ? "Vérification..." : "Continuer"}
-          </button>
-        </form>
+              <Button
+                type="submit"
+                disabled={verification || code.replace(/\s/g, "").length !== 6}
+                className="w-full"
+              >
+                {verification ? "Vérification..." : "Continuer"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </main>
   );

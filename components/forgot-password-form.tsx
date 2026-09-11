@@ -37,7 +37,7 @@ export function ForgotPasswordForm({
     setError(null);
 
     if (!captchaToken) {
-      setError("Please complete the captcha");
+      setError("Veuillez compléter le captcha.");
       setIsLoading(false);
       return;
     }
@@ -53,9 +53,7 @@ export function ForgotPasswordForm({
       setSuccess(true);
     } catch (error: unknown) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "An error occurred"
+        error instanceof Error ? error.message : "Une erreur est survenue.",
       );
 
       captchaRef.current?.resetCaptcha();
@@ -71,89 +69,87 @@ export function ForgotPasswordForm({
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">
-              Check Your Email
+              Consultez votre boîte e-mail
             </CardTitle>
 
             <CardDescription>
-              Password reset instructions sent
+              Les instructions de réinitialisation ont été envoyées.
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
+              Si un compte correspond à cette adresse, vous recevrez un e-mail
+              contenant un lien pour modifier votre mot de passe.
             </p>
+
+            <Button asChild variant="outline" className="mt-5 w-full">
+              <Link href="/auth/login">Retour à la connexion</Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">
-              Reset Your Password
-            </CardTitle>
+            <CardTitle className="text-2xl">Mot de passe oublié</CardTitle>
 
             <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
+              Saisissez votre adresse e-mail pour recevoir un lien de
+              réinitialisation.
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleForgotPassword}>
-              <div className="flex flex-col gap-6">
-
+              <div className="flex flex-col gap-5">
                 <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Adresse e-mail</Label>
 
                   <Input
                     id="email"
                     type="email"
-                    placeholder="m@example.com"
+                    placeholder="vous@exemple.fr"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
 
-                <HCaptcha
-                  ref={captchaRef}
-                  sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
-                  onVerify={(token) => {
-                    setCaptchaToken(token);
-                  }}
-                  onExpire={() => {
-                    setCaptchaToken(null);
-                  }}
-                  onError={() => {
-                    setCaptchaToken(null);
-                  }}
-                />
+                <div className="overflow-x-auto">
+                  <HCaptcha
+                    ref={captchaRef}
+                    sitekey={process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY!}
+                    onVerify={(token) => {
+                      setCaptchaToken(token);
+                    }}
+                    onExpire={() => {
+                      setCaptchaToken(null);
+                    }}
+                    onError={() => {
+                      setCaptchaToken(null);
+                    }}
+                  />
+                </div>
 
-                {error && (
-                  <p className="text-sm text-red-500">
-                    {error}
-                  </p>
-                )}
+                {error && <p className="text-sm text-destructive">{error}</p>}
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Sending..." : "Send reset email"}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "Envoi..." : "Envoyer le lien"}
                 </Button>
-
               </div>
 
-              <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
-
+              <div className="mt-5 text-center text-sm text-muted-foreground">
+                Vous connaissez votre mot de passe ?{" "}
                 <Link
                   href="/auth/login"
-                  className="underline underline-offset-4"
+                  className="
+                  font-medium
+                  text-foreground
+                  underline-offset-4
+                  hover:underline
+                "
                 >
-                  Login
+                  Se connecter
                 </Link>
               </div>
             </form>
