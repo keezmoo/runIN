@@ -159,12 +159,14 @@ export default async function ProfilPage() {
     >
       <h1
         className="
-        mb-8
-        text-2xl
-        font-bold
-      "
+    hidden
+    text-2xl
+    font-bold
+    md:mb-8
+    md:block
+  "
       >
-        Mon profil
+        Profil
       </h1>
 
       {/* PROFIL */}

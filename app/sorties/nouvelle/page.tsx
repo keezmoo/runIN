@@ -63,7 +63,9 @@ export default async function NouvelleSortiePage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-6 text-2xl font-bold">Créer une sortie</h1>
+      <h1 className="hidden text-2xl font-bold md:mb-6 md:block">
+        Créer une sortie
+      </h1>
 
       <SortieForm
         sexeOrganisateur={profil.sexe as "homme" | "femme" | "autre"}

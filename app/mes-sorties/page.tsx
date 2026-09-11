@@ -469,10 +469,9 @@ export default async function MesSortiesPage() {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <div className="mb-8">
+      <div className="hidden md:mb-8 md:block">
         <h1 className="text-2xl font-semibold">Mes sorties</h1>
       </div>
-
       {/* ==================================================
         SORTIES À VENIR
     ================================================== */}

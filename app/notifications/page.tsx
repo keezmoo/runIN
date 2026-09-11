@@ -119,7 +119,9 @@ export default async function NotificationsPage() {
   if (utilisateursIndisponiblesResult.error || notificationsResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <h1 className="mb-6 text-2xl font-bold">Notifications</h1>
+        <h1 className="hidden text-2xl font-bold md:mb-6 md:block">
+          Notifications
+        </h1>
 
         <p>Impossible de charger les notifications.</p>
       </main>
@@ -159,7 +161,7 @@ export default async function NotificationsPage() {
     "
       >
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <h1 className="hidden text-2xl font-bold md:block">Notifications</h1>
 
           {nombreNonLues > 0 ? (
             <p className="mt-1 text-sm text-gray-500">

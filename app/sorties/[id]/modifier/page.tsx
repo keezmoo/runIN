@@ -118,7 +118,9 @@ export default async function ModifierSortiePage({ params }: PageProps) {
 
   return (
     <main className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-6 text-2xl font-bold">Modifier la sortie</h1>
+      <h1 className="hidden text-2xl font-bold md:mb-6 md:block">
+        Modifier la sortie
+      </h1>
 
       <ModifierSortieForm
         sortie={sortie}

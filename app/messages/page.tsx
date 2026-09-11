@@ -119,7 +119,7 @@ export default async function MessagesPage() {
   if (conversations.length === 0) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <h1 className="mb-6 text-3xl font-bold">Messages</h1>
+        <h1 className="hidden text-3xl font-bold md:mb-6 md:block">Messages</h1>
 
         <p className="text-gray-500">
           Vous n&apos;avez aucune conversation active.
@@ -205,7 +205,7 @@ export default async function MessagesPage() {
   if (conversationsActives.length === 0) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <h1 className="mb-6 text-3xl font-bold">Messages</h1>
+        <h1 className="hidden text-3xl font-bold md:mb-6 md:block">Messages</h1>
 
         <p className="text-gray-500">
           Vous n&apos;avez aucune conversation active.
@@ -356,8 +356,14 @@ export default async function MessagesPage() {
     <main className="mx-auto max-w-2xl p-6">
       {/* TITRE */}
 
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold">Messages</h1>
+      <div
+        className={
+          conversationsAvecNonLus.length > 0
+            ? "mb-3 flex items-center justify-end gap-4 md:mb-6 md:justify-between"
+            : "hidden md:mb-6 md:flex"
+        }
+      >
+        <h1 className="hidden text-3xl font-bold md:block">Messages</h1>
 
         {conversationsAvecNonLus.length > 0 && (
           <ToutMarquerLuButton conversationIds={conversationsAvecNonLus} />

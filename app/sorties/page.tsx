@@ -14,7 +14,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-
 type SortiesPageProps = {
   searchParams: Promise<{
     lieu?: string;
@@ -614,7 +613,7 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
         p-6
     "
     >
-      <div className="mb-4">
+      <div className="hidden md:mb-4 md:block">
         <h1 className="text-2xl font-bold">Trouver une sortie</h1>
       </div>
 
