@@ -481,13 +481,33 @@ export default async function DetailSortiePage({ params }: PageProps) {
           )}
         </div>
 
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold">{sortie.titre}</h1>
+        <div
+          className="
+    flex
+    flex-col
+    gap-3
+    md:flex-row
+    md:items-start
+    md:justify-between
+    md:gap-4
+  "
+        >
+          <h1 className="min-w-0 break-words text-3xl font-bold">
+            {sortie.titre}
+          </h1>
 
           {estOrganisateur &&
             sortie.statut === "planifiee" &&
             !sortiePassee && (
-              <div className="flex shrink-0 gap-2">
+              <div
+                className="
+    flex
+    flex-wrap
+    justify-end
+    gap-2
+    md:shrink-0
+  "
+              >
                 <Button asChild variant="outline">
                   <Link href={`/sorties/${sortie.id}/modifier`}>Modifier</Link>
                 </Button>
