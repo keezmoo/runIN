@@ -779,6 +779,11 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
 
                         const minuteJour = heureDepart * 60 + minuteDepart;
 
+                        const modeInscriptionMobile =
+                          sortie.mode_inscription === "validation"
+                            ? "Sur accept."
+                            : "Valid. auto";
+
                         return (
                           <Card key={sortie.id} className="overflow-hidden">
                             <Link
@@ -797,73 +802,166 @@ export default async function SortiesPage({ searchParams }: SortiesPageProps) {
         focus-visible:ring-ring
       "
                             >
-                              {/* HEURE */}
+                              {/* ==================================================
+    MOBILE
+================================================== */}
 
-                              <div className="w-14 shrink-0">
-                                <p className="text-base font-semibold leading-none">
-                                  {heureAffichee}
-                                </p>
-                              </div>
+                              <div
+                                className="
+    grid
+    w-full
+    grid-cols-[3.25rem_minmax(0,1fr)_auto]
+    items-center
+    gap-x-2
+    gap-y-1
+    md:hidden
+  "
+                              >
+                                {/* HEURE */}
 
-                              {/* INFORMATIONS */}
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="min-w-0 flex-1">
-                                    {/* TITRE + TYPE */}
-
-                                    <div className="flex min-w-0 items-center gap-2">
-                                      <h3 className="truncate font-semibold">
-                                        {sortie.titre}
-                                      </h3>
-
-                                      <Badge
-                                        variant="secondary"
-                                        className="shrink-0 font-medium"
-                                      >
-                                        {sortie.type_sortie === "trail"
-                                          ? "Trail"
-                                          : "Route"}
-                                      </Badge>
-                                    </div>
-
-                                    {/* DONNÉES SPORTIVES */}
-
-                                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                                      {infosSportives}
-                                    </p>
-                                  </div>
-
-                                  {/* PARTICIPANTS */}
-
-                                  <div className="shrink-0 text-right">
-                                    <p className="font-medium leading-none">
-                                      {nombreActuel} /{" "}
-                                      {sortie.nombre_max_participants}
-                                    </p>
-
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      {modeInscriptionAffiche}
-                                    </p>
-                                  </div>
+                                <div className="row-span-3 self-start pt-1">
+                                  <p className="text-base font-semibold leading-none">
+                                    {heureAffichee}
+                                  </p>
                                 </div>
 
-                                {/* ORGANISATEUR + DISTANCE */}
+                                {/* LIGNE 1 : TITRE */}
 
-                                <p className="mt-2 truncate text-xs text-muted-foreground">
+                                <h3 className="min-w-0 truncate font-semibold">
+                                  {sortie.titre}
+                                </h3>
+
+                                {/* LIGNE 1 : TERRAIN */}
+
+                                <Badge
+                                  variant="secondary"
+                                  className="justify-self-end whitespace-nowrap font-medium"
+                                >
+                                  {sortie.type_sortie === "trail"
+                                    ? "Trail"
+                                    : "Route"}
+                                </Badge>
+
+                                {/* LIGNE 2 : SPECS */}
+
+                                <p className="min-w-0 truncate text-sm text-muted-foreground">
+                                  {infosSportives}
+                                </p>
+
+                                {/* LIGNE 2 : PARTICIPANTS */}
+
+                                <p className="justify-self-end whitespace-nowrap text-sm font-medium">
+                                  {nombreActuel}/
+                                  {sortie.nombre_max_participants}
+                                </p>
+
+                                {/* LIGNE 3 : ORGANISATEUR */}
+
+                                <p className="min-w-0 truncate text-xs text-muted-foreground">
                                   {organisateur?.nom ?? "Organisateur"}
 
                                   {distanceGeoAffichee !== null &&
                                     ` • ${distanceGeoAffichee} km`}
                                 </p>
 
+                                {/* LIGNE 3 : INSCRIPTION */}
+
+                                <p className="justify-self-end whitespace-nowrap text-xs text-muted-foreground">
+                                  {modeInscriptionMobile}
+                                </p>
+
                                 {/* PERSONNES SUIVIES */}
 
                                 {infosSuivis && (
-                                  <p className="mt-2 truncate text-xs font-medium text-primary-strong">
+                                  <p
+                                    className="
+        col-start-2
+        col-end-4
+        mt-1
+        truncate
+        text-xs
+        font-medium
+        text-primary-strong
+      "
+                                  >
                                     {infosSuivis}
                                   </p>
                                 )}
+                              </div>
+
+                              {/* ==================================================
+    DESKTOP
+================================================== */}
+
+                              <div className="hidden w-full items-start gap-3 md:flex">
+                                {/* HEURE */}
+
+                                <div className="w-14 shrink-0">
+                                  <p className="text-base font-semibold leading-none">
+                                    {heureAffichee}
+                                  </p>
+                                </div>
+
+                                {/* INFORMATIONS */}
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                      {/* TITRE + TYPE */}
+
+                                      <div className="flex min-w-0 items-center gap-2">
+                                        <h3 className="truncate font-semibold">
+                                          {sortie.titre}
+                                        </h3>
+
+                                        <Badge
+                                          variant="secondary"
+                                          className="shrink-0 font-medium"
+                                        >
+                                          {sortie.type_sortie === "trail"
+                                            ? "Trail"
+                                            : "Route"}
+                                        </Badge>
+                                      </div>
+
+                                      {/* DONNÉES SPORTIVES */}
+
+                                      <p className="mt-1 truncate text-sm text-muted-foreground">
+                                        {infosSportives}
+                                      </p>
+                                    </div>
+
+                                    {/* PARTICIPANTS */}
+
+                                    <div className="shrink-0 text-right">
+                                      <p className="font-medium leading-none">
+                                        {nombreActuel} /{" "}
+                                        {sortie.nombre_max_participants}
+                                      </p>
+
+                                      <p className="mt-2 text-xs text-muted-foreground">
+                                        {modeInscriptionAffiche}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* ORGANISATEUR + DISTANCE */}
+
+                                  <p className="mt-2 truncate text-xs text-muted-foreground">
+                                    {organisateur?.nom ?? "Organisateur"}
+
+                                    {distanceGeoAffichee !== null &&
+                                      ` • ${distanceGeoAffichee} km`}
+                                  </p>
+
+                                  {/* PERSONNES SUIVIES */}
+
+                                  {infosSuivis && (
+                                    <p className="mt-2 truncate text-xs font-medium text-primary-strong">
+                                      {infosSuivis}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </Link>
                           </Card>
