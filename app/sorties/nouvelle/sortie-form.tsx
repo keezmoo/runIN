@@ -456,7 +456,7 @@ export default function SortieForm({
               <div>
                 <label className="mb-1 block font-medium">
                   Dénivelé positif
-                  <span className="ml-1 text-sm font-normal text-gray-500">
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">
                     (facultatif)
                   </span>
                 </label>
@@ -555,12 +555,12 @@ export default function SortieForm({
           <div>
             <label className="mb-1 block font-medium">
               Durée totale estimée
-              <span className="ml-1 text-sm font-normal text-gray-500">
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
                 (facultatif)
               </span>
             </label>
 
-            <p className="mb-2 text-xs text-gray-500">
+            <p className="mb-2 text-xs text-muted-foreground">
               Temps global prévu, pauses et arrêts compris.
             </p>
 
@@ -609,7 +609,7 @@ export default function SortieForm({
           <div>
             <label className="mb-1 block font-medium">
               Description
-              <span className="ml-1 text-sm font-normal text-gray-500">
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
                 (facultatif)
               </span>
             </label>
@@ -621,7 +621,7 @@ export default function SortieForm({
               rows={4}
               placeholder="Décris la sortie, le parcours, l'objectif de l'entraînement, les éventuelles pauses..."
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               {description.length} / 1000
             </p>
           </div>
@@ -654,7 +654,7 @@ export default function SortieForm({
             onWheel={empecherModificationMolette}
           />
 
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-muted-foreground">
             Vous êtes compris dans ce nombre.
           </p>
         </div>

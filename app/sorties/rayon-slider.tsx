@@ -35,7 +35,7 @@ export default function RayonSlider({
         className="rayon-slider w-full"
       />
 
-      <div className="mt-2 flex justify-between text-sm text-gray-400">
+      <div className="mt-2 flex justify-between text-sm text-muted-foreground">
         <span>5 km</span>
         <span>100 km</span>
       </div>

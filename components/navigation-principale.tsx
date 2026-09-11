@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import MenuProfil from "./menu-profil";
 
@@ -498,7 +498,6 @@ export default function NavigationPrincipale() {
 border-b
 border-border
 bg-card
-shadow-sm
 
           md:hidden
         "
@@ -552,8 +551,8 @@ shadow-sm
 
                 ${
                   messagesActif
-                    ? "text-[#8ED8B6]"
-                    : "text-foreground hover:bg-zinc-800"
+                    ? "text-primary-strong"
+                    : "text-foreground hover:bg-accent"
                 }
               `}
             >
@@ -581,8 +580,8 @@ shadow-sm
 
                 ${
                   notificationsActif
-                    ? "text-[#8ED8B6]"
-                    : "text-foreground hover:bg-zinc-800"
+                    ? "text-primary-strong"
+                    : "text-foreground hover:bg-accent"
                 }
               `}
             >
@@ -612,10 +611,9 @@ shadow-sm
           right-0
           z-50
 
-border-b
+border-t
 border-border
 bg-card
-shadow-sm
 
           md:hidden
         "
@@ -645,7 +643,7 @@ shadow-sm
               text-xs
               transition
 
-              ${sortiesActif ? "text-[#8ED8B6]" : "text-foreground"}
+              ${sortiesActif ? "text-primary-strong" : "text-foreground"}
             `}
           >
             <Icone type="search" />
@@ -669,7 +667,7 @@ shadow-sm
               text-xs
               transition
 
-              ${mesSortiesActif ? "text-[#8ED8B6]" : "text-foreground"}
+              ${mesSortiesActif ? "text-primary-strong" : "text-foreground"}
             `}
           >
             <Icone type="calendar" />
@@ -679,44 +677,12 @@ shadow-sm
 
           {/* CRÉER */}
 
-          <Link
-            href="/sorties/nouvelle"
-            aria-current={creerActif ? "page" : undefined}
-            className="
-              flex
-              h-full
-              flex-1
-              flex-col
-              items-center
-              justify-center
-              gap-1
-              text-xs
-              font-medium
-              text-[#8ED8B6]
-            "
-          >
-            <div
-              className={`
-                flex
-                h-8
-                w-8
-                items-center
-                justify-center
-                rounded-full
-                border
-
-                ${
-                  creerActif
-                    ? "border-[#8ED8B6] bg-[#8ED8B6] text-black"
-                    : "border-[#8ED8B6]"
-                }
-              `}
-            >
+          <Button asChild size="sm">
+            <Link href="/sorties/nouvelle">
               <Icone type="plus" />
-            </div>
-
-            <span>Créer</span>
-          </Link>
+              Créer
+            </Link>
+          </Button>
         </div>
       </nav>
 
@@ -778,7 +744,7 @@ bg-card
                 text-sm
                 transition
 
-                ${sortiesActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
+                ${sortiesActif ? "text-primary-strong" : "hover:bg-accent"}
               `}
             >
               Sorties
@@ -793,7 +759,7 @@ bg-card
                 text-sm
                 transition
 
-                ${mesSortiesActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
+                ${mesSortiesActif ? "text-primary-strong" : "hover:bg-accent"}
               `}
             >
               Mes sorties
@@ -806,12 +772,12 @@ bg-card
                 items-center
                 gap-2
                 rounded-lg
-                bg-[#8ED8B6]
+                bg-primary
                 px-3
                 py-2
                 text-sm
                 font-medium
-                text-black
+                text-primary-foreground
               "
             >
               <Icone type="plus" />
@@ -840,7 +806,7 @@ bg-card
                 rounded-full
                 transition
 
-                ${messagesActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
+                ${messagesActif ? "text-primary-strong" : "hover:bg-accent"}
               `}
             >
               <div className="relative">
@@ -862,7 +828,7 @@ bg-card
                 rounded-full
                 transition
 
-                ${notificationsActif ? "text-[#8ED8B6]" : "hover:bg-zinc-800"}
+                ${notificationsActif ? "text-primary-strong" : "hover:bg-accent"}
               `}
             >
               <div className="relative">

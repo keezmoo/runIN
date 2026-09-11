@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -11,7 +11,12 @@ type Props = {
   affichage?: "inline" | "modal";
 };
 
-export default function SignalerButton({ typeCible, cibleId, libelle, affichage = "inline" }: Props) {
+export default function SignalerButton({
+  typeCible,
+  cibleId,
+  libelle,
+  affichage = "inline",
+}: Props) {
   const [ouvert, setOuvert] = useState(false);
 
   const [motif, setMotif] = useState("");
@@ -99,27 +104,28 @@ export default function SignalerButton({ typeCible, cibleId, libelle, affichage 
 
   if (!ouvert) {
     return (
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={() => {
           setOuvert(true);
           setMessage("");
         }}
         className="
-                    text-sm
-                    text-gray-500
-                    hover:text-red-400
-                    hover:underline
-                "
+        h-auto
+        p-0
+        text-muted-foreground
+        hover:text-destructive
+      "
       >
         {libelle}
-      </button>
+      </Button>
     );
   }
 
-const formulaire = (
-  <div className="rounded-xl border bg-background p-4">
-    <div
+  const formulaire = (
+    <div className="rounded-xl border bg-background p-4">
+      <div
         className="
                     flex
                     items-center
@@ -129,20 +135,17 @@ const formulaire = (
       >
         <p className="font-medium">Signaler</p>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={() => {
             setOuvert(false);
             setMessage("");
           }}
-          className="
-                        text-sm
-                        text-gray-500
-                        hover:underline
-                    "
+          className="h-auto px-2 py-1 text-sm"
         >
           Fermer
-        </button>
+        </Button>
       </div>
 
       <label
@@ -215,39 +218,40 @@ const formulaire = (
         className="
                     mt-1
                     text-xs
-                    text-gray-500
+                    text-muted-foreground
                 "
       >
         {commentaire.length} / 1000
       </p>
 
-      <button
+      <Button
         type="button"
+        variant="destructive"
         onClick={envoyer}
         disabled={loading || !motif}
-        className="
-                    mt-4
-                    rounded-lg
-                    border
-                    border-red-800
-                    px-4
-                    py-2
-                    text-sm
-                    text-red-400
-                    disabled:opacity-40
-                "
+        className="mt-4"
       >
         {loading ? "Envoi..." : "Envoyer le signalement"}
-      </button>
+      </Button>
 
-      {message && <p className="mt-3 text-sm">{message}</p>}
-  </div>
-);
+      {message && (
+        <p
+          className={
+            message === "Signalement envoyé."
+              ? "mt-3 text-sm text-primary-strong"
+              : "mt-3 text-sm text-destructive"
+          }
+        >
+          {message}
+        </p>
+      )}
+    </div>
+  );
 
-if (affichage === "modal") {
-  return (
-    <div
-      className="
+  if (affichage === "modal") {
+    return (
+      <div
+        className="
         fixed
         inset-0
         z-50
@@ -257,20 +261,20 @@ if (affichage === "modal") {
         bg-black/50
         p-4
       "
-      onClick={() => {
-        setOuvert(false);
-        setMessage("");
-      }}
-    >
-      <div
-        className="w-full max-w-md"
-        onClick={(event) => event.stopPropagation()}
+        onClick={() => {
+          setOuvert(false);
+          setMessage("");
+        }}
       >
-        {formulaire}
+        <div
+          className="w-full max-w-md"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {formulaire}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-return formulaire;
+  return formulaire;
 }

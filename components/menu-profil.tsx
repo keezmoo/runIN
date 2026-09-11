@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 type MenuProfilProps = {
   actif?: boolean;
@@ -143,8 +144,8 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
 
           ${
             actif || ouvert
-              ? "bg-zinc-800 text-[#8ED8B6]"
-              : "text-foreground hover:bg-zinc-800"
+              ? "bg-accent text-primary-strong"
+              : "text-foreground hover:bg-accent"
           }
         `}
       >
@@ -166,8 +167,8 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
             overflow-hidden
             rounded-xl
             border
-            border-zinc-800
-            bg-zinc-900
+            border-border
+            bg-popover text-popover-foreground
 
             shadow-xl
           "
@@ -183,7 +184,7 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
 
                 text-sm
 
-                hover:bg-zinc-800
+                hover:bg-accent
               "
             >
               Mon profil
@@ -199,7 +200,7 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
 
                 text-sm
 
-                hover:bg-zinc-800
+                hover:bg-accent
               "
             >
               Paramètres
@@ -214,8 +215,8 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
             px-3
             py-2.5
             text-sm
-            text-[#8ED8B6]
-            hover:bg-zinc-800
+            text-primary-strong
+            hover:bg-accent
         "
               >
                 Administration
@@ -226,29 +227,29 @@ export default function MenuProfil({ actif = false }: MenuProfilProps) {
           <div
             className="
               border-t
-              border-zinc-800
+              border-border
               p-1
             "
           >
             <form action="/auth/signout" method="post">
-              <button
+              <Button
                 type="submit"
+                variant="ghost"
                 className="
-                  block
-                  w-full
-                  rounded-lg
-                  px-3
-                  py-2.5
-
-                  text-left
-                  text-sm
-                  text-red-400
-
-                  hover:bg-zinc-800
-                "
+    h-auto
+    w-full
+    justify-start
+    rounded-lg
+    px-3
+    py-2.5
+    text-sm
+    text-destructive
+    hover:bg-accent
+    hover:text-destructive
+  "
               >
                 Déconnexion
-              </button>
+              </Button>
             </form>
           </div>
         </div>

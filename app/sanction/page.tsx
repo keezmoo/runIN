@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 
 type SanctionActive = {
@@ -52,148 +53,71 @@ export default async function SanctionPage() {
   const bannissement = sanction.type === "bannissement";
 
   return (
-    <main
-      className="
-                mx-auto
-                flex
-                min-h-screen
-                max-w-xl
-                items-center
-                px-4
-                py-10
-            "
-    >
-      <div
-        className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-red-900
-                    bg-red-950/20
-                    p-6
-                "
-      >
-        <p
-          className="
-                        text-sm
-                        font-medium
-                        text-red-400
-                    "
-        >
-          Compte restreint
-        </p>
-
-        <h1
-          className="
-                        mt-2
-                        text-2xl
-                        font-bold
-                    "
-        >
-          {bannissement
-            ? "Votre compte a été banni"
-            : "Votre compte est temporairement suspendu"}
-        </h1>
-
-        <p
-          className="
-                        mt-4
-                        text-sm
-                        text-gray-400
-                    "
-        >
-          L&apos;accès aux fonctionnalités de runIN est actuellement désactivé
-          pour ce compte.
-        </p>
-
-        <div
-          className="
-                        mt-6
-                        rounded-lg
-                        border
-                        p-4
-                    "
-        >
-          <p
-            className="
-                            text-xs
-                            uppercase
-                            text-gray-500
-                        "
-          >
-            Motif
+    <main className="mx-auto flex min-h-svh max-w-xl items-center px-4 py-10">
+      <Card className="w-full border-destructive/40">
+        <CardHeader>
+          <p className="text-sm font-medium text-destructive">
+            Compte restreint
           </p>
 
-          <p className="mt-2">{sanction.motif}</p>
-        </div>
+          <CardTitle className="text-2xl">
+            {bannissement
+              ? "Votre compte a été banni"
+              : "Votre compte est temporairement suspendu"}
+          </CardTitle>
 
-        <dl
-          className="
-                        mt-6
-                        space-y-3
-                        text-sm
-                    "
-        >
-          <div>
-            <dt className="text-gray-500">Début de la sanction</dt>
+          <p className="text-sm text-muted-foreground">
+            L&apos;accès aux fonctionnalités de runIN est actuellement désactivé
+            pour ce compte.
+          </p>
+        </CardHeader>
 
-            <dd>{afficherDate(sanction.date_debut)}</dd>
+        <CardContent>
+          <div className="rounded-xl border bg-muted/40 p-4">
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Motif
+            </p>
+
+            <p className="mt-2">{sanction.motif}</p>
           </div>
 
-          {!bannissement && sanction.date_fin && (
+          <dl className="mt-6 space-y-4 text-sm">
             <div>
-              <dt className="text-gray-500">Fin de la suspension</dt>
+              <dt className="text-muted-foreground">Début de la sanction</dt>
 
-              <dd>{afficherDate(sanction.date_fin)}</dd>
+              <dd className="mt-1">{afficherDate(sanction.date_debut)}</dd>
             </div>
-          )}
 
-          {bannissement && (
-            <div>
-              <dt className="text-gray-500">Durée</dt>
+            {!bannissement && sanction.date_fin && (
+              <div>
+                <dt className="text-muted-foreground">Fin de la suspension</dt>
 
-              <dd>Bannissement sans date de fin</dd>
-            </div>
-          )}
-        </dl>
+                <dd className="mt-1">{afficherDate(sanction.date_fin)}</dd>
+              </div>
+            )}
 
-        <div
-          className="
-                        mt-8
-                        flex
-                        flex-wrap
-                        gap-3
-                    "
-        >
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="
-                                rounded-lg
-                                border
-                                px-4
-                                py-2
-                                text-sm
-                            "
-            >
-              Se déconnecter
-            </button>
-          </form>
+            {bannissement && (
+              <div>
+                <dt className="text-muted-foreground">Durée</dt>
 
-          <Link
-            href="/confidentialite"
-            className="
-                            rounded-lg
-                            border
-                            px-4
-                            py-2
-                            text-sm
-                        "
-          >
-            Confidentialité
-          </Link>
-        </div>
-      </div>
+                <dd className="mt-1">Bannissement sans date de fin</dd>
+              </div>
+            )}
+          </dl>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <form action="/auth/signout" method="post">
+              <Button type="submit" variant="outline">
+                Se déconnecter
+              </Button>
+            </form>
+
+            <Button asChild variant="outline">
+              <Link href="/confidentialite">Confidentialité</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </main>
   );
 }

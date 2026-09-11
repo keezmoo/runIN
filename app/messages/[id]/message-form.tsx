@@ -3,7 +3,7 @@
 import { FormEvent, KeyboardEvent, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type MessageFormProps = {
@@ -139,18 +139,16 @@ export default function MessageForm({ conversationId }: MessageFormProps) {
       />
 
       <div className="flex items-center justify-between gap-4">
-        <p className="text-xs text-gray-500">{contenu.length} / 2000</p>
+        <p className="text-xs text-muted-foreground">{contenu.length} / 2000</p>
 
-        <button
-          type="submit"
-          disabled={loading || contenu.trim() === ""}
-          className="rounded border px-4 py-2 disabled:opacity-50"
-        >
+        <Button type="submit" disabled={loading || contenu.trim() === ""}>
           {loading ? "Envoi..." : "Envoyer"}
-        </button>
+        </Button>
       </div>
 
-      {messageErreur && <p className="text-sm text-red-500">{messageErreur}</p>}
+      {messageErreur && (
+        <p className="text-sm text-destructive">{messageErreur}</p>
+      )}
     </form>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type BlocageUtilisateurButtonProps = {
@@ -74,23 +74,16 @@ export default function BlocageUtilisateurButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant={mode === "bloquer" ? "destructive" : "outline"}
         onClick={agir}
         disabled={loading}
-        className="
-          rounded
-          border
-          px-3
-          py-2
-          text-sm
-          disabled:opacity-50
-        "
       >
         {loading ? "..." : mode === "bloquer" ? "Bloquer" : "Débloquer"}
-      </button>
+      </Button>
 
-      {message && <p className="mt-2 text-sm text-red-500">{message}</p>}
+      {message && <p className="mt-2 text-sm text-destructive">{message}</p>}
     </div>
   );
 }
