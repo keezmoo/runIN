@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type ToutMarquerLuButtonProps = {
@@ -18,6 +18,71 @@ export default function ToutMarquerLuButton({
   const [chargement, setChargement] = useState(false);
 
   const [erreur, setErreur] = useState("");
+
+  const lectureAutomatiqueTerminee = useRef(false);
+
+  const pageQuittee = useRef(false);
+
+  // ------------------------------------------------
+  // LECTURE AUTOMATIQUE
+  // ------------------------------------------------
+  //
+  // Les notifications sont enregistrées comme lues
+  // en base dès que la page est consultée.
+  //
+  // On ne rafraîchit volontairement PAS la page :
+  // elles conservent donc leur apparence "nouvelle"
+  // pendant toute cette visite.
+  //
+  // Lorsque l'utilisateur quitte la page,
+  // le badge de la cloche est actualisé.
+  // ------------------------------------------------
+
+  useEffect(() => {
+    pageQuittee.current = false;
+    lectureAutomatiqueTerminee.current = false;
+
+    if (nombreNonLues === 0) {
+      return;
+    }
+
+    const supabase = createClient();
+
+    async function enregistrerLectureAutomatique() {
+      const { error } = await supabase.rpc(
+        "marquer_toutes_notifications_visibles_lues",
+      );
+
+      if (error) {
+        console.error("Erreur lecture automatique des notifications :", error);
+
+        return;
+      }
+
+      lectureAutomatiqueTerminee.current = true;
+
+      // Si l'utilisateur a quitté la page
+      // pendant que la requête terminait,
+      // on actualise quand même la cloche.
+      if (pageQuittee.current) {
+        window.dispatchEvent(new Event("notifications-non-lues-modifiees"));
+      }
+    }
+
+    void enregistrerLectureAutomatique();
+
+    return () => {
+      pageQuittee.current = true;
+
+      if (lectureAutomatiqueTerminee.current) {
+        window.dispatchEvent(new Event("notifications-non-lues-modifiees"));
+      }
+    };
+  }, [nombreNonLues]);
+
+  // ------------------------------------------------
+  // BOUTON MANUEL
+  // ------------------------------------------------
 
   async function toutMarquerCommeLu() {
     if (chargement || nombreNonLues === 0) {
@@ -43,10 +108,8 @@ export default function ToutMarquerLuButton({
       return;
     }
 
-    // Actualise le badge de navigation
     window.dispatchEvent(new Event("notifications-non-lues-modifiees"));
 
-    // Actualise la page Server Component
     router.refresh();
 
     setChargement(false);

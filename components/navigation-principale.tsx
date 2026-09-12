@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import MenuProfil from "./menu-profil";
 

@@ -258,8 +258,8 @@ export default async function NotificationsPage() {
         </div>
       )}
       <p className="mt-8 text-center text-xs text-muted-foreground">
-        Les notifications lues sont conservées 30 jours. Les notifications non
-        lues sont conservées 90 jours.
+        Les notifications lues sont conservées 7 jours. Les notifications non
+        lues sont conservées 30 jours.
       </p>
     </main>
   );
