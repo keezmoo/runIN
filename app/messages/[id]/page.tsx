@@ -7,6 +7,7 @@ import RealtimeMessages from "./realtime-messages";
 import ScrollVersDernierMessage from "./scroll-vers-dernier-message";
 import StatutConversation from "./statut-conversation";
 import SignalerButton from "@/components/signaler-button";
+import AvatarUtilisateur from "@/components/avatar-utilisateur";
 
 type PageProps = {
   params: Promise<{
@@ -237,15 +238,23 @@ export default async function ConversationPage({ params }: PageProps) {
           </Link>
         </h1>
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          Conversation avec{" "}
-          <Link
-            href={`/membres/${interlocuteurId}`}
-            className="font-semibold hover:underline"
-          >
-            {interlocuteur?.nom ?? "Utilisateur"}
-          </Link>
-        </p>
+        <div className="mt-3 flex items-center gap-3">
+          <AvatarUtilisateur
+            nom={interlocuteur?.nom}
+            utilisateurId={interlocuteur?.id ?? interlocuteurId}
+            taille="md"
+          />
+
+          <p className="min-w-0 text-sm text-muted-foreground">
+            Conversation avec{" "}
+            <Link
+              href={`/membres/${interlocuteurId}`}
+              className="font-semibold text-foreground hover:underline"
+            >
+              {interlocuteur?.nom ?? "Utilisateur"}
+            </Link>
+          </p>
+        </div>
       </header>
 
       {/* ------------------------------------------------ */}

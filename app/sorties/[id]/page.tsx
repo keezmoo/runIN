@@ -20,6 +20,7 @@ import SignalerButton from "@/components/signaler-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import AvatarUtilisateur from "@/components/avatar-utilisateur";
 
 type PageProps = {
   params: Promise<{
@@ -676,20 +677,36 @@ export default async function DetailSortiePage({ params }: PageProps) {
                   <Card key={demande.id} className="p-4">
                     <Link
                       href={`/membres/${profil.id}`}
-                      className="font-medium"
+                      className="
+      flex
+      min-w-0
+      items-center
+      gap-3
+      hover:opacity-70
+    "
                     >
-                      {profil.nom}
+                      <AvatarUtilisateur
+                        nom={profil.nom}
+                        utilisateurId={profil.id}
+                        taille="md"
+                      />
+
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{profil.nom}</p>
+
+                        <p className="text-sm text-muted-foreground">
+                          {profil.age} ans
+                        </p>
+                      </div>
                     </Link>
 
-                    <p className="mb-3 text-sm text-muted-foreground">
-                      {profil.age} ans
-                    </p>
-
-                    <GererDemandeButtons
-                      demandeId={demande.id}
-                      sortieId={sortie.id}
-                      utilisateurId={profil.id}
-                    />
+                    <div className="mt-3">
+                      <GererDemandeButtons
+                        demandeId={demande.id}
+                        sortieId={sortie.id}
+                        utilisateurId={profil.id}
+                      />
+                    </div>
                   </Card>
                 );
               })}
@@ -737,15 +754,27 @@ export default async function DetailSortiePage({ params }: PageProps) {
                 <Link
                   href={`/membres/${profil.id}`}
                   className="
-                                flex-1
-                                hover:opacity-70
-                            "
+    flex
+    min-w-0
+    flex-1
+    items-center
+    gap-3
+    hover:opacity-70
+  "
                 >
-                  <p className="font-medium">{profil.nom}</p>
+                  <AvatarUtilisateur
+                    nom={profil.nom}
+                    utilisateurId={profil.id}
+                    taille="md"
+                  />
 
-                  <p className="text-sm text-muted-foreground">
-                    {profil.age} ans
-                  </p>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{profil.nom}</p>
+
+                    <p className="text-sm text-muted-foreground">
+                      {profil.age} ans
+                    </p>
+                  </div>
                 </Link>
 
                 {/* ORGANISATEUR */}

@@ -8,6 +8,7 @@ import { afficherAllure, afficherIntensite } from "@/lib/sortie-utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDateLongue, formatHeure, getDateKey } from "@/lib/date-utils";
+import AvatarUtilisateur from "@/components/avatar-utilisateur";
 
 type ProfilPublicPageProps = {
   params: Promise<{
@@ -237,23 +238,33 @@ export default async function ProfilPublicPage({
 
       <header className="mb-6">
         <Card className="p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="truncate text-2xl font-bold">{profil.nom}</h1>
+          <div className="flex items-start gap-3">
+            <AvatarUtilisateur
+              nom={profil.nom}
+              utilisateurId={profil.id}
+              taille="lg"
+            />
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                {profil.age} ans
-                {" • "}
-                {afficherSexe(profil.sexe)}
-              </p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h1 className="truncate text-2xl font-bold">{profil.nom}</h1>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {profil.age} ans
+                    {" • "}
+                    {afficherSexe(profil.sexe)}
+                  </p>
+                </div>
+
+                {!estMonProfil && (
+                  <SuivreButton
+                    profilId={profil.id}
+                    estSuiviInitialement={estSuivi}
+                  />
+                )}
+              </div>
             </div>
-
-            {!estMonProfil && (
-              <SuivreButton
-                profilId={profil.id}
-                estSuiviInitialement={estSuivi}
-              />
-            )}
           </div>
 
           {/* ABONNÉS / ABONNEMENTS */}

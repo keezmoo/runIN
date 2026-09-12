@@ -4,6 +4,7 @@ import ToutMarquerLuButton from "./tout-marquer-lu-button";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import AvatarUtilisateur from "@/components/avatar-utilisateur";
 
 function numeroJourParis(date: Date) {
   const parties = new Intl.DateTimeFormat("fr-FR", {
@@ -105,7 +106,9 @@ export default async function MessagesPage() {
   if (utilisateursIndisponiblesResult.error || conversationsResult.error) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-4 md:p-6">
-        <p className="text-sm text-destructive">Impossible de charger les conversations.</p>
+        <p className="text-sm text-destructive">
+          Impossible de charger les conversations.
+        </p>
       </main>
     );
   }
@@ -155,7 +158,9 @@ export default async function MessagesPage() {
   if (sortiesError) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <p className="text-sm text-destructive">Impossible de charger les sorties.</p>
+        <p className="text-sm text-destructive">
+          Impossible de charger les sorties.
+        </p>
       </main>
     );
   }
@@ -267,7 +272,9 @@ export default async function MessagesPage() {
   if (profilsResult.error || messagesResult.error) {
     return (
       <main className="mx-auto max-w-2xl p-6">
-        <p className="text-sm text-destructive">Impossible de charger les conversations.</p>
+        <p className="text-sm text-destructive">
+          Impossible de charger les conversations.
+        </p>
       </main>
     );
   }
@@ -418,58 +425,68 @@ export default async function MessagesPage() {
               focus-visible:ring-ring
             "
                 >
-                  {/* PREMIÈRE LIGNE */}
+                  <div className="flex min-w-0 items-start gap-3">
+                    <AvatarUtilisateur
+                      nom={interlocuteur?.nom}
+                      utilisateurId={interlocuteur?.id}
+                      taille="md"
+                    />
 
-                  <div className="flex min-w-0 items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <h2
+                    <div className="min-w-0 flex-1">
+                      {/* PREMIÈRE LIGNE */}
+
+                      <div className="flex min-w-0 items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <h2
+                            className={
+                              estNonLue
+                                ? "truncate font-semibold"
+                                : "truncate font-medium"
+                            }
+                          >
+                            {interlocuteur?.nom ?? "Utilisateur"}
+                          </h2>
+
+                          {estNonLue && (
+                            <Badge
+                              variant="secondary"
+                              className="
+              shrink-0
+              border-primary-strong/30
+              bg-primary/15
+              text-primary-strong
+            "
+                            >
+                              {nombreNonLus}{" "}
+                              {nombreNonLus === 1 ? "non lu" : "non lus"}
+                            </Badge>
+                          )}
+                        </div>
+
+                        <p className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                          {afficherDateRelative(dateActivite)}
+                        </p>
+                      </div>
+
+                      {/* SORTIE */}
+
+                      <p className="mt-1 truncate text-sm font-medium">
+                        {sortie.titre}
+                      </p>
+
+                      {/* DERNIER MESSAGE */}
+
+                      <p
                         className={
                           estNonLue
-                            ? "truncate font-semibold"
-                            : "truncate font-medium"
+                            ? "mt-1 truncate text-sm font-medium text-foreground"
+                            : "mt-1 truncate text-sm text-muted-foreground"
                         }
                       >
-                        {interlocuteur?.nom ?? "Utilisateur"}
-                      </h2>
-
-                      {estNonLue && (
-                        <Badge
-                          variant="secondary"
-                          className="
-                      shrink-0
-                      border-primary-strong/30
-                      bg-primary/15
-                      text-primary-strong
-                    "
-                        >
-                          {nombreNonLus}{" "}
-                          {nombreNonLus === 1 ? "non lu" : "non lus"}
-                        </Badge>
-                      )}
+                        {apercu}
+                      </p>
                     </div>
-
-                    <p className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                      {afficherDateRelative(dateActivite)}
-                    </p>
                   </div>
-
-                  {/* SORTIE */}
-
-                  <p className="mt-1 truncate text-sm font-medium">
-                    {sortie.titre}
-                  </p>
-
-                  {/* DERNIER MESSAGE */}
-
-                  <p
-                    className={
-                      estNonLue
-                        ? "mt-1 truncate text-sm font-medium text-foreground"
-                        : "mt-1 truncate text-sm text-muted-foreground"
-                    }
-                  >
-                    {apercu}
-                  </p>
                 </Link>
               </Card>
             );

@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import AvatarUtilisateur from "@/components/avatar-utilisateur";
 
 type PageProps = {
   params: Promise<{
@@ -158,9 +159,17 @@ export default async function AbonnementsPage({ params }: PageProps) {
                   focus-visible:ring-ring
                 "
                 >
-                  <span className="min-w-0 truncate font-medium">
-                    {profil.nom}
-                  </span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <AvatarUtilisateur
+                      nom={profil.nom}
+                      utilisateurId={profil.id}
+                      taille="sm"
+                    />
+
+                    <span className="min-w-0 truncate font-medium">
+                      {profil.nom}
+                    </span>
+                  </div>
 
                   <span
                     className="text-lg leading-none text-muted-foreground"
