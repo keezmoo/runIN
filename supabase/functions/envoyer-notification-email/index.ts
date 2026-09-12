@@ -184,51 +184,121 @@ Deno.serve(async (req) => {
         : "";
 
     // --------------------------------------------
-    // PRÉFÉRENCE E-MAIL DU DESTINATAIRE
+    // PRÉFÉRENCES E-MAIL DU DESTINATAIRE
     // --------------------------------------------
 
     const {
-      data: profil,
-      error: profilError,
+      data: preferences,
+      error: preferencesError,
     } = await supabaseAdmin
-      .from("profiles")
+      .from("preferences_notifications_email")
       .select(
-        "notifications_email_activees"
+        `
+        activees,
+        participations,
+        sorties
+        `,
       )
       .eq(
-        "id",
-        notification.utilisateur_id
+        "utilisateur_id",
+        notification.utilisateur_id,
       )
-      .single();
+      .maybeSingle();
 
 
-    if (profilError) {
-
+    if (preferencesError) {
       console.error(
-        "Erreur profil :",
-        profilError
+        "Erreur préférences e-mail :",
+        preferencesError,
       );
 
       return new Response(
-        "Erreur profil",
+        "Erreur préférences e-mail",
         {
           status: 500,
-        }
+        },
       );
     }
 
 
-    if (
-      !profil
-        .notifications_email_activees
-    ) {
+    if (!preferences) {
+      return Response.json({
+        email_envoye: false,
+        raison:
+          "preferences_email_absentes",
+      });
+    }
 
+
+    if (!preferences.activees) {
       return Response.json({
         email_envoye: false,
         raison:
           "notifications_email_desactivees",
       });
+    }
 
+
+    // --------------------------------------------
+    // CATÉGORIE DE LA NOTIFICATION
+    // --------------------------------------------
+
+    const typesParticipation =
+      new Set([
+        "demande_recue",
+        "demande_acceptee",
+        "demande_refusee",
+      ]);
+
+
+    const typesSortie =
+      new Set([
+        "sortie_annulee",
+        "sortie_modifiee",
+      ]);
+
+
+    if (
+      typesParticipation.has(
+        notification.type,
+      ) &&
+      !preferences.participations
+    ) {
+      return Response.json({
+        email_envoye: false,
+        raison:
+          "emails_participations_desactives",
+      });
+    }
+
+
+    if (
+      typesSortie.has(
+        notification.type,
+      ) &&
+      !preferences.sorties
+    ) {
+      return Response.json({
+        email_envoye: false,
+        raison:
+          "emails_sorties_desactives",
+      });
+    }
+
+
+    if (
+      !typesParticipation.has(
+        notification.type,
+      ) &&
+      !typesSortie.has(
+        notification.type,
+      )
+    ) {
+      return Response.json({
+        email_envoye: false,
+        raison:
+          "type_non_envoye_par_email",
+      });
     }
 
 
@@ -245,7 +315,7 @@ Deno.serve(async (req) => {
         .admin
         .getUserById(
           notification
-            .utilisateur_id
+            .utilisateur_id,
         );
 
 
@@ -253,17 +323,16 @@ Deno.serve(async (req) => {
       utilisateurError ||
       !utilisateur.user
     ) {
-
       console.error(
         "Erreur utilisateur :",
-        utilisateurError
+        utilisateurError,
       );
 
       return new Response(
         "Utilisateur introuvable",
         {
           status: 500,
-        }
+        },
       );
     }
 
@@ -273,45 +342,12 @@ Deno.serve(async (req) => {
 
 
     if (!email) {
-
       return Response.json({
         email_envoye: false,
         raison:
           "aucune_adresse_email",
       });
-
     }
-
-
-    // --------------------------------------------
-    // TYPES ENVOYÉS PAR E-MAIL
-    // --------------------------------------------
-
-    const typesEmailAutorises =
-      new Set([
-        "demande_recue",
-        "demande_acceptee",
-        "demande_refusee",
-        "sortie_annulee",
-        "sortie_modifiee",
-      ]);
-
-
-    if (
-      !typesEmailAutorises.has(
-        notification.type
-      )
-    ) {
-
-      return Response.json({
-        email_envoye: false,
-        raison:
-          "type_non_envoye_par_email",
-      });
-
-    }
-
-
     // --------------------------------------------
     // LIEN VERS runIN
     // --------------------------------------------
