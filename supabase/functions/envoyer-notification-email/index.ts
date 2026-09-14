@@ -18,7 +18,17 @@ const EMAIL_WEBHOOK_SECRET =
     "EMAIL_WEBHOOK_SECRET"
   );
 
+const RUNIN_APP_URL =
+  Deno.env.get("RUNIN_APP_URL") ??
+  "https://runin.fr";
 
+const RUNIN_EMAIL_FROM =
+  Deno.env.get("RUNIN_EMAIL_FROM") ??
+  "runIN <notifications@runin.fr>";
+
+const RUNIN_EMAIL_REPLY_TO =
+  Deno.env.get("RUNIN_EMAIL_REPLY_TO") ??
+  "contact@runin.fr";
 
 type NotificationRecord = {
   id: string;
@@ -353,7 +363,7 @@ Deno.serve(async (req) => {
     // --------------------------------------------
 
     const baseUrl =
-      "https://run-in-lovat.vercel.app";
+      RUNIN_APP_URL;
 
 
     const chemin =
@@ -375,8 +385,8 @@ Deno.serve(async (req) => {
       error,
     } = await resend.emails.send(
       {
-        from:
-          "runIN <onboarding@resend.dev>",
+        from: RUNIN_EMAIL_FROM,
+        replyTo: RUNIN_EMAIL_REPLY_TO,
 
         to: [
           email,

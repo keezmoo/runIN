@@ -41,6 +41,22 @@ export default function ParametresPage() {
           </Card>
         </section>
 
+        <section className="rounded-lg border bg-card p-4">
+          <h2 className="font-semibold">Besoin d&apos;aide ?</h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            Une question, un problème ou une remarque concernant runIN ?
+            Contactez-nous à{" "}
+            <a
+              href="mailto:contact@runin.fr"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              contact@runin.fr
+            </a>
+            .
+          </p>
+        </section>
+
         {/* SÉCURITÉ */}
 
         <section>
