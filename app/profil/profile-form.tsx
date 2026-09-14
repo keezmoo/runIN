@@ -1,8 +1,8 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useState } from "react";
 
-import CarteZoneRecherche from "@/app/sorties/carte-zone-recherche";
+import SelecteurLieu, { type Localisation } from "@/app/sorties/selecteur-lieu";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ type Profile = {
 type ProfileFormProps = {
   userId: string;
   initialProfile: Profile;
-  initialPosition: PositionRecherche | null;
+  initialPosition: Localisation | null;
 };
 
 type PositionRecherche = {
@@ -114,14 +114,6 @@ export default function ProfileForm({
   const [positionSauvegardee, setPositionSauvegardee] =
     useState<PositionRecherche | null>(initialPosition);
 
-  const [localisationOuverte, setLocalisationOuverte] = useState(false);
-
-  const [rechercheLieuEnCours, setRechercheLieuEnCours] = useState(false);
-
-  const [messageLocalisation, setMessageLocalisation] = useState("");
-
-  const requeteReverseId = useRef(0);
-
   // ------------------------------------------------
   // ANNULATION
   // ------------------------------------------------
@@ -131,148 +123,10 @@ export default function ProfileForm({
 
     setPositionRecherche(positionSauvegardee);
 
-    setLocalisationOuverte(false);
-
-    setMessageLocalisation("");
     setMessage("");
 
     setEdition(false);
   }
-  // ------------------------------------------------
-  // Localisation
-  // ------------------------------------------------
-
-  function modifierLieuRecherche(valeur: string) {
-    setValeurs((valeursActuelles) => ({
-      ...valeursActuelles,
-      lieuRecherche: valeur,
-    }));
-
-    // Le texte saisi ne correspond plus
-    // forcément au point enregistré.
-    setPositionRecherche(null);
-
-    setMessageLocalisation("");
-  }
-
-  async function localiserLieuRecherche() {
-    const recherche = valeurs.lieuRecherche.trim();
-
-    setMessageLocalisation("");
-
-    if (recherche.length < 2) {
-      setMessageLocalisation("Indiquez un lieu de recherche.");
-
-      return;
-    }
-
-    setRechercheLieuEnCours(true);
-
-    try {
-      const response = await fetch(
-        `/api/geocode?q=${encodeURIComponent(recherche)}`,
-      );
-
-      const resultat = (await response.json()) as {
-        nom?: string;
-        latitude?: number;
-        longitude?: number;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setMessageLocalisation(
-          resultat.error ?? "Impossible de trouver ce lieu.",
-        );
-
-        return;
-      }
-
-      const latitude = Number(resultat.latitude);
-
-      const longitude = Number(resultat.longitude);
-
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        setMessageLocalisation("Les coordonnées retournées sont invalides.");
-
-        return;
-      }
-
-      const nouveauNom =
-        typeof resultat.nom === "string" && resultat.nom.trim()
-          ? resultat.nom.trim()
-          : recherche;
-
-      setValeurs((valeursActuelles) => ({
-        ...valeursActuelles,
-        lieuRecherche: nouveauNom,
-      }));
-
-      setPositionRecherche({
-        latitude,
-        longitude,
-      });
-    } catch (erreur) {
-      console.error("Erreur localisation :", erreur);
-
-      setMessageLocalisation(
-        "Impossible de contacter le service de localisation.",
-      );
-    } finally {
-      setRechercheLieuEnCours(false);
-    }
-  }
-
-  async function changerCentreRecherche(latitude: number, longitude: number) {
-    setPositionRecherche({
-      latitude,
-      longitude,
-    });
-
-    setMessageLocalisation("");
-
-    setValeurs((valeursActuelles) => ({
-      ...valeursActuelles,
-      lieuRecherche: "Position personnalisée",
-    }));
-
-    const idRequete = ++requeteReverseId.current;
-
-    try {
-      const response = await fetch(
-        `/api/reverse-geocode?lat=${encodeURIComponent(
-          latitude,
-        )}&lon=${encodeURIComponent(longitude)}`,
-      );
-
-      const resultat = (await response.json()) as {
-        nom?: string;
-        error?: string;
-      };
-
-      if (idRequete !== requeteReverseId.current) {
-        return;
-      }
-
-      if (!response.ok) {
-        console.error("Erreur géocodage inverse :", resultat.error);
-
-        return;
-      }
-
-      if (typeof resultat.nom === "string" && resultat.nom.trim()) {
-        const nouveauNom = resultat.nom.trim();
-
-        setValeurs((valeursActuelles) => ({
-          ...valeursActuelles,
-          lieuRecherche: nouveauNom,
-        }));
-      }
-    } catch (erreur) {
-      console.error("Erreur géocodage inverse :", erreur);
-    }
-  }
-
   // ------------------------------------------------
   // ENREGISTREMENT
   // ------------------------------------------------
@@ -333,8 +187,6 @@ export default function ProfileForm({
 
     setLoading(true);
 
-    setLoading(true);
-
     try {
       const supabase = createClient();
 
@@ -371,7 +223,6 @@ export default function ProfileForm({
       setValeursSauvegardees(nouvellesValeurs);
       setPositionSauvegardee(positionRecherche);
 
-      setLocalisationOuverte(false);
       setEdition(false);
 
       setMessage("Profil enregistré.");
@@ -415,8 +266,6 @@ export default function ProfileForm({
               className="shrink-0"
               onClick={() => {
                 setMessage("");
-                setMessageLocalisation("");
-                setLocalisationOuverte(false);
                 setEdition(true);
               }}
             >
@@ -605,105 +454,28 @@ export default function ProfileForm({
           autour de vous.
         </p>
 
-        <div className="mt-5 overflow-hidden rounded-xl border">
-          {/* RÉSUMÉ */}
-
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setLocalisationOuverte((ouverte) => !ouverte)}
-            aria-expanded={localisationOuverte}
-            className="h-auto w-full justify-between rounded-none px-4 py-3 text-left"
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                className="h-5 w-5 shrink-0"
-                aria-hidden="true"
-              >
-                <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-
-                <circle cx="12" cy="10" r="2.5" />
-              </svg>
-
-              <span className="truncate font-medium">
-                {valeurs.lieuRecherche ? (
-                  <>
-                    {valeurs.lieuRecherche}
-                    {" · "}
-                    {valeurs.rayonRecherche} km
-                  </>
-                ) : (
-                  "Ajouter une localisation"
-                )}
-              </span>
-            </div>
-
-            <span
-              className={`shrink-0 text-lg transition-transform ${
-                localisationOuverte ? "rotate-180" : ""
-              }`}
-              aria-hidden="true"
-            >
-              ⌄
-            </span>
-          </Button>
-
-          {/* ÉDITEUR */}
-
-          {localisationOuverte && (
-            <div className="space-y-4 border-t p-4">
-              {/* LIEU */}
-
-              <div>
-                <label
-                  htmlFor="lieu-recherche-profil"
-                  className="mb-1 block text-sm font-medium"
-                >
-                  Lieu de recherche
-                </label>
-
-                <div className="flex gap-2">
-                  <Input
-                    id="lieu-recherche-profil"
-                    type="text"
-                    value={valeurs.lieuRecherche}
-                    onChange={(event) =>
-                      modifierLieuRecherche(event.target.value)
-                    }
-                    placeholder="Chambéry"
-                    className="min-w-0 flex-1"
-                  />
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={localiserLieuRecherche}
-                    disabled={rechercheLieuEnCours}
-                    className="shrink-0"
-                  >
-                    {rechercheLieuEnCours ? "Recherche..." : "Localiser"}
-                  </Button>
-                </div>
-
-                {!positionRecherche && (
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Cliquez sur « Localiser » pour positionner ce lieu.
-                  </p>
-                )}
-
-                {messageLocalisation && (
-                  <p className="mt-2 text-sm text-destructive">
-                    {messageLocalisation}
-                  </p>
-                )}
-              </div>
-
-              {/* RAYON */}
-
+        <div className="mt-5">
+          <SelecteurLieu
+            lieu={valeurs.lieuRecherche}
+            onLieuChange={(lieuRecherche) =>
+              setValeurs((valeursActuelles) => ({
+                ...valeursActuelles,
+                lieuRecherche,
+              }))
+            }
+            localisation={positionRecherche}
+            onLocalisationChange={setPositionRecherche}
+            libelle="Lieu de recherche"
+            placeholder="Chambéry"
+            resumeSupplementaire={
+              valeurs.lieuRecherche ? (
+                <>
+                  {" · "}
+                  {valeurs.rayonRecherche} km
+                </>
+              ) : null
+            }
+            contenuSupplementaire={
               <div>
                 <div className="mb-1 flex items-center justify-between text-sm">
                   <span className="font-medium">Rayon de recherche</span>
@@ -724,7 +496,6 @@ export default function ProfileForm({
 
                     setValeurs((valeursActuelles) => ({
                       ...valeursActuelles,
-
                       rayonRecherche: RAYONS_KM[index],
                     }));
                   }}
@@ -739,7 +510,6 @@ export default function ProfileForm({
                       onClick={() =>
                         setValeurs((valeursActuelles) => ({
                           ...valeursActuelles,
-
                           rayonRecherche: rayon,
                         }))
                       }
@@ -754,57 +524,10 @@ export default function ProfileForm({
                   ))}
                 </div>
               </div>
-
-              {/* CARTE */}
-
-              {positionRecherche ? (
-                <div>
-                  <CarteZoneRecherche
-                    latitude={positionRecherche.latitude}
-                    longitude={positionRecherche.longitude}
-                    rayonKm={valeurs.rayonRecherche}
-                    onCentreChange={changerCentreRecherche}
-                  />
-
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Cliquez sur la carte ou déplacez le point pour modifier le
-                    centre de la recherche.
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-                  Localisez un lieu pour afficher la carte.
-                </div>
-              )}
-
-              <p className="text-xs text-muted-foreground">
-                Données © OpenStreetMap contributors.
-              </p>
-
-              {/* VALIDATION LOCALISATION */}
-
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    if (!positionRecherche) {
-                      setMessageLocalisation(
-                        "Localisez d'abord le lieu saisi.",
-                      );
-
-                      return;
-                    }
-
-                    setMessageLocalisation("");
-                    setLocalisationOuverte(false);
-                  }}
-                >
-                  Valider la localisation
-                </Button>
-              </div>
-            </div>
-          )}
+            }
+            rayonCarteKm={valeurs.rayonRecherche}
+            aideCarte="Cliquez sur la carte ou déplacez le point pour modifier le centre de votre zone de recherche."
+          />
         </div>
       </section>
 

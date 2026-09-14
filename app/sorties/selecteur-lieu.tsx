@@ -330,6 +330,7 @@ export default function SelecteurLieu({
 
     onLieuChange(valeur);
     onLocalisationChange(null);
+    setLocalisationCarte(null);
     setMessage("");
   }
 
@@ -415,12 +416,12 @@ export default function SelecteurLieu({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border">
-<Button
-  type="button"
-  variant="ghost"
-  onClick={() => setOuverte((valeur) => !valeur)}
-  aria-expanded={ouverte}
-  className="
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => setOuverte((valeur) => !valeur)}
+        aria-expanded={ouverte}
+        className="
     h-auto
     w-full
     justify-between
@@ -429,7 +430,7 @@ export default function SelecteurLieu({
     py-3
     text-left
   "
->
+      >
         <div className="flex min-w-0 items-center gap-2">
           <svg
             viewBox="0 0 24 24"
