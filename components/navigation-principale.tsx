@@ -759,12 +759,45 @@ bg-card
             <Link
               href="/sorties"
               className="
-                mr-3
-                text-xl
-                font-bold
-              "
+    mr-3
+    flex
+    items-center
+  "
+              aria-label="runIN"
             >
-              runIN
+              <svg
+                viewBox="0 0 115 40"
+                className="h-9 w-auto"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient
+                    id="runinTextGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
+                    <stop offset="50%" stopColor="hsl(var(--foreground))" />
+                    <stop offset="50%" stopColor="hsl(var(--primary-strong))" />
+                    <stop
+                      offset="100%"
+                      stopColor="hsl(var(--primary-strong))"
+                    />
+                  </linearGradient>
+                </defs>
+
+                <text
+                  x="2"
+                  y="31"
+                  fontFamily="Arial, sans-serif"
+                  fontSize="32"
+                  fontWeight="700"
+                  fill="url(#runinTextGradient)"
+                >
+                  runIN
+                </text>
+              </svg>
             </Link>
 
             <Link
