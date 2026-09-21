@@ -875,7 +875,7 @@ export default async function DetailSortiePage({ params }: PageProps) {
 
           {/* ACTIONS */}
 
-          <div className="flex flex-1 items-center justify-end gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
             {sortie.statut === "annulee" ? (
               <span className="font-medium text-muted-foreground">
                 Sortie annulée

@@ -166,3 +166,9 @@
 
   cursor: grab;
 }
+
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}

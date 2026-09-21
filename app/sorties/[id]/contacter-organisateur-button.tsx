@@ -64,7 +64,7 @@ export default function ContacterOrganisateurButton({
         onClick={contacterOrganisateur}
         disabled={loading}
       >
-        {loading ? "Ouverture..." : "Contacter l'organisateur"}
+        {loading ? "Ouverture..." : "Contacter l'organisteur"}
       </Button>
 
       {message && <p className="mt-2 text-sm text-destructive">{message}</p>}

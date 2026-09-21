@@ -254,11 +254,20 @@ export default function SelecteurLieu({
 
     const localisationCourante = localisationCarte;
 
+    let annule = false;
+
     async function synchroniserCarte() {
+      const L = await import("leaflet");
+
+      if (annule) {
+        return;
+      }
+
       const carte = carteRef.current;
       const marqueur = marqueurRef.current;
+      const conteneur = conteneurRef.current;
 
-      if (!carte || !marqueur) {
+      if (!carte || !marqueur || !conteneur || !conteneur.isConnected) {
         return;
       }
 
@@ -268,8 +277,6 @@ export default function SelecteurLieu({
       ];
 
       marqueur.setLatLng(position);
-
-      const L = await import("leaflet");
 
       if (
         rayonCarteKm !== undefined &&
@@ -305,11 +312,26 @@ export default function SelecteurLieu({
       }
 
       requestAnimationFrame(() => {
+        const conteneurActuel = conteneurRef.current;
+
+        if (
+          annule ||
+          carteRef.current !== carte ||
+          !conteneurActuel ||
+          !conteneurActuel.isConnected
+        ) {
+          return;
+        }
+
         carte.invalidateSize();
       });
     }
 
     void synchroniserCarte();
+
+    return () => {
+      annule = true;
+    };
   }, [ouverte, localisationCarte, rayonCarteKm]);
 
   useEffect(() => {
@@ -329,8 +351,11 @@ export default function SelecteurLieu({
     requeteIdRef.current += 1;
 
     onLieuChange(valeur);
+
+    // Le texte a changé : la localisation n'est plus validée,
+    // mais on conserve la carte actuelle affichée.
     onLocalisationChange(null);
-    setLocalisationCarte(null);
+
     setMessage("");
   }
 

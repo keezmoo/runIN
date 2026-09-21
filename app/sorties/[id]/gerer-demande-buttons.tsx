@@ -65,12 +65,21 @@ export default function GererDemandeButtons({
       p_demande_id: demandeId,
     });
 
-    if (error) {
-      setMessage("Impossible de refuser la demande.");
+if (error) {
+  console.error("Erreur refus demande :", {
+    message: error.message,
+    code: error.code,
+    details: error.details,
+    hint: error.hint,
+  });
 
-      setLoading(false);
-      return;
-    }
+  setMessage(
+    `Impossible de refuser la demande : ${error.message}`,
+  );
+
+  setLoading(false);
+  return;
+}
 
     router.refresh();
   }

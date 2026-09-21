@@ -62,6 +62,14 @@ function afficherSexe(sexe: Sexe) {
 }
 const RAYONS_KM = [1, 2, 3, 5, 10, 15, 20] as const;
 
+const LIEU_PROFIL_PAR_DEFAUT =
+  "Fontaine des Éléphants, 10 Pl. des Éléphants, 73000 Chambéry";
+
+const POSITION_PROFIL_PAR_DEFAUT = {
+  latitude: 45.566597,
+  longitude: 5.922878,
+};
+
 function indexRayonLePlusProche(valeur: number) {
   let meilleurIndex = 0;
   let meilleureDifference = Infinity;
@@ -93,7 +101,7 @@ export default function ProfileForm({
     age: initialProfile?.age?.toString() ?? "",
     sexe: normaliserSexe(initialProfile?.sexe),
     description: initialProfile?.description ?? "",
-    lieuRecherche: initialProfile?.lieu_recherche ?? "",
+    lieuRecherche: initialProfile?.lieu_recherche ?? LIEU_PROFIL_PAR_DEFAUT,
     rayonRecherche: rayonInitial,
   };
 
@@ -108,11 +116,13 @@ export default function ProfileForm({
 
   const [loading, setLoading] = useState(false);
 
+  const positionInitiale = initialPosition ?? POSITION_PROFIL_PAR_DEFAUT;
+
   const [positionRecherche, setPositionRecherche] =
-    useState<PositionRecherche | null>(initialPosition);
+    useState<PositionRecherche | null>(positionInitiale);
 
   const [positionSauvegardee, setPositionSauvegardee] =
-    useState<PositionRecherche | null>(initialPosition);
+    useState<PositionRecherche | null>(positionInitiale);
 
   // ------------------------------------------------
   // ANNULATION
@@ -145,7 +155,7 @@ export default function ProfileForm({
     const rayon = Number(valeurs.rayonRecherche);
 
     if (nom.length < 2) {
-      setMessage("Veuillez indiquer votre nom.");
+      setMessage("Veuillez indiquer votre pseudonyme.");
 
       return;
     }
@@ -344,7 +354,7 @@ export default function ProfileForm({
           {/* NOM */}
 
           <div>
-            <label className="mb-1 block font-medium">Nom</label>
+            <label className="mb-1 block font-medium">Prénom</label>
 
             <Input
               type="text"
@@ -355,7 +365,7 @@ export default function ProfileForm({
                   nom: event.target.value,
                 }))
               }
-              placeholder="Vincent"
+              placeholder="Votre prénom"
             />
           </div>
 

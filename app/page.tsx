@@ -21,70 +21,47 @@ export default function HomePage() {
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
-            className="flex items-center"
+            className="flex items-center gap-2"
             aria-label="Accueil runIN"
           >
-            <svg
-              viewBox="0 0 115 40"
-              className="h-9 w-auto"
+            <img
+              src="/logo-runin.svg"
+              alt=""
+              className="h-8 w-8 shrink-0"
               aria-hidden="true"
-            >
-              <defs>
-                <linearGradient
-                  id="runinLandingGradient"
-                  x1="0%"
-                  y1="0%"
-                  x2="100%"
-                  y2="0%"
-                >
-                  <stop
-                    offset="0%"
-                    stopColor="hsl(var(--foreground))"
-                  />
-
-                  <stop
-                    offset="15%"
-                    stopColor="hsl(var(--primary-strong))"
-                  />
-
-                  <stop
-                    offset="100%"
-                    stopColor="hsl(var(--primary-strong))"
-                  />
-                </linearGradient>
-              </defs>
-
-              <text
-                x="2"
-                y="31"
-                fontFamily="Arial, sans-serif"
-                fontSize="32"
-                fontWeight="700"
-                fill="url(#runinLandingGradient)"
+            />
+            <defs>
+              <linearGradient
+                id="runinTextGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
               >
-                runIN
-              </text>
-            </svg>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
+                <stop offset="50%" stopColor="hsl(var(--foreground))" />
+                <stop offset="50%" stopColor="hsl(var(--primary-strong))" />
+                <stop offset="100%" stopColor="hsl(var(--primary-strong))" />
+              </linearGradient>
+            </defs>
+            <span
+              className="
+      bg-[linear-gradient(90deg,hsl(var(--foreground))_0%,hsl(var(--primary-strong))_20%,hsl(var(--primary-strong))_100%)]
+      bg-clip-text
+      text-2xl
+      font-bold
+      text-transparent
+    "
             >
-              <Link href="/auth/login">
-                Connexion
-              </Link>
+              runIN
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/auth/login">Connexion</Link>
             </Button>
 
-            <Button
-              asChild
-              size="sm"
-            >
-              <Link href="/auth/sign-up">
-                Créer un compte
-              </Link>
+            <Button asChild size="sm">
+              <Link href="/auth/sign-up">Créer un compte</Link>
             </Button>
           </div>
         </div>
@@ -105,51 +82,19 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-            runIN vous permet de trouver des coureurs autour de vous,
-            de rejoindre des sorties running ou trail et de proposer
-            vos propres entraînements.
+            runIN vous permet de trouver des coureurs autour de vous, de
+            rejoindre des sorties running ou trail et de proposer vos propres
+            entraînements.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <Button
-              asChild
-              size="lg"
-            >
-              <Link href="/auth/sign-up">
-                Créer mon compte
-              </Link>
+            <Button asChild size="lg">
+              <Link href="/auth/sign-up">Créer mon compte</Link>
             </Button>
 
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-            >
-              <Link href="/auth/login">
-                Se connecter
-              </Link>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/auth/login">Se connecter</Link>
             </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================ */}
-      {/* PRÉSENTATION                                 */}
-      {/* ============================================ */}
-
-      <section className="border-y border-border bg-card">
-        <div className="mx-auto max-w-5xl px-4 py-16 sm:px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold sm:text-3xl">
-              Courir ensemble.
-            </h2>
-
-            <p className="mt-4 leading-7 text-muted-foreground">
-              Que vous cherchiez une sortie tranquille, un entraînement
-              spécifique ou simplement d&apos;autres coureurs avec qui
-              partager quelques kilomètres, runIN facilite les rencontres
-              autour de la course à pied.
-            </p>
           </div>
         </div>
       </section>
@@ -170,10 +115,9 @@ export default function HomePage() {
             </h2>
 
             <p className="mt-4 leading-7 text-muted-foreground">
-              runIN est encore en développement. De nouvelles
-              fonctionnalités seront ajoutées progressivement pour faciliter
-              les rencontres entre coureurs et améliorer l&apos;organisation
-              des sorties.
+              runIN est encore en développement. De nouvelles fonctionnalités
+              seront ajoutées progressivement pour faciliter les rencontres
+              entre coureurs et améliorer l&apos;organisation des sorties.
             </p>
           </div>
 
@@ -182,12 +126,11 @@ export default function HomePage() {
               <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary-strong" />
 
               <div>
-                <h3 className="font-semibold">
-                  Création de clubs
-                </h3>
+                <h3 className="font-semibold">Création de clubs</h3>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Inscrivez vous à votre club et ne voyez que les sorties de ce dernier.
+                  Inscrivez vous à votre club et ne voyez que les sorties de ce
+                  dernier.
                 </p>
               </div>
             </Card>
@@ -196,13 +139,11 @@ export default function HomePage() {
               <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary-strong" />
 
               <div>
-                <h3 className="font-semibold">
-                  Recherche plus précise
-                </h3>
+                <h3 className="font-semibold">Recherche plus précise</h3>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  De nouveaux filtres et outils pour trouver plus facilement
-                  les sorties qui vous correspondent.
+                  De nouveaux filtres et outils pour trouver plus facilement les
+                  sorties qui vous correspondent.
                 </p>
               </div>
             </Card>
@@ -211,14 +152,11 @@ export default function HomePage() {
               <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-primary-strong" />
 
               <div>
-                <h3 className="font-semibold">
-                  Messagerie et communauté
-                </h3>
+                <h3 className="font-semibold">Messagerie et communauté</h3>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Une expérience progressivement enrichie pour communiquer
-                  avant les sorties et rester en contact avec les autres
-                  coureurs.
+                  Une expérience progressivement enrichie pour communiquer avant
+                  les sorties et rester en contact avec les autres coureurs.
                 </p>
               </div>
             </Card>
@@ -227,13 +165,11 @@ export default function HomePage() {
               <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full border-2 border-primary-strong" />
 
               <div>
-                <h3 className="font-semibold">
-                  Et ensuite…
-                </h3>
+                <h3 className="font-semibold">Et ensuite…</h3>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Les retours des premiers utilisateurs aideront à définir
-                  les prochaines évolutions de runIN.
+                  Les retours des premiers utilisateurs aideront à définir les
+                  prochaines évolutions de runIN.
                 </p>
               </div>
             </Card>
@@ -256,14 +192,8 @@ export default function HomePage() {
             disponibles autour de vous.
           </p>
 
-          <Button
-            asChild
-            size="lg"
-            className="mt-7"
-          >
-            <Link href="/auth/sign-up">
-              Créer mon compte
-            </Link>
+          <Button asChild size="lg" className="mt-7">
+            <Link href="/auth/sign-up">Créer mon compte</Link>
           </Button>
         </div>
       </section>
@@ -274,29 +204,18 @@ export default function HomePage() {
 
       <footer>
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <span>
-            © {new Date().getFullYear()} runIN
-          </span>
+          <span>© {new Date().getFullYear()} runIN</span>
 
           <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <a
-              href="mailto:contact@runin.fr"
-              className="hover:text-foreground"
-            >
+            <a href="mailto:contact@runin.fr" className="hover:text-foreground">
               Contact
             </a>
 
-            <Link
-              href="/auth/login"
-              className="hover:text-foreground"
-            >
+            <Link href="/auth/login" className="hover:text-foreground">
               Connexion
             </Link>
 
-            <Link
-              href="/auth/sign-up"
-              className="hover:text-foreground"
-            >
+            <Link href="/auth/sign-up" className="hover:text-foreground">
               Inscription
             </Link>
           </div>

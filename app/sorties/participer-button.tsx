@@ -489,7 +489,7 @@ export default function ParticiperButton({
   } else if (complet) {
     texteBouton = "Complet";
   } else if (modeInscription === "validation") {
-    texteBouton = "Demander à participer";
+    texteBouton = "Participer";
   }
 
   // ------------------------------------------------
@@ -513,7 +513,18 @@ export default function ParticiperButton({
         onClick={actionParticipation}
         disabled={boutonDesactive}
       >
-        {texteBouton}
+        {loading ? (
+          "..."
+        ) : modeInscription === "validation" &&
+          secondesCooldown <= 0 &&
+          !complet ? (
+          <>
+            <span className="sm:hidden">Demander</span>
+            <span className="hidden sm:inline">Demander à participer</span>
+          </>
+        ) : (
+          texteBouton
+        )}
       </Button>
 
       {demandeActive && !dejaParticipant && (
