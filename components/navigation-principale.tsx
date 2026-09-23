@@ -765,12 +765,6 @@ bg-card
   "
               aria-label="runIN"
             >
-              <img
-                src="/logo-runin.svg"
-                alt=""
-                className="h-7 w-7 shrink-0"
-                aria-hidden="true"
-              />
               <svg
                 viewBox="0 0 115 40"
                 className="h-9 w-auto"

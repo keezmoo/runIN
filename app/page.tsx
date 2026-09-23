@@ -24,36 +24,32 @@ export default function HomePage() {
             className="flex items-center gap-2"
             aria-label="Accueil runIN"
           >
-            <img
-              src="/logo-runin.svg"
-              alt=""
-              className="h-8 w-8 shrink-0"
-              aria-hidden="true"
-            />
-            <defs>
-              <linearGradient
-                id="runinTextGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="100%"
+            <svg viewBox="0 0 115 40" className="h-9 w-auto" aria-hidden="true">
+              <defs>
+                <linearGradient
+                  id="runinTextGradient"
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="100%"
+                >
+                  <stop offset="50%" stopColor="hsl(var(--foreground))" />
+                  <stop offset="50%" stopColor="hsl(var(--primary-strong))" />
+                  <stop offset="100%" stopColor="hsl(var(--primary-strong))" />
+                </linearGradient>
+              </defs>
+
+              <text
+                x="2"
+                y="31"
+                fontFamily="Arial, sans-serif"
+                fontSize="32"
+                fontWeight="700"
+                fill="url(#runinTextGradient)"
               >
-                <stop offset="50%" stopColor="hsl(var(--foreground))" />
-                <stop offset="50%" stopColor="hsl(var(--primary-strong))" />
-                <stop offset="100%" stopColor="hsl(var(--primary-strong))" />
-              </linearGradient>
-            </defs>
-            <span
-              className="
-      bg-[linear-gradient(90deg,hsl(var(--foreground))_0%,hsl(var(--primary-strong))_20%,hsl(var(--primary-strong))_100%)]
-      bg-clip-text
-      text-2xl
-      font-bold
-      text-transparent
-    "
-            >
-              runIN
-            </span>
+                runIN
+              </text>
+            </svg>
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm">
