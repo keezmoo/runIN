@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "runIN – Trouvez des partenaires de running et trail",
@@ -10,7 +12,17 @@ export const metadata: Metadata = {
     "Trouvez des partenaires de course près de chez vous, rejoignez des sorties running et trail ou créez les vôtres avec runIN.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/sorties");
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* ============================================ */}
